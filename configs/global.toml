@@ -1,0 +1,36 @@
+[project]
+name = "trading-ml-v4"
+timezone = "America/New_York"
+session_start = "09:30:00"
+session_end = "16:00:00"
+primary_setup = "BNR"
+primary_zone_window = "09:30:00-09:30:59"
+
+[data]
+provider = "databento"
+timeframes = ["30s", "1m"]
+asset_class = "equities"
+
+[symbols]
+watchlist = []
+
+[costs]
+commission_per_share = 0.0
+sec_fee_per_dollar = 0.0
+exchange_fee_per_share = 0.0
+
+[slippage]
+model = "bps"
+entry_bps = 2.0
+exit_bps = 2.0
+
+[validation]
+exploration_start = "2024-01-01"
+exploration_end = "2025-06-30"
+validation_start = "2025-07-01"
+validation_end = "2025-12-31"
+holdout_start = "2026-01-01"
+holdout_end = "2026-03-31"
+walk_forward = false
+purging_bars = 0
+embargo_bars = 0

@@ -1,0 +1,20 @@
+{
+  "dataset_name": "databento_bnr_universe",
+  "provider": "databento",
+  "timezone": "America/New_York",
+  "generated_at": "2026-05-17T00:00:00Z",
+  "files": [
+    {
+      "symbol": "SPY",
+      "timeframe": "1m",
+      "date_start": "2024-01-02",
+      "date_end": "2026-03-31",
+      "source_path": "data/raw/databento/spy_1m.parquet",
+      "schema": "ohlcv-1m",
+      "quality_flags": [
+        "session-checked",
+        "timezone-normalized"
+      ]
+    }
+  ]
+}

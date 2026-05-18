@@ -1,0 +1,205 @@
+{
+  "candidate_count": 111,
+  "config": {
+    "break_buffer_points": 0.0,
+    "horizon_bars": 20,
+    "latest_trigger_time": "11:00:00",
+    "source_path": "/Users/radhikaarora/Library/Containers/com.apple.Numbers/Data/tmp/com.apple.Numbers_25077_import_796495321_11/mnq_30s_2025_q4.numbers",
+    "stop_multiple": 1.0,
+    "symbol": "MNQ",
+    "target_multiple": 1.5,
+    "timeframe": "30s",
+    "timezone": "America/New_York"
+  },
+  "data_quality": {
+    "date_end": "2025-12-31T12:45:30-05:00",
+    "date_start": "2025-10-01T09:30:00-04:00",
+    "duplicate_timestamps": 0,
+    "missing_regular_session_bars": 24832,
+    "opening_zone_sessions": 64,
+    "quality_flags": [
+      "missing_regular_session_bars"
+    ],
+    "rows": 25088,
+    "sessions": 64,
+    "source_path": "/Users/radhikaarora/Library/Containers/com.apple.Numbers/Data/tmp/com.apple.Numbers_25077_import_796495321_11/mnq_30s_2025_q4.numbers",
+    "symbol": "MNQ",
+    "timeframe": "30s",
+    "timezone": "America/New_York"
+  },
+  "feature_audit": {
+    "failed": 0,
+    "issues": [],
+    "rows": 111
+  },
+  "label_summary": {
+    "avg_pnl_r": 0.046206251636105686,
+    "outcomes": {
+      "stop": 48,
+      "target": 30,
+      "timeout": 33
+    },
+    "positive_rate": 0.2702702702702703,
+    "rows": 111
+  },
+  "model_summary": {
+    "metrics": {
+      "brier": 0.21142014313900506,
+      "precision": 0.25,
+      "recall": 0.25,
+      "roc_auc": 0.6057692307692308
+    },
+    "model_name": "logistic_regression",
+    "positive_rate_test": 0.23529411764705882,
+    "positive_rate_train": 0.2857142857142857,
+    "rows_test": 34,
+    "rows_train": 77,
+    "status": "fit"
+  },
+  "sample_candidates": [
+    {
+      "candidate_id": "MNQ-2025-10-01-break_above_zone-2025-10-01T09:31:00-04:00",
+      "decision_time": "2025-10-01T09:31:30-04:00",
+      "direction": "long",
+      "entry_reference_price": 24790.25,
+      "feature_cutoff_time": "2025-10-01T09:31:30-04:00",
+      "invalidation_reference_price": 24743.5,
+      "session_date": "2025-10-01",
+      "setup_type": "break_above_zone",
+      "symbol": "MNQ",
+      "trace": {
+        "trigger_bar_complete_at": "2025-10-01T09:31:30-04:00",
+        "trigger_bar_start": "2025-10-01T09:31:00-04:00",
+        "trigger_close": 24790.25,
+        "zone_high": 24768.25,
+        "zone_low": 24743.5
+      },
+      "trigger_time": "2025-10-01T09:31:00-04:00",
+      "zone": {
+        "decision_available_at": "2025-10-01T09:31:00-04:00",
+        "high": 24768.25,
+        "low": 24743.5,
+        "midpoint": 24755.875,
+        "quality_flags": [],
+        "session_date": "2025-10-01",
+        "source_timeframe": "30s",
+        "symbol": "MNQ",
+        "width": 24.75,
+        "width_bps": 9.997626825955455,
+        "zone_end": "2025-10-01T09:30:30-04:00",
+        "zone_start": "2025-10-01T09:30:00-04:00"
+      }
+    },
+    {
+      "candidate_id": "MNQ-2025-10-01-break_below_zone-2025-10-01T09:49:30-04:00",
+      "decision_time": "2025-10-01T09:50:00-04:00",
+      "direction": "short",
+      "entry_reference_price": 24737.0,
+      "feature_cutoff_time": "2025-10-01T09:50:00-04:00",
+      "invalidation_reference_price": 24768.25,
+      "session_date": "2025-10-01",
+      "setup_type": "break_below_zone",
+      "symbol": "MNQ",
+      "trace": {
+        "trigger_bar_complete_at": "2025-10-01T09:50:00-04:00",
+        "trigger_bar_start": "2025-10-01T09:49:30-04:00",
+        "trigger_close": 24737.0,
+        "zone_high": 24768.25,
+        "zone_low": 24743.5
+      },
+      "trigger_time": "2025-10-01T09:49:30-04:00",
+      "zone": {
+        "decision_available_at": "2025-10-01T09:31:00-04:00",
+        "high": 24768.25,
+        "low": 24743.5,
+        "midpoint": 24755.875,
+        "quality_flags": [],
+        "session_date": "2025-10-01",
+        "source_timeframe": "30s",
+        "symbol": "MNQ",
+        "width": 24.75,
+        "width_bps": 9.997626825955455,
+        "zone_end": "2025-10-01T09:30:30-04:00",
+        "zone_start": "2025-10-01T09:30:00-04:00"
+      }
+    },
+    {
+      "candidate_id": "MNQ-2025-10-02-break_below_zone-2025-10-02T09:32:00-04:00",
+      "decision_time": "2025-10-02T09:32:30-04:00",
+      "direction": "short",
+      "entry_reference_price": 25137.75,
+      "feature_cutoff_time": "2025-10-02T09:32:30-04:00",
+      "invalidation_reference_price": 25169.0,
+      "session_date": "2025-10-02",
+      "setup_type": "break_below_zone",
+      "symbol": "MNQ",
+      "trace": {
+        "trigger_bar_complete_at": "2025-10-02T09:32:30-04:00",
+        "trigger_bar_start": "2025-10-02T09:32:00-04:00",
+        "trigger_close": 25137.75,
+        "zone_high": 25169.0,
+        "zone_low": 25138.25
+      },
+      "trigger_time": "2025-10-02T09:32:00-04:00",
+      "zone": {
+        "decision_available_at": "2025-10-02T09:31:00-04:00",
+        "high": 25169.0,
+        "low": 25138.25,
+        "midpoint": 25153.625,
+        "quality_flags": [],
+        "session_date": "2025-10-02",
+        "source_timeframe": "30s",
+        "symbol": "MNQ",
+        "width": 30.75,
+        "width_bps": 12.224878123928459,
+        "zone_end": "2025-10-02T09:30:30-04:00",
+        "zone_start": "2025-10-02T09:30:00-04:00"
+      }
+    }
+  ],
+  "sample_zones": [
+    {
+      "decision_available_at": "2025-10-01T09:31:00-04:00",
+      "high": 24768.25,
+      "low": 24743.5,
+      "midpoint": 24755.875,
+      "quality_flags": [],
+      "session_date": "2025-10-01",
+      "source_timeframe": "30s",
+      "symbol": "MNQ",
+      "width": 24.75,
+      "width_bps": 9.997626825955455,
+      "zone_end": "2025-10-01T09:30:30-04:00",
+      "zone_start": "2025-10-01T09:30:00-04:00"
+    },
+    {
+      "decision_available_at": "2025-10-02T09:31:00-04:00",
+      "high": 25169.0,
+      "low": 25138.25,
+      "midpoint": 25153.625,
+      "quality_flags": [],
+      "session_date": "2025-10-02",
+      "source_timeframe": "30s",
+      "symbol": "MNQ",
+      "width": 30.75,
+      "width_bps": 12.224878123928459,
+      "zone_end": "2025-10-02T09:30:30-04:00",
+      "zone_start": "2025-10-02T09:30:00-04:00"
+    },
+    {
+      "decision_available_at": "2025-10-03T09:31:00-04:00",
+      "high": 25146.5,
+      "low": 25120.0,
+      "midpoint": 25133.25,
+      "quality_flags": [],
+      "session_date": "2025-10-03",
+      "source_timeframe": "30s",
+      "symbol": "MNQ",
+      "width": 26.5,
+      "width_bps": 10.543801537803509,
+      "zone_end": "2025-10-03T09:30:30-04:00",
+      "zone_start": "2025-10-03T09:30:00-04:00"
+    }
+  ],
+  "zone_count": 64
+}

@@ -1,0 +1,15 @@
+[boundary]
+mode = "strict"
+notes = "Exploration may iterate inside the exploration period only. Validation is reserved for frozen specifications. Holdout remains untouched until final confirmation."
+
+[exploration]
+start = "2024-01-01"
+end = "2025-06-30"
+
+[validation]
+start = "2025-07-01"
+end = "2025-12-31"
+
+[holdout]
+start = "2026-01-01"
+end = "2026-03-31"

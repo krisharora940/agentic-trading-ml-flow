@@ -1,0 +1,70 @@
+{
+  "asset_class": "futures",
+  "dataset_name": "databento_mnq_bnr",
+  "decision_available_at": "09:31:00 America/New_York",
+  "files": [
+    {
+      "date_end": "2026-02-27T12:59:30-05:00",
+      "date_start": "2026-01-02T09:30:00-05:00",
+      "duplicate_timestamps": 0,
+      "instrument": "Micro E-mini Nasdaq-100 futures",
+      "missing_regular_session_bars": 14040,
+      "opening_zone_sessions": 39,
+      "provider": "databento",
+      "quality_flags": [
+        "missing_regular_session_bars"
+      ],
+      "rows": 16380,
+      "schema": "ohlcv-30s",
+      "sessions": 39,
+      "source_path": "/Users/radhikaarora/Documents/Trading ML/ML V2/data/mnq_30s_2026-01-01_to_2026-02-28.parquet",
+      "symbol": "MNQ",
+      "timeframe": "30s",
+      "timezone": "America/New_York"
+    },
+    {
+      "date_end": "2026-03-27T12:59:30-04:00",
+      "date_start": "2026-03-23T09:30:00-04:00",
+      "duplicate_timestamps": 0,
+      "instrument": "Micro E-mini Nasdaq-100 futures",
+      "missing_regular_session_bars": 1800,
+      "opening_zone_sessions": 5,
+      "provider": "databento",
+      "quality_flags": [
+        "missing_regular_session_bars"
+      ],
+      "rows": 2100,
+      "schema": "ohlcv-30s",
+      "sessions": 5,
+      "source_path": "/Users/radhikaarora/Documents/Trading ML/ML V2/data/mnq_30s_2026-03-20_to_2026-03-27.parquet",
+      "symbol": "MNQ",
+      "timeframe": "30s",
+      "timezone": "America/New_York"
+    },
+    {
+      "date_end": "2026-03-27T12:59:00-04:00",
+      "date_start": "2026-03-23T09:30:00-04:00",
+      "duplicate_timestamps": 0,
+      "instrument": "Micro E-mini Nasdaq-100 futures",
+      "missing_regular_session_bars": 900,
+      "opening_zone_sessions": 5,
+      "provider": "databento",
+      "quality_flags": [
+        "missing_regular_session_bars"
+      ],
+      "rows": 1050,
+      "schema": "ohlcv-1m",
+      "sessions": 5,
+      "source_path": "/Users/radhikaarora/Documents/Trading ML/ML V2/data/mnq_1m_2026-03-20_to_2026-03-27.parquet",
+      "symbol": "MNQ",
+      "timeframe": "1m",
+      "timezone": "America/New_York"
+    }
+  ],
+  "generated_at": "2026-05-17T23:13:06+00:00",
+  "primary_setup": "BNR",
+  "provider": "databento",
+  "symbol": "MNQ",
+  "timezone": "America/New_York",
+  "zone_window": "09:30:00-09:30:59 America/New_York"
+}

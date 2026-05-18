@@ -1,0 +1,90 @@
+[setup]
+name = "BNR"
+symbol = "MNQ"
+timezone = "America/New_York"
+zone_window = "09:30:00-09:30:59"
+decision_unit = "30s_close"
+source_break_timeframe = "1m"
+
+[phases.break]
+earliest_break_close_time = "09:31:00"
+requires_zone_close_complete = true
+requires_1m_close_beyond_boundary = true
+wick_through_allowed = true
+wick_through_weight = "lower"
+minimum_break_magnitude_points = 0.0
+
+[phases.pivot]
+dynamic_pivot = true
+pivot_extreme_stop_anchor = true
+multiple_reclaims_valid = true
+close_through_opposite_zone_invalidates = true
+hard_time_limit_bars = 0
+
+[phases.entry]
+earliest_entry_time = "09:32:00"
+confirmation_required = true
+entry_requires_30s_close = true
+failed_first_continuation_invalidates = false
+
+[exits]
+stop_mode = "pivot_extreme_close_invalidation"
+move_stop_to_breakeven = false
+partial_exits = false
+v1_exit_mode = "fixed_r_research_target"
+future_exit_mode = "momentum_weakness"
+
+[label_v1]
+name = "target_before_stop_within_horizon"
+description = "Research label: does the setup reach +target_r before -stop_r within horizon_bars after valid continuation entry."
+horizon_bars = 20
+stop_r = 1.0
+target_r = 1.5
+timeout_label = 0
+ambiguous_stop_target_label = 0
+
+[feature_mapping]
+wick_break_quality = "first_break_wick_only, first_break_close_confirmed"
+delay_penalty_proxy = "pivot_duration_bars, continuation_delay_bars"
+reclaim_strength_proxy = "reclaim_count, reentry_count, deepest_zone_retrace_fraction"
+continuation_quality_proxy = "continuation_displacement_ratio, post_reclaim_close_strength"
+invalidation_risk_proxy = "opposite_boundary_close_violation"
+
+[engineer_features]
+enabled = true
+backend = "hybrid"
+disable_numba_jit = true
+features = ["rsi", "atr", "ema", "mfi", "stddev", "choppiness_index"]
+
+[search_v1]
+description = "First governed exploration batch. Small search space only."
+max_batch_trials = 6
+
+[search_v1.space]
+earliest_trigger_time = ["09:32:00", "09:33:00"]
+horizon_bars = [20, 30]
+target_multiple = [1.5, 2.0]
+break_buffer_points = [0.0, 1.0]
+
+[model_search_v1]
+description = "Frozen-setup model-family comparison batch."
+max_batch_trials = 2
+
+[model_search_v1.space]
+model_family = ["linear_baseline", "gbm"]
+
+[translation_contract]
+min_breadth_per_session = 1.0
+min_positive_rate = 0.05
+max_positive_rate = 0.60
+threshold_grid = [0.45, 0.50, 0.55, 0.60, 0.65]
+
+[controller]
+spec_version = "bnr_spec_vA"
+active_family = "setup"
+active_model_family = "linear_baseline"
+min_candidate_ratio_vs_baseline = 0.7
+require_positive_net_delta = true
+min_roc_auc_delta = 0.0
+frozen_threshold = 0.45
+benchmark_name = "bnr_hybrid_linear_v1"

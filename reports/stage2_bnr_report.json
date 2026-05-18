@@ -1,0 +1,433 @@
+{
+  "bnr_spec": {
+    "exits": {
+      "future_exit_mode": "momentum_weakness",
+      "move_stop_to_breakeven": false,
+      "partial_exits": false,
+      "stop_mode": "pivot_extreme_close_invalidation",
+      "v1_exit_mode": "fixed_r_research_target"
+    },
+    "feature_mapping": {
+      "continuation_quality_proxy": "continuation_displacement_ratio, post_reclaim_close_strength",
+      "delay_penalty_proxy": "pivot_duration_bars, continuation_delay_bars",
+      "invalidation_risk_proxy": "opposite_boundary_close_violation",
+      "reclaim_strength_proxy": "reclaim_count, reentry_count, deepest_zone_retrace_fraction",
+      "wick_break_quality": "first_break_wick_only, first_break_close_confirmed"
+    },
+    "label_v1": {
+      "ambiguous_stop_target_label": 0,
+      "description": "Research label: does the setup reach +target_r before -stop_r within horizon_bars after valid continuation entry.",
+      "horizon_bars": 20,
+      "name": "target_before_stop_within_horizon",
+      "stop_r": 1.0,
+      "target_r": 1.5,
+      "timeout_label": 0
+    },
+    "phases": {
+      "break": {
+        "earliest_break_close_time": "09:31:00",
+        "minimum_break_magnitude_points": 0.0,
+        "requires_1m_close_beyond_boundary": true,
+        "requires_zone_close_complete": true,
+        "wick_through_allowed": true,
+        "wick_through_weight": "lower"
+      },
+      "entry": {
+        "confirmation_required": true,
+        "earliest_entry_time": "09:32:00",
+        "entry_requires_30s_close": true,
+        "failed_first_continuation_invalidates": false
+      },
+      "pivot": {
+        "close_through_opposite_zone_invalidates": true,
+        "dynamic_pivot": true,
+        "hard_time_limit_bars": 0,
+        "multiple_reclaims_valid": true,
+        "pivot_extreme_stop_anchor": true
+      }
+    },
+    "search_v1": {
+      "description": "First governed exploration batch. Small search space only.",
+      "max_batch_trials": 6,
+      "space": {
+        "break_buffer_points": [
+          0.0,
+          1.0
+        ],
+        "earliest_trigger_time": [
+          "09:32:00",
+          "09:33:00"
+        ],
+        "horizon_bars": [
+          20,
+          30
+        ],
+        "target_multiple": [
+          1.5,
+          2.0
+        ]
+      }
+    },
+    "setup": {
+      "decision_unit": "30s_close",
+      "name": "BNR",
+      "source_break_timeframe": "1m",
+      "symbol": "MNQ",
+      "timezone": "America/New_York",
+      "zone_window": "09:30:00-09:30:59"
+    }
+  },
+  "candidate_count": 58,
+  "config": {
+    "break_buffer_points": 0.0,
+    "earliest_trigger_time": "09:32:00",
+    "horizon_bars": 20,
+    "latest_trigger_time": "11:00:00",
+    "source_path": "/Users/radhikaarora/Documents/Trading ML/ML V2/data/mnq_30s_2026-01-01_to_2026-02-28.parquet",
+    "spec_name": "BNR",
+    "stop_multiple": 1.0,
+    "symbol": "MNQ",
+    "target_multiple": 1.5,
+    "timeframe": "30s",
+    "timezone": "America/New_York"
+  },
+  "data_quality": {
+    "date_end": "2026-02-27T12:59:30-05:00",
+    "date_start": "2026-01-02T09:30:00-05:00",
+    "duplicate_timestamps": 0,
+    "missing_regular_session_bars": 14040,
+    "opening_zone_sessions": 39,
+    "quality_flags": [
+      "missing_regular_session_bars"
+    ],
+    "rows": 16380,
+    "sessions": 39,
+    "source_path": "/Users/radhikaarora/Documents/Trading ML/ML V2/data/mnq_30s_2026-01-01_to_2026-02-28.parquet",
+    "symbol": "MNQ",
+    "timeframe": "30s",
+    "timezone": "America/New_York"
+  },
+  "feature_audit": {
+    "failed": 0,
+    "issues": [],
+    "rows": 58
+  },
+  "label_summary": {
+    "avg_pnl_r": 0.15068753804483806,
+    "outcomes": {
+      "stop": 19,
+      "target": 11,
+      "timeout": 28
+    },
+    "positive_rate": 0.1896551724137931,
+    "rows": 58
+  },
+  "labels_preview": [
+    {
+      "bars_held": 20,
+      "candidate_id": "MNQ-2026-01-02-break_reentry_reclaim_short-2026-01-02T09:32:00-05:00",
+      "entry_price": 25674.5,
+      "entry_time": "2026-01-02T09:32:30-05:00",
+      "exit_price": 25656.75,
+      "exit_time": "2026-01-02T09:42:00-05:00",
+      "label": 0,
+      "mae": -30.5,
+      "mfe": 36.5,
+      "outcome": "timeout",
+      "pnl_r": 0.35148514851485146,
+      "stop_price": 25725.0,
+      "target_price": 25598.75
+    },
+    {
+      "bars_held": 20,
+      "candidate_id": "MNQ-2026-01-02-break_reentry_reclaim_long-2026-01-02T09:47:00-05:00",
+      "entry_price": 25752.75,
+      "entry_time": "2026-01-02T09:47:30-05:00",
+      "exit_price": 25737.0,
+      "exit_time": "2026-01-02T09:57:00-05:00",
+      "label": 0,
+      "mae": -22.25,
+      "mfe": 50.75,
+      "outcome": "timeout",
+      "pnl_r": -0.3118811881188119,
+      "stop_price": 25702.25,
+      "target_price": 25828.5
+    },
+    {
+      "bars_held": 20,
+      "candidate_id": "MNQ-2026-01-05-break_reentry_reclaim_short-2026-01-05T09:32:00-05:00",
+      "entry_price": 25598.5,
+      "entry_time": "2026-01-05T09:32:30-05:00",
+      "exit_price": 25571.5,
+      "exit_time": "2026-01-05T09:42:00-05:00",
+      "label": 0,
+      "mae": -32.75,
+      "mfe": 60.0,
+      "outcome": "timeout",
+      "pnl_r": 0.5373134328358209,
+      "stop_price": 25648.75,
+      "target_price": 25523.125
+    },
+    {
+      "bars_held": 20,
+      "candidate_id": "MNQ-2026-01-05-break_reentry_reclaim_long-2026-01-05T10:28:00-05:00",
+      "entry_price": 25680.25,
+      "entry_time": "2026-01-05T10:28:30-05:00",
+      "exit_price": 25659.5,
+      "exit_time": "2026-01-05T10:38:00-05:00",
+      "label": 0,
+      "mae": -27.75,
+      "mfe": 11.0,
+      "outcome": "timeout",
+      "pnl_r": -0.4129353233830846,
+      "stop_price": 25630.0,
+      "target_price": 25755.625
+    },
+    {
+      "bars_held": 9,
+      "candidate_id": "MNQ-2026-01-06-break_reentry_reclaim_short-2026-01-06T09:40:30-05:00",
+      "entry_price": 25625.25,
+      "entry_time": "2026-01-06T09:41:00-05:00",
+      "exit_price": 25669.25,
+      "exit_time": "2026-01-06T09:45:00-05:00",
+      "label": 0,
+      "mae": -63.75,
+      "mfe": 16.5,
+      "outcome": "stop",
+      "pnl_r": -1.0,
+      "stop_price": 25669.25,
+      "target_price": 25559.25
+    }
+  ],
+  "model_summary": {
+    "avg_entry_price": 25419.987068965518,
+    "avg_risk_points": 56.56896551724138,
+    "metrics": {
+      "brier": 0.3257251521311742,
+      "precision": 0.3333333333333333,
+      "recall": 0.5,
+      "roc_auc": 0.5694444444444444
+    },
+    "model_name": "logistic_regression",
+    "positive_rate_test": 0.3333333333333333,
+    "positive_rate_train": 0.125,
+    "rows_test": 18,
+    "rows_train": 40,
+    "status": "fit"
+  },
+  "sample_candidates": [
+    {
+      "break_decision_time": "2026-01-02T09:33:00-05:00",
+      "break_time": "2026-01-02T09:32:00-05:00",
+      "candidate_id": "MNQ-2026-01-02-break_reentry_reclaim_short-2026-01-02T09:32:00-05:00",
+      "decision_time": "2026-01-02T09:32:30-05:00",
+      "direction": "short",
+      "entry_reference_price": 25674.5,
+      "feature_cutoff_time": "2026-01-02T09:32:30-05:00",
+      "flem_price": 25659.75,
+      "flem_time": "2026-01-02T09:33:00-05:00",
+      "invalidation_reference_price": 25728.0,
+      "pivot_price": 25717.25,
+      "pivot_time": "2026-01-02T09:32:30-05:00",
+      "reclaim_count": 0,
+      "reentry_count": 1,
+      "session_date": "2026-01-02",
+      "setup_type": "break_reentry_reclaim_short",
+      "symbol": "MNQ",
+      "trace": {
+        "break_bar_close_time": "2026-01-02T09:33:00-05:00",
+        "break_bar_start": "2026-01-02T09:32:00-05:00",
+        "break_close": 25670.5,
+        "break_high": 25717.25,
+        "break_low": 25659.75,
+        "continuation_delay_bars": 0.0,
+        "continuation_displacement_ratio": 0.8465346534653465,
+        "deepest_zone_retrace_fraction": 0.7871287128712872,
+        "entry_bar_close_time": "2026-01-02T09:32:30-05:00",
+        "entry_bar_start": "2026-01-02T09:32:00-05:00",
+        "entry_close": 25674.5,
+        "first_break_close_confirmed": 1.0,
+        "first_break_close_excess_points": 7.0,
+        "first_break_wick_excess_points": 17.75,
+        "first_break_wick_only": 0.0,
+        "opposite_boundary_close_violation": 0.0,
+        "pivot_duration_bars": 0.0,
+        "post_reclaim_close_strength": 0.0594059405940594,
+        "zone_high": 25728.0,
+        "zone_low": 25677.5
+      },
+      "trigger_time": "2026-01-02T09:32:00-05:00",
+      "zone": {
+        "decision_available_at": "2026-01-02T09:31:00-05:00",
+        "high": 25728.0,
+        "low": 25677.5,
+        "midpoint": 25702.75,
+        "quality_flags": [],
+        "session_date": "2026-01-02",
+        "source_timeframe": "30s",
+        "symbol": "MNQ",
+        "width": 50.5,
+        "width_bps": 19.647703066792463,
+        "zone_end": "2026-01-02T09:30:30-05:00",
+        "zone_start": "2026-01-02T09:30:00-05:00"
+      }
+    },
+    {
+      "break_decision_time": "2026-01-02T09:48:00-05:00",
+      "break_time": "2026-01-02T09:47:00-05:00",
+      "candidate_id": "MNQ-2026-01-02-break_reentry_reclaim_long-2026-01-02T09:47:00-05:00",
+      "decision_time": "2026-01-02T09:47:30-05:00",
+      "direction": "long",
+      "entry_reference_price": 25752.75,
+      "feature_cutoff_time": "2026-01-02T09:47:30-05:00",
+      "flem_price": 25760.25,
+      "flem_time": "2026-01-02T09:48:00-05:00",
+      "invalidation_reference_price": 25677.5,
+      "pivot_price": 25697.5,
+      "pivot_time": "2026-01-02T09:47:30-05:00",
+      "reclaim_count": 0,
+      "reentry_count": 1,
+      "session_date": "2026-01-02",
+      "setup_type": "break_reentry_reclaim_long",
+      "symbol": "MNQ",
+      "trace": {
+        "break_bar_close_time": "2026-01-02T09:48:00-05:00",
+        "break_bar_start": "2026-01-02T09:47:00-05:00",
+        "break_close": 25758.0,
+        "break_high": 25760.25,
+        "break_low": 25697.5,
+        "continuation_delay_bars": 0.0,
+        "continuation_displacement_ratio": 1.0940594059405941,
+        "deepest_zone_retrace_fraction": 0.6039603960396039,
+        "entry_bar_close_time": "2026-01-02T09:47:30-05:00",
+        "entry_bar_start": "2026-01-02T09:47:00-05:00",
+        "entry_close": 25752.75,
+        "first_break_close_confirmed": 1.0,
+        "first_break_close_excess_points": 30.0,
+        "first_break_wick_excess_points": 32.25,
+        "first_break_wick_only": 0.0,
+        "opposite_boundary_close_violation": 0.0,
+        "pivot_duration_bars": 0.0,
+        "post_reclaim_close_strength": 0.4900990099009901,
+        "zone_high": 25728.0,
+        "zone_low": 25677.5
+      },
+      "trigger_time": "2026-01-02T09:47:00-05:00",
+      "zone": {
+        "decision_available_at": "2026-01-02T09:31:00-05:00",
+        "high": 25728.0,
+        "low": 25677.5,
+        "midpoint": 25702.75,
+        "quality_flags": [],
+        "session_date": "2026-01-02",
+        "source_timeframe": "30s",
+        "symbol": "MNQ",
+        "width": 50.5,
+        "width_bps": 19.647703066792463,
+        "zone_end": "2026-01-02T09:30:30-05:00",
+        "zone_start": "2026-01-02T09:30:00-05:00"
+      }
+    },
+    {
+      "break_decision_time": "2026-01-05T09:33:00-05:00",
+      "break_time": "2026-01-05T09:32:00-05:00",
+      "candidate_id": "MNQ-2026-01-05-break_reentry_reclaim_short-2026-01-05T09:32:00-05:00",
+      "decision_time": "2026-01-05T09:32:30-05:00",
+      "direction": "short",
+      "entry_reference_price": 25598.5,
+      "feature_cutoff_time": "2026-01-05T09:32:30-05:00",
+      "flem_price": 25587.25,
+      "flem_time": "2026-01-05T09:33:00-05:00",
+      "invalidation_reference_price": 25673.25,
+      "pivot_price": 25638.75,
+      "pivot_time": "2026-01-05T09:32:30-05:00",
+      "reclaim_count": 0,
+      "reentry_count": 1,
+      "session_date": "2026-01-05",
+      "setup_type": "break_reentry_reclaim_short",
+      "symbol": "MNQ",
+      "trace": {
+        "break_bar_close_time": "2026-01-05T09:33:00-05:00",
+        "break_bar_start": "2026-01-05T09:32:00-05:00",
+        "break_close": 25598.5,
+        "break_high": 25638.75,
+        "break_low": 25587.25,
+        "continuation_delay_bars": 0.0,
+        "continuation_displacement_ratio": 0.8009950248756219,
+        "deepest_zone_retrace_fraction": 0.31343283582089554,
+        "entry_bar_close_time": "2026-01-05T09:32:30-05:00",
+        "entry_bar_start": "2026-01-05T09:32:00-05:00",
+        "entry_close": 25598.5,
+        "first_break_close_confirmed": 1.0,
+        "first_break_close_excess_points": 24.5,
+        "first_break_wick_excess_points": 35.75,
+        "first_break_wick_only": 0.0,
+        "opposite_boundary_close_violation": 0.0,
+        "pivot_duration_bars": 0.0,
+        "post_reclaim_close_strength": 0.48756218905472637,
+        "zone_high": 25673.25,
+        "zone_low": 25623.0
+      },
+      "trigger_time": "2026-01-05T09:32:00-05:00",
+      "zone": {
+        "decision_available_at": "2026-01-05T09:31:00-05:00",
+        "high": 25673.25,
+        "low": 25623.0,
+        "midpoint": 25648.125,
+        "quality_flags": [],
+        "session_date": "2026-01-05",
+        "source_timeframe": "30s",
+        "symbol": "MNQ",
+        "width": 50.25,
+        "width_bps": 19.592075444111412,
+        "zone_end": "2026-01-05T09:30:30-05:00",
+        "zone_start": "2026-01-05T09:30:00-05:00"
+      }
+    }
+  ],
+  "sample_zones": [
+    {
+      "decision_available_at": "2026-01-02T09:31:00-05:00",
+      "high": 25728.0,
+      "low": 25677.5,
+      "midpoint": 25702.75,
+      "quality_flags": [],
+      "session_date": "2026-01-02",
+      "source_timeframe": "30s",
+      "symbol": "MNQ",
+      "width": 50.5,
+      "width_bps": 19.647703066792463,
+      "zone_end": "2026-01-02T09:30:30-05:00",
+      "zone_start": "2026-01-02T09:30:00-05:00"
+    },
+    {
+      "decision_available_at": "2026-01-05T09:31:00-05:00",
+      "high": 25673.25,
+      "low": 25623.0,
+      "midpoint": 25648.125,
+      "quality_flags": [],
+      "session_date": "2026-01-05",
+      "source_timeframe": "30s",
+      "symbol": "MNQ",
+      "width": 50.25,
+      "width_bps": 19.592075444111412,
+      "zone_end": "2026-01-05T09:30:30-05:00",
+      "zone_start": "2026-01-05T09:30:00-05:00"
+    },
+    {
+      "decision_available_at": "2026-01-06T09:31:00-05:00",
+      "high": 25675.5,
+      "low": 25631.5,
+      "midpoint": 25653.5,
+      "quality_flags": [],
+      "session_date": "2026-01-06",
+      "source_timeframe": "30s",
+      "symbol": "MNQ",
+      "width": 44.0,
+      "width_bps": 17.151655719492467,
+      "zone_end": "2026-01-06T09:30:30-05:00",
+      "zone_start": "2026-01-06T09:30:00-05:00"
+    }
+  ],
+  "zone_count": 39
+}

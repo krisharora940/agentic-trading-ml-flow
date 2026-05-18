@@ -1,0 +1,21 @@
+[graph]
+default_thread_prefix = "bnr"
+default_phase = "foundation"
+
+[limits]
+max_trials = 50
+max_feature_changes = 12
+max_threshold_changes = 10
+
+[checkpoints]
+bnr_spec_approval = true
+label_approval = true
+search_space_approval = true
+frozen_spec_approval = true
+
+[routing]
+on_approval = "next"
+on_reject = "revise"
+
+[diagnostics]
+categories = ["data_issue", "feature_issue", "label_issue", "model_issue", "execution_issue"]

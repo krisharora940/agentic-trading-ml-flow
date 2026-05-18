@@ -1,0 +1,18 @@
+[orchestrators]
+governor = "trading-ml-governor"
+cto = "trading-ml-cto"
+
+[data]
+primary = ["ml4t-databento", "ml4t-point-in-time", "ml4t-data-leakage"]
+
+[labeling]
+primary = ["ml4t-triple-barrier", "ml4t-pnl-labeling", "ml4t-meta-labeling"]
+
+[features]
+primary = ["ml4t-ohlcv-features", "ml4t-zscore", "ml4t-feature-importance"]
+
+[validation]
+primary = ["ml4t-walk-forward", "ml4t-cpcv", "ml4t-multiple-testing", "ml4t-backtest-overfitting"]
+
+[backtest]
+primary = ["ml4t-vectorbt", "ml4t-slippage", "ml4t-risk-management"]
