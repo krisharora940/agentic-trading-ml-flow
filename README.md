@@ -8,7 +8,7 @@ Build a disciplined ML4T-style workflow for a BNR strategy centered on the `09:3
 
 ## Stage 1 Scope
 
-Stage 1 establishes the project substrate:
+Stage 1 established the project substrate:
 
 - Repo structure.
 - Canonical project state schema.
@@ -18,6 +18,13 @@ Stage 1 establishes the project substrate:
 - Databento data manifest format.
 - Structured run logging.
 - Basic tests.
+
+## Current State
+
+The repo has moved beyond Stage 1:
+
+- Stage 2 (BNR research engine) is implemented in `src/trading_ml/` and exercised by the `tools/` runners.
+- Stage 3 (LangGraph + DeepAgents orchestration) is implemented via `src/trading_ml/langgraph_integration.py` and `src/trading_ml/deepagents_integration.py` (requires the optional agents dependencies).
 
 ## Non-Negotiable Guardrails
 
@@ -42,6 +49,4 @@ Stage 1 establishes the project substrate:
 
 ## Immediate Next Phases
 
-- Stage 2: BNR research engine.
-- Stage 3: LangGraph and DeepAgents orchestration.
 - Stage 4: backtest-to-live technical parity and production controls.
