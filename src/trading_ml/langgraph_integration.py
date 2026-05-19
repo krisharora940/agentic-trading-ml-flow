@@ -40,9 +40,12 @@ def require_langgraph() -> tuple[Any, Any, Any, Any]:
 
 
 def _interrupt_for_review(state: AgentLoopState, checkpoint_name: str) -> dict[str, Any]:
+    approvals = dict(state.get("approvals", {}))
+    if approvals.get(checkpoint_name, False):
+        pending = [name for name in state.get("checkpoints_pending", []) if name != checkpoint_name]
+        return {"approvals": approvals, "checkpoints_pending": pending}
     _, _, _, (_, _, interrupt) = require_langgraph()
     decision = interrupt(asdict(checkpoint_payload(checkpoint_name, state)))
-    approvals = dict(state.get("approvals", {}))
     approvals[checkpoint_name] = bool(decision)
     pending = [name for name in state.get("checkpoints_pending", []) if name != checkpoint_name]
     return {"approvals": approvals, "checkpoints_pending": pending}

@@ -1,0 +1,594 @@
+{
+  "source": "regime_feature_cycle",
+  "threshold": 0.45,
+  "ranked_rows": [
+    {
+      "feature_family": "context_plus_reclaim",
+      "walk_forward_status": "fail",
+      "walk_forward_mean_roc_auc": 0.5444715007215007,
+      "feature_validation": {
+        "status": "complete",
+        "feature_count": 12,
+        "failed_count": 1,
+        "failed_features": [
+          {
+            "feature": "opposite_boundary_close_violation",
+            "missing_rate": 0.0,
+            "unique_count": 1,
+            "label_corr": null,
+            "is_constant": true
+          }
+        ],
+        "top_abs_label_corr": [
+          {
+            "feature": "pre_trigger_range",
+            "missing_rate": 0.0,
+            "unique_count": 301,
+            "label_corr": -0.10172971279967985,
+            "is_constant": false
+          },
+          {
+            "feature": "trigger_seconds_after_open",
+            "missing_rate": 0.0,
+            "unique_count": 104,
+            "label_corr": -0.0958614779757632,
+            "is_constant": false
+          },
+          {
+            "feature": "pre_trigger_volume",
+            "missing_rate": 0.0,
+            "unique_count": 588,
+            "label_corr": -0.09147238519138562,
+            "is_constant": false
+          },
+          {
+            "feature": "reentry_count",
+            "missing_rate": 0.0,
+            "unique_count": 3,
+            "label_corr": -0.07695673584711922,
+            "is_constant": false
+          },
+          {
+            "feature": "reclaim_count",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.07452159384468955,
+            "is_constant": false
+          },
+          {
+            "feature": "prior_close_gap",
+            "missing_rate": 0.0,
+            "unique_count": 377,
+            "label_corr": -0.05749856004271884,
+            "is_constant": false
+          },
+          {
+            "feature": "pivot_duration_bars",
+            "missing_rate": 0.0,
+            "unique_count": 4,
+            "label_corr": -0.050294565034293394,
+            "is_constant": false
+          },
+          {
+            "feature": "continuation_delay_bars",
+            "missing_rate": 0.0,
+            "unique_count": 4,
+            "label_corr": -0.050294565034293394,
+            "is_constant": false
+          },
+          {
+            "feature": "pre_trigger_return",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": -0.03810052603594653,
+            "is_constant": false
+          },
+          {
+            "feature": "post_reclaim_close_strength",
+            "missing_rate": 0.0,
+            "unique_count": 349,
+            "label_corr": 0.00749228683731573,
+            "is_constant": false
+          },
+          {
+            "feature": "deepest_zone_retrace_fraction",
+            "missing_rate": 0.0,
+            "unique_count": 290,
+            "label_corr": 0.004527810607097866,
+            "is_constant": false
+          }
+        ]
+      },
+      "trade_count": 299,
+      "total_pnl_r": 22.861723279730178,
+      "avg_trade_r": 0.07646061297568621,
+      "win_rate": 0.4882943143812709,
+      "max_drawdown_r": -10.85150404162389,
+      "utility_score": 14.961325555000103
+    },
+    {
+      "feature_family": "context_plus_regime",
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5991702741702742,
+      "feature_validation": {
+        "status": "complete",
+        "feature_count": 19,
+        "failed_count": 0,
+        "failed_features": [],
+        "top_abs_label_corr": [
+          {
+            "feature": "reg_range_ratio_10",
+            "missing_rate": 0.0,
+            "unique_count": 562,
+            "label_corr": 0.1181112495348769,
+            "is_constant": false
+          },
+          {
+            "feature": "pre_trigger_range",
+            "missing_rate": 0.0,
+            "unique_count": 301,
+            "label_corr": -0.10172971279967985,
+            "is_constant": false
+          },
+          {
+            "feature": "trigger_seconds_after_open",
+            "missing_rate": 0.0,
+            "unique_count": 104,
+            "label_corr": -0.0958614779757632,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_pretrigger_bar_count",
+            "missing_rate": 0.0,
+            "unique_count": 104,
+            "label_corr": -0.09586147797576317,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_chop_10",
+            "missing_rate": 0.0,
+            "unique_count": 498,
+            "label_corr": 0.0945868361769481,
+            "is_constant": false
+          },
+          {
+            "feature": "pre_trigger_volume",
+            "missing_rate": 0.0,
+            "unique_count": 588,
+            "label_corr": -0.09147238519138562,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_trending_state",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.0738201159148489,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_vol_ratio",
+            "missing_rate": 0.0,
+            "unique_count": 239,
+            "label_corr": 0.07364695493961189,
+            "is_constant": false
+          },
+          {
+            "feature": "prior_close_gap",
+            "missing_rate": 0.0,
+            "unique_count": 377,
+            "label_corr": -0.05749856004271884,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_trend_10",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": -0.053519186798268635,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_high_vol_state",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.04720235330172856,
+            "is_constant": false
+          },
+          {
+            "feature": "pre_trigger_return",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": -0.03810052603594653,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_range_ratio_30",
+            "missing_rate": 0.0,
+            "unique_count": 563,
+            "label_corr": 0.03672267531567023,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_trend_30",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": -0.03237028906370712,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_vol_10",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": 0.019927214477012394,
+            "is_constant": false
+          }
+        ]
+      },
+      "trade_count": 278,
+      "total_pnl_r": 20.71610604266227,
+      "avg_trade_r": 0.07451836705993621,
+      "win_rate": 0.48201438848920863,
+      "max_drawdown_r": -14.140631919691277,
+      "utility_score": 10.347891286423778
+    },
+    {
+      "feature_family": "reclaim_plus_regime",
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.6138083213083213,
+      "feature_validation": {
+        "status": "complete",
+        "feature_count": 21,
+        "failed_count": 1,
+        "failed_features": [
+          {
+            "feature": "opposite_boundary_close_violation",
+            "missing_rate": 0.0,
+            "unique_count": 1,
+            "label_corr": null,
+            "is_constant": true
+          }
+        ],
+        "top_abs_label_corr": [
+          {
+            "feature": "reg_range_ratio_10",
+            "missing_rate": 0.0,
+            "unique_count": 562,
+            "label_corr": 0.1181112495348769,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_pretrigger_bar_count",
+            "missing_rate": 0.0,
+            "unique_count": 104,
+            "label_corr": -0.09586147797576317,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_chop_10",
+            "missing_rate": 0.0,
+            "unique_count": 498,
+            "label_corr": 0.0945868361769481,
+            "is_constant": false
+          },
+          {
+            "feature": "reentry_count",
+            "missing_rate": 0.0,
+            "unique_count": 3,
+            "label_corr": -0.07695673584711922,
+            "is_constant": false
+          },
+          {
+            "feature": "reclaim_count",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.07452159384468955,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_trending_state",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.0738201159148489,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_vol_ratio",
+            "missing_rate": 0.0,
+            "unique_count": 239,
+            "label_corr": 0.07364695493961189,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_trend_10",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": -0.053519186798268635,
+            "is_constant": false
+          },
+          {
+            "feature": "pivot_duration_bars",
+            "missing_rate": 0.0,
+            "unique_count": 4,
+            "label_corr": -0.050294565034293394,
+            "is_constant": false
+          },
+          {
+            "feature": "continuation_delay_bars",
+            "missing_rate": 0.0,
+            "unique_count": 4,
+            "label_corr": -0.050294565034293394,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_high_vol_state",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.04720235330172856,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_range_ratio_30",
+            "missing_rate": 0.0,
+            "unique_count": 563,
+            "label_corr": 0.03672267531567023,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_trend_30",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": -0.03237028906370712,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_vol_10",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": 0.019927214477012394,
+            "is_constant": false
+          },
+          {
+            "feature": "reg_trend_strength_10",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": -0.018488930390315152,
+            "is_constant": false
+          }
+        ]
+      },
+      "trade_count": 275,
+      "total_pnl_r": 10.201339571664771,
+      "avg_trade_r": 0.03709578026059917,
+      "win_rate": 0.4690909090909091,
+      "max_drawdown_r": -17.62561872317242,
+      "utility_score": -2.7993265805842418
+    },
+    {
+      "feature_family": "context_plus_geometry",
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5913425925925926,
+      "feature_validation": {
+        "status": "complete",
+        "feature_count": 17,
+        "failed_count": 0,
+        "failed_features": [],
+        "top_abs_label_corr": [
+          {
+            "feature": "zone_width",
+            "missing_rate": 0.0,
+            "unique_count": 160,
+            "label_corr": -0.16803070785100854,
+            "is_constant": false
+          },
+          {
+            "feature": "zone_width_bps",
+            "missing_rate": 0.0,
+            "unique_count": 379,
+            "label_corr": -0.15818531456441168,
+            "is_constant": false
+          },
+          {
+            "feature": "pre_trigger_range",
+            "missing_rate": 0.0,
+            "unique_count": 301,
+            "label_corr": -0.10172971279967985,
+            "is_constant": false
+          },
+          {
+            "feature": "trigger_seconds_after_open",
+            "missing_rate": 0.0,
+            "unique_count": 104,
+            "label_corr": -0.0958614779757632,
+            "is_constant": false
+          },
+          {
+            "feature": "pre_trigger_volume",
+            "missing_rate": 0.0,
+            "unique_count": 588,
+            "label_corr": -0.09147238519138562,
+            "is_constant": false
+          },
+          {
+            "feature": "entry_distance_from_zone_low",
+            "missing_rate": 0.0,
+            "unique_count": 258,
+            "label_corr": -0.08862579263920313,
+            "is_constant": false
+          },
+          {
+            "feature": "direction_long",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.07955424531090112,
+            "is_constant": false
+          },
+          {
+            "feature": "first_break_close_confirmed",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": 0.07478846488699549,
+            "is_constant": false
+          },
+          {
+            "feature": "first_break_wick_only",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.07306287387500975,
+            "is_constant": false
+          },
+          {
+            "feature": "prior_close_gap",
+            "missing_rate": 0.0,
+            "unique_count": 377,
+            "label_corr": -0.05749856004271884,
+            "is_constant": false
+          },
+          {
+            "feature": "first_break_wick_excess_points",
+            "missing_rate": 0.0,
+            "unique_count": 115,
+            "label_corr": 0.051514892422523495,
+            "is_constant": false
+          },
+          {
+            "feature": "entry_distance_from_midpoint",
+            "missing_rate": 0.0,
+            "unique_count": 370,
+            "label_corr": -0.051292414899047636,
+            "is_constant": false
+          },
+          {
+            "feature": "pre_trigger_return",
+            "missing_rate": 0.0,
+            "unique_count": 595,
+            "label_corr": -0.03810052603594653,
+            "is_constant": false
+          },
+          {
+            "feature": "first_break_close_excess_points",
+            "missing_rate": 0.0,
+            "unique_count": 102,
+            "label_corr": 0.030511354648552966,
+            "is_constant": false
+          },
+          {
+            "feature": "entry_distance_from_zone_high",
+            "missing_rate": 0.0,
+            "unique_count": 253,
+            "label_corr": -0.011180918127855885,
+            "is_constant": false
+          }
+        ]
+      },
+      "trade_count": 299,
+      "total_pnl_r": 6.135215711807412,
+      "avg_trade_r": 0.020519116093001378,
+      "win_rate": 0.451505016722408,
+      "max_drawdown_r": -13.24710678300847,
+      "utility_score": -3.589854817402439
+    }
+  ],
+  "best_row": {
+    "feature_family": "context_plus_reclaim",
+    "walk_forward_status": "fail",
+    "walk_forward_mean_roc_auc": 0.5444715007215007,
+    "feature_validation": {
+      "status": "complete",
+      "feature_count": 12,
+      "failed_count": 1,
+      "failed_features": [
+        {
+          "feature": "opposite_boundary_close_violation",
+          "missing_rate": 0.0,
+          "unique_count": 1,
+          "label_corr": null,
+          "is_constant": true
+        }
+      ],
+      "top_abs_label_corr": [
+        {
+          "feature": "pre_trigger_range",
+          "missing_rate": 0.0,
+          "unique_count": 301,
+          "label_corr": -0.10172971279967985,
+          "is_constant": false
+        },
+        {
+          "feature": "trigger_seconds_after_open",
+          "missing_rate": 0.0,
+          "unique_count": 104,
+          "label_corr": -0.0958614779757632,
+          "is_constant": false
+        },
+        {
+          "feature": "pre_trigger_volume",
+          "missing_rate": 0.0,
+          "unique_count": 588,
+          "label_corr": -0.09147238519138562,
+          "is_constant": false
+        },
+        {
+          "feature": "reentry_count",
+          "missing_rate": 0.0,
+          "unique_count": 3,
+          "label_corr": -0.07695673584711922,
+          "is_constant": false
+        },
+        {
+          "feature": "reclaim_count",
+          "missing_rate": 0.0,
+          "unique_count": 2,
+          "label_corr": -0.07452159384468955,
+          "is_constant": false
+        },
+        {
+          "feature": "prior_close_gap",
+          "missing_rate": 0.0,
+          "unique_count": 377,
+          "label_corr": -0.05749856004271884,
+          "is_constant": false
+        },
+        {
+          "feature": "pivot_duration_bars",
+          "missing_rate": 0.0,
+          "unique_count": 4,
+          "label_corr": -0.050294565034293394,
+          "is_constant": false
+        },
+        {
+          "feature": "continuation_delay_bars",
+          "missing_rate": 0.0,
+          "unique_count": 4,
+          "label_corr": -0.050294565034293394,
+          "is_constant": false
+        },
+        {
+          "feature": "pre_trigger_return",
+          "missing_rate": 0.0,
+          "unique_count": 595,
+          "label_corr": -0.03810052603594653,
+          "is_constant": false
+        },
+        {
+          "feature": "post_reclaim_close_strength",
+          "missing_rate": 0.0,
+          "unique_count": 349,
+          "label_corr": 0.00749228683731573,
+          "is_constant": false
+        },
+        {
+          "feature": "deepest_zone_retrace_fraction",
+          "missing_rate": 0.0,
+          "unique_count": 290,
+          "label_corr": 0.004527810607097866,
+          "is_constant": false
+        }
+      ]
+    },
+    "trade_count": 299,
+    "total_pnl_r": 22.861723279730178,
+    "avg_trade_r": 0.07646061297568621,
+    "win_rate": 0.4882943143812709,
+    "max_drawdown_r": -10.85150404162389,
+    "utility_score": 14.961325555000103
+  }
+}

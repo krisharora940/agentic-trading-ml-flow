@@ -4,6 +4,53 @@
   "decision_available_at": "09:31:00 America/New_York",
   "files": [
     {
+      "boundary_role": "exploration",
+      "date_end": "2025-06-30T11:30:00-04:00",
+      "date_start": "2024-01-02T09:30:00-05:00",
+      "duplicate_timestamps": 0,
+      "earliest_session_end": "2024-01-02T10:59:30-05:00",
+      "instrument": "Micro E-mini Nasdaq-100 futures",
+      "latest_session_end": "2025-06-30T11:30:00-04:00",
+      "missing_regular_session_bars": 171605,
+      "opening_zone_sessions": 316,
+      "provider": "boundary_cache",
+      "quality_flags": [
+        "missing_regular_session_bars"
+      ],
+      "rows": 74875,
+      "schema": "ohlcv-30s",
+      "sessions": 316,
+      "source_path": "/Users/radhikaarora/Documents/Trading ML V4/data/cache/mnq_30s_exploration_opening.parquet",
+      "stage2_priority": 300,
+      "symbol": "MNQ",
+      "timeframe": "30s",
+      "timezone": "America/New_York"
+    },
+    {
+      "boundary_role": "validation",
+      "date_end": "2025-09-29T11:30:00-04:00",
+      "date_start": "2025-07-01T09:30:00-04:00",
+      "duplicate_timestamps": 0,
+      "earliest_session_end": "2025-07-01T11:30:00-04:00",
+      "instrument": "Micro E-mini Nasdaq-100 futures",
+      "latest_session_end": "2025-09-29T11:30:00-04:00",
+      "missing_regular_session_bars": 34496,
+      "opening_zone_sessions": 64,
+      "provider": "boundary_cache",
+      "quality_flags": [
+        "missing_regular_session_bars"
+      ],
+      "rows": 15424,
+      "schema": "ohlcv-30s",
+      "sessions": 64,
+      "source_path": "/Users/radhikaarora/Documents/Trading ML V4/data/cache/mnq_30s_validation_opening.parquet",
+      "stage2_priority": 200,
+      "symbol": "MNQ",
+      "timeframe": "30s",
+      "timezone": "America/New_York"
+    },
+    {
+      "boundary_role": "holdout",
       "date_end": "2026-02-27T12:59:30-05:00",
       "date_start": "2026-01-02T09:30:00-05:00",
       "duplicate_timestamps": 0,
@@ -23,6 +70,7 @@
       "timezone": "America/New_York"
     },
     {
+      "boundary_role": "holdout",
       "date_end": "2026-03-27T12:59:30-04:00",
       "date_start": "2026-03-23T09:30:00-04:00",
       "duplicate_timestamps": 0,
@@ -42,6 +90,50 @@
       "timezone": "America/New_York"
     },
     {
+      "date_end": "2025-09-29T11:30:00-04:00",
+      "date_start": "2024-01-02T09:30:00-05:00",
+      "duplicate_timestamps": 0,
+      "earliest_session_end": "2024-01-02T10:59:30-05:00",
+      "instrument": "Micro E-mini Nasdaq-100 futures",
+      "latest_session_end": "2025-09-29T11:30:00-04:00",
+      "missing_regular_session_bars": 206101,
+      "opening_zone_sessions": 380,
+      "provider": "external_csv",
+      "quality_flags": [
+        "missing_regular_session_bars"
+      ],
+      "rows": 90299,
+      "schema": "ohlcv-30s",
+      "sessions": 380,
+      "source_path": "data/cache/mnq_30s_2024_to_2025q3_opening.parquet",
+      "stage2_priority": 100,
+      "symbol": "MNQ",
+      "timeframe": "30s",
+      "timezone": "America/New_York"
+    },
+    {
+      "date_end": "2025-09-30T03:42:00-04:00",
+      "date_start": "2024-01-02T09:30:00-05:00",
+      "duplicate_timestamps": 0,
+      "earliest_session_end": "2024-01-02T10:59:30-05:00",
+      "instrument": "Micro E-mini Nasdaq-100 futures",
+      "latest_session_end": "2025-09-29T15:59:30-04:00",
+      "missing_regular_session_bars": 17881,
+      "opening_zone_sessions": 380,
+      "provider": "external_csv",
+      "quality_flags": [
+        "missing_regular_session_bars"
+      ],
+      "rows": 999999,
+      "schema": "ohlcv-30s",
+      "sessions": 380,
+      "source_path": "data/cache/mnq_30s_2024_to_2025q3.parquet",
+      "symbol": "MNQ",
+      "timeframe": "30s",
+      "timezone": "America/New_York"
+    },
+    {
+      "boundary_role": "holdout",
       "date_end": "2026-03-27T12:59:00-04:00",
       "date_start": "2026-03-23T09:30:00-04:00",
       "duplicate_timestamps": 0,
@@ -61,7 +153,7 @@
       "timezone": "America/New_York"
     }
   ],
-  "generated_at": "2026-05-17T23:13:06+00:00",
+  "generated_at": "2026-05-19T12:23:37+00:00",
   "primary_setup": "BNR",
   "provider": "databento",
   "symbol": "MNQ",

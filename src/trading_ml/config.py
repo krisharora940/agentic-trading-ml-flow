@@ -29,6 +29,10 @@ def load_bnr_config() -> dict[str, Any]:
     return load_toml(CONFIGS_DIR / "bnr.toml")
 
 
+def load_research_program_config() -> dict[str, Any]:
+    return load_toml(CONFIGS_DIR / "research_program.toml")
+
+
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 

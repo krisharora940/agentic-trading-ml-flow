@@ -1,0 +1,176 @@
+{
+  "source": "cross_model_analysis_30s_mnq",
+  "label_target_multiple": 1.5,
+  "fold_backend": "custom",
+  "folds_evaluated": 2,
+  "results": [
+    {
+      "model_family": "linear_baseline",
+      "status": "evaluated",
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 15,
+          "test_rows": 8,
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "brier": 0.24215993968515914,
+          "roc_auc": 0.5833333333333333
+        },
+        {
+          "fold": 2,
+          "train_rows": 23,
+          "test_rows": 10,
+          "precision": 0.0,
+          "recall": 0.0,
+          "brier": 0.22893338663997814,
+          "roc_auc": 0.33333333333333337
+        }
+      ],
+      "fold_stability": {
+        "roc_auc_mean": 0.4583333333333333,
+        "roc_auc_std": 0.12499999999999994
+      },
+      "bucket_monotonicity": {
+        "status": "complete",
+        "monotonic_hit_rate": false,
+        "buckets": [
+          {
+            "avg_probability": 0.01629127468200583,
+            "hit_rate": 0.25,
+            "avg_pnl_r": 0.4260545655894493,
+            "count": 4
+          },
+          {
+            "avg_probability": 0.05989816923428614,
+            "hit_rate": 0.0,
+            "avg_pnl_r": -0.4935064935064935,
+            "count": 3
+          },
+          {
+            "avg_probability": 0.1190032148001123,
+            "hit_rate": 0.25,
+            "avg_pnl_r": -0.0158499446290144,
+            "count": 4
+          },
+          {
+            "avg_probability": 0.38171279277034054,
+            "hit_rate": 0.0,
+            "avg_pnl_r": -0.6612903225806451,
+            "count": 3
+          },
+          {
+            "avg_probability": 0.8278257188211875,
+            "hit_rate": 0.25,
+            "avg_pnl_r": 0.17329545454545456,
+            "count": 4
+          }
+        ]
+      },
+      "regime_conditional": {
+        "status": "complete",
+        "regimes": {
+          "gap_up": {
+            "count": 11,
+            "conditional_ic": -0.2636767249194514,
+            "avg_pnl_r": -0.21527910017646093
+          },
+          "gap_down": {
+            "count": 7,
+            "conditional_ic": 0.4307602022180666,
+            "avg_pnl_r": 0.17681142224331595
+          }
+        }
+      },
+      "advancement_recommendation": "freeze"
+    },
+    {
+      "model_family": "gbm",
+      "status": "evaluated",
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 15,
+          "test_rows": 8,
+          "precision": 0.0,
+          "recall": 0.0,
+          "brier": 0.20111111111111113,
+          "roc_auc": 0.5
+        },
+        {
+          "fold": 2,
+          "train_rows": 23,
+          "test_rows": 10,
+          "precision": 0.0,
+          "recall": 0.0,
+          "brier": 0.09546313799621926,
+          "roc_auc": 0.5
+        }
+      ],
+      "fold_stability": {
+        "roc_auc_mean": 0.5,
+        "roc_auc_std": 0.0
+      },
+      "bucket_monotonicity": {
+        "status": "complete",
+        "monotonic_hit_rate": false,
+        "buckets": [
+          {
+            "avg_probability": 0.1333333333333333,
+            "hit_rate": 0.25,
+            "avg_pnl_r": -0.05844155844155846,
+            "count": 4
+          },
+          {
+            "avg_probability": 0.1333333333333333,
+            "hit_rate": 0.3333333333333333,
+            "avg_pnl_r": -0.16666666666666666,
+            "count": 3
+          },
+          {
+            "avg_probability": 0.16376811594202897,
+            "hit_rate": 0.25,
+            "avg_pnl_r": 0.36352838209552385,
+            "count": 4
+          },
+          {
+            "avg_probability": 0.17391304347826086,
+            "hit_rate": 0.0,
+            "avg_pnl_r": -0.10356471693680995,
+            "count": 3
+          },
+          {
+            "avg_probability": 0.17391304347826086,
+            "hit_rate": 0.0,
+            "avg_pnl_r": -0.3850108225108225,
+            "count": 4
+          }
+        ]
+      },
+      "regime_conditional": {
+        "status": "complete",
+        "regimes": {
+          "gap_up": {
+            "count": 11,
+            "conditional_ic": -0.23904572186687875,
+            "avg_pnl_r": -0.21527910017646093
+          },
+          "gap_down": {
+            "count": 7,
+            "conditional_ic": -0.6454972243679028,
+            "avg_pnl_r": 0.17681142224331595
+          }
+        }
+      },
+      "advancement_recommendation": "freeze"
+    },
+    {
+      "model_family": "dl",
+      "status": "not_implemented"
+    },
+    {
+      "model_family": "causal",
+      "status": "not_implemented"
+    }
+  ]
+}

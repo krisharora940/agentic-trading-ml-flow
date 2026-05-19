@@ -5,18 +5,20 @@ from typing import Any
 from trading_ml.config import load_bnr_config
 
 
-def build_translation_analysis(stage2_result: dict[str, Any]) -> dict[str, Any]:
+def build_translation_analysis(stage2_result: dict[str, Any], prediction_records: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     try:
         import pandas as pd
     except ImportError:
         return {"status": "pending", "reason": "missing_dependencies"}
 
-    model_summary = dict(stage2_result.get("model_summary", {}))
-    prediction_records = list(model_summary.get("prediction_records", []))
-    if not prediction_records:
+    records = list(prediction_records or [])
+    if not records:
+        model_summary = dict(stage2_result.get("model_summary", {}))
+        records = list(model_summary.get("prediction_records", []))
+    if not records:
         return {"status": "pending", "reason": "missing_prediction_records"}
 
-    frame = pd.DataFrame(prediction_records)
+    frame = pd.DataFrame(records)
     if frame.empty or "probability" not in frame or "pnl_r" not in frame:
         return {"status": "pending", "reason": "invalid_prediction_records"}
 

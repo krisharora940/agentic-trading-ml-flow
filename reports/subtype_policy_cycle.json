@@ -1,0 +1,94 @@
+{
+  "source": "governed_subtype_policy_cycle",
+  "max_sessions": 160,
+  "source_path": "/Users/radhikaarora/Documents/Trading ML V4/data/cache/mnq_30s_subtype_policy_slice_160sessions.parquet",
+  "ranked_rows": [
+    {
+      "policy_name": "baseline_all",
+      "selected_signal_count": 112,
+      "selected_subtype_counts": {
+        "balanced_reclaim_continuation": 40,
+        "deep_retrace_repair": 28,
+        "weak_follow_through": 25,
+        "clean_break_continuation": 19
+      },
+      "trade_count": 112,
+      "total_pnl_r": 5.622473297569805,
+      "avg_trade_r": 0.05020065444258754,
+      "win_rate": 0.4642857142857143,
+      "max_drawdown_r": -10.126643119086268,
+      "utility_score": -1.7474087145236024,
+      "walk_forward_status": "fail",
+      "walk_forward_mean_roc_auc": 0.4953373015873016
+    },
+    {
+      "policy_name": "prefer_clean_strict_weak",
+      "selected_signal_count": 88,
+      "selected_subtype_counts": {
+        "balanced_reclaim_continuation": 40,
+        "deep_retrace_repair": 17,
+        "weak_follow_through": 12,
+        "clean_break_continuation": 19
+      },
+      "trade_count": 88,
+      "total_pnl_r": 4.277902796687735,
+      "avg_trade_r": 0.04861253178054245,
+      "win_rate": 0.4431818181818182,
+      "max_drawdown_r": -11.767926124151721,
+      "utility_score": -4.323735530535784,
+      "walk_forward_status": "fail",
+      "walk_forward_mean_roc_auc": 0.4953373015873016
+    },
+    {
+      "policy_name": "exclude_deep_and_weak",
+      "selected_signal_count": 59,
+      "selected_subtype_counts": {
+        "balanced_reclaim_continuation": 40,
+        "clean_break_continuation": 19
+      },
+      "trade_count": 59,
+      "total_pnl_r": 0.7056730639979802,
+      "avg_trade_r": 0.011960560406745428,
+      "win_rate": 0.4406779661016949,
+      "max_drawdown_r": -11.90806724433639,
+      "utility_score": -8.019397089050939,
+      "walk_forward_status": "fail",
+      "walk_forward_mean_roc_auc": 0.4953373015873016
+    },
+    {
+      "policy_name": "exclude_weak_follow_through",
+      "selected_signal_count": 87,
+      "selected_subtype_counts": {
+        "balanced_reclaim_continuation": 40,
+        "deep_retrace_repair": 28,
+        "clean_break_continuation": 19
+      },
+      "trade_count": 87,
+      "total_pnl_r": -1.209525745176056,
+      "avg_trade_r": -0.013902594772138574,
+      "win_rate": 0.42528735632183906,
+      "max_drawdown_r": -14.122047473142285,
+      "utility_score": -11.608012647418839,
+      "walk_forward_status": "fail",
+      "walk_forward_mean_roc_auc": 0.4953373015873016
+    }
+  ],
+  "best_row": {
+    "policy_name": "baseline_all",
+    "selected_signal_count": 112,
+    "selected_subtype_counts": {
+      "balanced_reclaim_continuation": 40,
+      "deep_retrace_repair": 28,
+      "weak_follow_through": 25,
+      "clean_break_continuation": 19
+    },
+    "trade_count": 112,
+    "total_pnl_r": 5.622473297569805,
+    "avg_trade_r": 0.05020065444258754,
+    "win_rate": 0.4642857142857143,
+    "max_drawdown_r": -10.126643119086268,
+    "utility_score": -1.7474087145236024,
+    "walk_forward_status": "fail",
+    "walk_forward_mean_roc_auc": 0.4953373015873016
+  }
+}

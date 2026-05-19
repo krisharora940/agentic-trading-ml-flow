@@ -18,7 +18,7 @@ def build_walk_forward_splits(merged: Any) -> tuple[list[tuple[Any, Any, WalkFor
     validation = dict(global_config.get("validation", {}))
     timeframe_seconds = 30
     if "entry_time" in merged.columns:
-        times = pd.to_datetime(merged["entry_time"], errors="coerce")
+        times = pd.to_datetime(merged["entry_time"], errors="coerce", utc=True)
         diffs = times.sort_values().diff().dropna()
         if not diffs.empty:
             timeframe_seconds = max(int(diffs.min().total_seconds()), 30)
@@ -30,8 +30,8 @@ def build_walk_forward_splits(merged: Any) -> tuple[list[tuple[Any, Any, WalkFor
     unique_sessions = sorted(merged["session_date"].dropna().astype(str).unique().tolist())
 
     merged = merged.copy()
-    merged["entry_time"] = pd.to_datetime(merged["entry_time"], errors="coerce")
-    merged["exit_time"] = pd.to_datetime(merged["exit_time"], errors="coerce")
+    merged["entry_time"] = pd.to_datetime(merged["entry_time"], errors="coerce", utc=True)
+    merged["exit_time"] = pd.to_datetime(merged["exit_time"], errors="coerce", utc=True)
     folds: list[tuple[Any, Any, WalkForwardFold]] = []
     for fold_idx, start in enumerate(range(min_train_sessions, len(unique_sessions) - test_sessions + 1, step_sessions), start=1):
         train_sessions_list = unique_sessions[:start]

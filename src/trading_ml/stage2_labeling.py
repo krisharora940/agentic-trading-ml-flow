@@ -12,6 +12,7 @@ LabelValue = Literal[0, 1]
 @dataclass(slots=True)
 class TradeLabel:
     candidate_id: str
+    direction: str
     label: LabelValue
     outcome: str
     entry_time: str
@@ -124,6 +125,7 @@ def label_candidate(
     pnl_r = pnl / risk if risk else 0.0
     return TradeLabel(
         candidate_id=candidate.candidate_id,
+        direction=candidate.direction,
         label=label,
         outcome=outcome,
         entry_time=decision_time.isoformat(),

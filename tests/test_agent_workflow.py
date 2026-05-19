@@ -10,6 +10,8 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertEqual(state["phase"], "exploration")
         self.assertTrue(state["data_manifest_loaded"])
         self.assertEqual(state["stage2_config"]["symbol"], "MNQ")
+        self.assertIn("program_state", state)
+        self.assertIn("strategy_notes", state)
 
     def test_linear_stage3_pass_produces_promotion_decision_and_logs(self) -> None:
         state = run_linear_stage3_pass()
@@ -17,6 +19,8 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertGreater(len(state["run_log"]), 0)
         self.assertIn(state["current_node"], {"promotion_decision", "iteration_controller"})
         self.assertIn("stage2_result", state)
+        self.assertIn("priority_mandates", state["program_state"])
+        self.assertIn("selected_feature_groups", state["research_intake"])
 
     def test_pending_human_checkpoints_surface_payloads(self) -> None:
         state = run_linear_stage3_pass()

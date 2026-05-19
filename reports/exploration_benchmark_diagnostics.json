@@ -1,0 +1,162 @@
+{
+  "source": "exploration_benchmark_diagnostics",
+  "source_path": "/Users/radhikaarora/Documents/Trading ML V4/data/cache/mnq_30s_exploration_opening.parquet",
+  "feature_family": "bnr_plus_context",
+  "model_family": "linear_baseline",
+  "threshold": 0.45,
+  "walk_forward": {
+    "status": "pass",
+    "mean_roc_auc": 0.5788326118326118,
+    "fold_count": 55
+  },
+  "cpcv": {
+    "status": "fail",
+    "pbo": 0.5789473684210527,
+    "mean_total_pnl_r": -3.437515485364161,
+    "mean_roc_auc": 0.5845094966422062,
+    "evaluated_paths": 19
+  },
+  "overfitting": "fail",
+  "shap_analysis": {
+    "status": "complete",
+    "top_features": [
+      {
+        "feature": "first_break_close_excess_points",
+        "mean_abs_shap": 0.1935633493674918
+      },
+      {
+        "feature": "first_break_wick_excess_points",
+        "mean_abs_shap": 0.14941525528548463
+      },
+      {
+        "feature": "reclaim_body_strength",
+        "mean_abs_shap": 0.11496162700310464
+      },
+      {
+        "feature": "first_break_close_confirmed",
+        "mean_abs_shap": 0.1124984363501434
+      },
+      {
+        "feature": "break_close_distance_to_zone",
+        "mean_abs_shap": 0.10251710267895836
+      },
+      {
+        "feature": "zone_width",
+        "mean_abs_shap": 0.0779712679072348
+      },
+      {
+        "feature": "direction_long",
+        "mean_abs_shap": 0.07402030572369173
+      },
+      {
+        "feature": "prior_close_gap",
+        "mean_abs_shap": 0.06756117449069321
+      },
+      {
+        "feature": "continuation_displacement_ratio",
+        "mean_abs_shap": 0.06106207943022001
+      },
+      {
+        "feature": "break_efficiency_ratio",
+        "mean_abs_shap": 0.05834453719011624
+      }
+    ],
+    "worst_trade_explanations": [
+      {
+        "candidate_id": "MNQ-2025-02-18-break_reentry_reclaim_short-2025-02-18T09:31:30-05:00",
+        "session_date": "2025-02-18",
+        "pnl_r": -1.0,
+        "top_contributors": [
+          {
+            "feature": "first_break_close_confirmed",
+            "shap_value": 0.16555283522215067
+          },
+          {
+            "feature": "first_break_close_excess_points",
+            "shap_value": 0.14304668132838877
+          },
+          {
+            "feature": "break_close_distance_to_zone",
+            "shap_value": -0.10860549270137168
+          }
+        ]
+      },
+      {
+        "candidate_id": "MNQ-2025-02-19-break_reentry_reclaim_short-2025-02-19T09:32:00-05:00",
+        "session_date": "2025-02-19",
+        "pnl_r": -1.0,
+        "top_contributors": [
+          {
+            "feature": "first_break_wick_excess_points",
+            "shap_value": 0.20745116105595526
+          },
+          {
+            "feature": "break_close_distance_to_zone",
+            "shap_value": 0.1705381287750502
+          },
+          {
+            "feature": "reclaim_body_strength",
+            "shap_value": 0.14507662405386443
+          }
+        ]
+      },
+      {
+        "candidate_id": "MNQ-2025-02-19-break_reentry_reclaim_long-2025-02-19T09:35:30-05:00",
+        "session_date": "2025-02-19",
+        "pnl_r": -1.0,
+        "top_contributors": [
+          {
+            "feature": "reclaim_body_strength",
+            "shap_value": -0.2271127270718454
+          },
+          {
+            "feature": "first_break_close_confirmed",
+            "shap_value": 0.15857116831717485
+          },
+          {
+            "feature": "first_break_close_excess_points",
+            "shap_value": 0.12132763393379312
+          }
+        ]
+      },
+      {
+        "candidate_id": "MNQ-2025-02-21-break_reentry_reclaim_short-2025-02-21T09:31:30-05:00",
+        "session_date": "2025-02-21",
+        "pnl_r": -1.0,
+        "top_contributors": [
+          {
+            "feature": "first_break_close_confirmed",
+            "shap_value": -0.10525441280004635
+          },
+          {
+            "feature": "first_break_close_excess_points",
+            "shap_value": -0.09911414752709471
+          },
+          {
+            "feature": "reclaim_body_strength",
+            "shap_value": -0.08020131567265673
+          }
+        ]
+      },
+      {
+        "candidate_id": "MNQ-2025-02-25-break_reentry_reclaim_short-2025-02-25T09:31:30-05:00",
+        "session_date": "2025-02-25",
+        "pnl_r": -1.0,
+        "top_contributors": [
+          {
+            "feature": "post_reclaim_close_strength",
+            "shap_value": 0.2319289116627435
+          },
+          {
+            "feature": "continuation_displacement_ratio",
+            "shap_value": 0.21891852428293515
+          },
+          {
+            "feature": "first_break_wick_excess_points",
+            "shap_value": 0.18264060741092233
+          }
+        ]
+      }
+    ]
+  }
+}

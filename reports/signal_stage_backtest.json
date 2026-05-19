@@ -1,0 +1,33 @@
+{
+  "source": "signal_stage_backtest_30s_mnq",
+  "label_target_multiple": 1.5,
+  "signal_threshold": 0.45,
+  "rows": [
+    {
+      "model_family": "linear_baseline",
+      "threshold": 0.45,
+      "status": "complete",
+      "trade_count": 5,
+      "total_pnl_r": 0.4038711194114892,
+      "avg_trade_r": 0.08077422388229784,
+      "win_rate": 0.4,
+      "max_drawdown_r": -1.114449845338047,
+      "utility_score": -0.19157915265089703,
+      "random_plumbing_total_pnl_r": -2.068215072359088,
+      "ic_to_sharpe_proxy": 0.3623950607566217
+    },
+    {
+      "model_family": "gbm",
+      "threshold": 0.45,
+      "status": "pending",
+      "trade_count": 0,
+      "total_pnl_r": null,
+      "avg_trade_r": 0.0,
+      "win_rate": 0.0,
+      "max_drawdown_r": 0.0,
+      "utility_score": null,
+      "random_plumbing_total_pnl_r": null,
+      "ic_to_sharpe_proxy": null
+    }
+  ]
+}

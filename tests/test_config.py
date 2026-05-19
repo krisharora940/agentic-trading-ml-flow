@@ -4,6 +4,7 @@ from trading_ml.config import (
     load_bnr_config,
     load_evidence_boundary_config,
     load_global_config,
+    load_research_program_config,
     load_skill_registry_config,
 )
 
@@ -30,7 +31,18 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config["engineer_features"]["backend"], "hybrid")
         self.assertIn("rsi", config["engineer_features"]["features"])
         self.assertIn("translation_contract", config)
+        self.assertIn("utility_contract", config)
         self.assertIn("model_search_v1", config)
+        self.assertIn("feature_threshold_search_v1", config)
+        self.assertIn("label_search_v1", config)
+        self.assertIn("threshold_search_v1", config)
+        self.assertEqual(config["frozen_benchmark"]["feature_family"], "bnr_plus_context")
+
+    def test_research_program_config_defines_institutional_workstreams(self) -> None:
+        config = load_research_program_config()
+        self.assertEqual(config["program"]["primary_objective"], "maximize_utility_subject_to_research_validity")
+        self.assertIn("thesis_lab", config["program"]["workstreams"])
+        self.assertIn("execution_lab", config["program"]["workstreams"])
 
 
 if __name__ == "__main__":

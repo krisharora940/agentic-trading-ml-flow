@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from trading_ml.cpcv_analysis import build_cpcv_audit
 from trading_ml.config import load_global_config
 from trading_ml.validation_splits import build_walk_forward_splits
 
@@ -10,11 +11,13 @@ def build_validation_audit(stage2_result: dict[str, Any], search_results: dict[s
     features = list(stage2_result.get("features_records", []))
     labels = list(stage2_result.get("labels_records", []))
     walk_forward = _walk_forward_check(features, labels)
+    cpcv = build_cpcv_audit(stage2_result)
     purging = _purging_check(labels)
     multiple_testing = _multiple_testing_check(search_results)
-    overfitting = _overfitting_check(walk_forward, multiple_testing)
+    overfitting = _overfitting_check(walk_forward, cpcv, multiple_testing)
     return {
         "walk_forward": walk_forward,
+        "cpcv": cpcv,
         "purging": purging,
         "multiple_testing": multiple_testing,
         "overfitting": overfitting,
@@ -46,6 +49,7 @@ def _walk_forward_check(features: list[dict[str, Any]], labels: list[dict[str, A
         return {"status": "pending", "reason": "insufficient_sessions", **metadata}
 
     folds: list[dict[str, Any]] = []
+    stitched_predictions: list[dict[str, Any]] = []
     feature_cols = [
         col
         for col in merged.columns
@@ -64,6 +68,27 @@ def _walk_forward_check(features: list[dict[str, Any]], labels: list[dict[str, A
         model.fit(train[feature_cols], train["label"])
         probabilities = model.predict_proba(test[feature_cols])[:, 1]
         predictions = (probabilities >= 0.5).astype(int)
+        prediction_frame = test[
+            [
+                "candidate_id",
+                "session_date",
+                "direction",
+                "setup_subtype",
+                "label",
+                "pnl_r",
+                "entry_time",
+                "exit_time",
+                "entry_price",
+                "exit_price",
+                "stop_price",
+                "target_price",
+                "bars_held",
+            ]
+        ].copy()
+        prediction_frame["probability"] = probabilities
+        prediction_frame["prediction"] = predictions
+        prediction_frame["fold"] = fold_meta.fold
+        stitched_predictions.extend(prediction_frame.to_dict(orient="records"))
         folds.append(
             {
                 **fold_meta.to_dict(),
@@ -83,6 +108,7 @@ def _walk_forward_check(features: list[dict[str, Any]], labels: list[dict[str, A
         "mean_roc_auc": mean_roc_auc,
         **metadata,
         "folds": folds,
+        "stitched_prediction_records": stitched_predictions,
     }
 
 
@@ -101,8 +127,8 @@ def _purging_check(labels: list[dict[str, Any]]) -> dict[str, Any]:
 
     global_config = load_global_config()
     purging_bars = int(global_config["validation"].get("purging_bars", 0))
-    labels_df["entry_time"] = pd.to_datetime(labels_df["entry_time"], errors="coerce")
-    labels_df["exit_time"] = pd.to_datetime(labels_df["exit_time"], errors="coerce")
+    labels_df["entry_time"] = pd.to_datetime(labels_df["entry_time"], errors="coerce", utc=True)
+    labels_df["exit_time"] = pd.to_datetime(labels_df["exit_time"], errors="coerce", utc=True)
     labels_df = labels_df.dropna(subset=["entry_time", "exit_time"]).sort_values("entry_time").reset_index(drop=True)
     if len(labels_df) < 2:
         return {"status": "pass", "overlap_ratio": 0.0, "overlapping_pairs": 0}
@@ -148,9 +174,9 @@ def _multiple_testing_check(search_results: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _overfitting_check(walk_forward: dict[str, Any], multiple_testing: dict[str, Any]) -> str:
-    if walk_forward.get("status") == "fail" or multiple_testing.get("status") == "fail":
+def _overfitting_check(walk_forward: dict[str, Any], cpcv: dict[str, Any], multiple_testing: dict[str, Any]) -> str:
+    if walk_forward.get("status") == "fail" or cpcv.get("status") == "fail" or multiple_testing.get("status") == "fail":
         return "fail"
-    if walk_forward.get("status") == "pass" and multiple_testing.get("status") == "pass":
+    if walk_forward.get("status") == "pass" and cpcv.get("status") == "pass" and multiple_testing.get("status") == "pass":
         return "pass"
     return "pending"

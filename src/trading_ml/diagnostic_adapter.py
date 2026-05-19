@@ -41,8 +41,8 @@ def build_diagnostic_walk_forward_splits(merged: Any) -> tuple[list[tuple[Any, A
     n_splits = max((session_count - min_train_sessions) // max(step_sessions, 1), 1)
 
     frame = merged.copy().sort_values("entry_time").reset_index(drop=True)
-    frame["entry_time"] = pd.to_datetime(frame["entry_time"], errors="coerce")
-    frame["exit_time"] = pd.to_datetime(frame["exit_time"], errors="coerce")
+    frame["entry_time"] = pd.to_datetime(frame["entry_time"], errors="coerce", utc=True)
+    frame["exit_time"] = pd.to_datetime(frame["exit_time"], errors="coerce", utc=True)
     config = WalkForwardConfig(
         n_splits=n_splits,
         train_size=min_train_sessions,

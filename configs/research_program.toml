@@ -1,0 +1,55 @@
+[program]
+name = "institutional_bnr_research_os"
+mandate = "Build a research system that explains, tests, and industrializes the BNR edge instead of only tuning it."
+primary_objective = "maximize_utility_subject_to_research_validity"
+promotion_standard = "institutional_cutting_edge"
+
+[program.principles]
+items = [
+  "market structure comes before model complexity",
+  "features must encode a falsifiable trading story",
+  "every improvement must survive walk-forward, utility, and execution realism",
+  "holdouts and search accounting are non-negotiable",
+  "prediction quality is intermediate; trading protocol quality is the product"
+]
+
+[program.workstreams.thesis_lab]
+required_artifacts = ["setup_ontology", "market_structure_playbook", "failure_taxonomy"]
+
+[program.workstreams.data_lab]
+required_artifacts = ["manifest", "session_policy", "timestamp_policy", "opening_hours_cache"]
+
+[program.workstreams.label_lab]
+required_artifacts = ["label_registry", "objective_matrix", "ambiguity_policy"]
+
+[program.workstreams.feature_lab]
+required_artifacts = ["feature_family_registry", "feature_validation", "regime_pack", "market_structure_pack"]
+
+[program.workstreams.model_lab]
+required_artifacts = ["baseline_ladder", "calibration_checks", "bucket_monotonicity", "uncertainty_review"]
+
+[program.workstreams.validation_lab]
+required_artifacts = ["walk_forward", "purging", "multiple_testing", "random_signal_plumbing"]
+
+[program.workstreams.execution_lab]
+required_artifacts = ["event_driven_backtest", "slippage_model", "signal_to_order_contract"]
+
+[program.workstreams.portfolio_lab]
+required_artifacts = ["position_sizing_policy", "overlap_policy", "risk_budget"]
+
+[program.workstreams.production_lab]
+required_artifacts = ["registry", "promotion_policy", "shadow_mode_plan", "monitoring_plan"]
+
+[program.market_structure_questions]
+items = [
+  "what distinguishes continuation-quality breaks from noisy breaks",
+  "when does reclaim behavior add information versus mean reversion risk",
+  "which opening conditions change BNR payoff geometry",
+  "when does the same setup express trend continuation versus auction repair"
+]
+
+[program.sample_floor]
+min_exploration_sessions = 160
+reset_policy = "baseline_all"
+reset_feature_family = "context_plus_reclaim"
+reset_threshold = 0.45

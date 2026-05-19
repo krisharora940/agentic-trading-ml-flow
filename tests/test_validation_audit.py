@@ -14,6 +14,7 @@ class ValidationAuditTests(unittest.TestCase):
         audit = build_validation_audit(stage2_result, search_results)
         self.assertIn(audit["walk_forward"]["status"], {"pass", "fail", "pending"})
         self.assertIn(audit["walk_forward"].get("backend", "custom"), {"custom", "ml4t_diagnostic"})
+        self.assertIn(audit["cpcv"]["status"], {"pass", "fail", "pending"})
         self.assertIn(audit["purging"]["status"], {"pass", "fail", "pending"})
         self.assertIn(audit["multiple_testing"]["status"], {"pass", "fail", "pending"})
         self.assertIn(audit["overfitting"], {"pass", "fail", "pending"})

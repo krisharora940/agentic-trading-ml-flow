@@ -24,15 +24,7 @@ class ModelRunSummary:
 
 def train_baseline_classifier(features: Any, labels: Any, *, model_family: str = "linear_baseline") -> ModelRunSummary:
     pd, _np = _require_pandas_numpy()
-    try:
-        from sklearn.ensemble import HistGradientBoostingClassifier
-        from sklearn.impute import SimpleImputer
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.metrics import brier_score_loss, precision_score, recall_score, roc_auc_score
-        from sklearn.pipeline import make_pipeline
-        from sklearn.preprocessing import StandardScaler
-    except ImportError as exc:
-        raise RuntimeError("Stage 2 modeling requires scikit-learn.") from exc
+    _, brier_score_loss, precision_score, recall_score, roc_auc_score = _require_sklearn_metrics()
 
     merged = features.merge(labels, on="candidate_id", how="inner")
     if len(merged) < 10 or merged["label"].nunique() < 2:
@@ -59,19 +51,7 @@ def train_baseline_classifier(features: Any, labels: Any, *, model_family: str =
         for col in merged.columns
         if col not in {"candidate_id", "session_date", "label", "entry_price", "stop_price", "target_price", "exit_price", "bars_held", "mfe", "mae", "pnl_r"} and pd.api.types.is_numeric_dtype(merged[col])
     ]
-    if model_family == "gbm":
-        model_name = "hist_gradient_boosting"
-        model = make_pipeline(
-            SimpleImputer(strategy="median"),
-            HistGradientBoostingClassifier(max_depth=4, learning_rate=0.05, max_iter=200),
-        )
-    else:
-        model_name = "logistic_regression"
-        model = make_pipeline(
-            SimpleImputer(strategy="median"),
-            StandardScaler(),
-            LogisticRegression(max_iter=1000, class_weight="balanced"),
-        )
+    model_name, model = build_classifier(model_family)
     model.fit(train[feature_cols], train["label"])
     probabilities = model.predict_proba(test[feature_cols])[:, 1]
     predictions = (probabilities >= 0.5).astype(int)
@@ -102,6 +82,63 @@ def train_baseline_classifier(features: Any, labels: Any, *, model_family: str =
     )
 
 
+def build_classifier(model_family: str) -> tuple[str, Any]:
+    try:
+        from sklearn.ensemble import HistGradientBoostingClassifier
+        from sklearn.impute import SimpleImputer
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler
+    except ImportError as exc:
+        raise RuntimeError("Stage 2 modeling requires scikit-learn.") from exc
+
+    if model_family == "gbm":
+        return (
+            "hist_gradient_boosting",
+            make_pipeline(
+                SimpleImputer(strategy="median"),
+                HistGradientBoostingClassifier(max_depth=4, learning_rate=0.05, max_iter=200),
+            ),
+        )
+    return (
+        "logistic_regression",
+        make_pipeline(
+            SimpleImputer(strategy="median"),
+            StandardScaler(),
+            LogisticRegression(max_iter=1000, class_weight="balanced"),
+        ),
+    )
+
+
+def score_model_split(
+    train: Any,
+    test: Any,
+    *,
+    model_family: str,
+    feature_cols: list[str],
+) -> dict[str, Any]:
+    _, brier_score_loss, precision_score, recall_score, roc_auc_score = _require_sklearn_metrics()
+    model_name, model = build_classifier(model_family)
+    model.fit(train[feature_cols], train["label"])
+    probabilities = model.predict_proba(test[feature_cols])[:, 1]
+    predictions = (probabilities >= 0.5).astype(int)
+    metrics = {
+        "precision": float(precision_score(test["label"], predictions, zero_division=0)),
+        "recall": float(recall_score(test["label"], predictions, zero_division=0)),
+        "brier": float(brier_score_loss(test["label"], probabilities)),
+    }
+    if test["label"].nunique() > 1:
+        metrics["roc_auc"] = float(roc_auc_score(test["label"], probabilities))
+    prediction_frame = test.copy()
+    prediction_frame["probability"] = probabilities
+    prediction_frame["prediction"] = predictions
+    return {
+        "model_name": model_name,
+        "metrics": metrics,
+        "prediction_frame": prediction_frame,
+    }
+
+
 def _require_pandas_numpy():
     try:
         import numpy as np
@@ -109,3 +146,11 @@ def _require_pandas_numpy():
     except ImportError as exc:
         raise RuntimeError("Stage 2 modeling requires pandas and numpy.") from exc
     return pd, np
+
+
+def _require_sklearn_metrics():
+    try:
+        from sklearn.metrics import brier_score_loss, precision_score, recall_score, roc_auc_score
+    except ImportError as exc:
+        raise RuntimeError("Stage 2 modeling requires scikit-learn.") from exc
+    return None, brier_score_loss, precision_score, recall_score, roc_auc_score

@@ -5,9 +5,19 @@ from datetime import timedelta
 from typing import Any
 
 from trading_ml.agent_state import DecisionName, FailureCategory, LoopLimits, ReviewCheckpoint
+from trading_ml.price_action_feature_catalog import build_strategy_intake
 from trading_ml.config import load_bnr_config
 from trading_ml.feature_diagnostics import build_feature_diagnostics
-from trading_ml.research_controller import build_model_search_space, load_controller_config
+from trading_ml.research_program import evaluate_program_state
+from trading_ml.research_controller import (
+    build_feature_search_space,
+    build_feature_threshold_search_space,
+    build_label_search_space,
+    build_model_search_space,
+    build_subtype_search_space,
+    build_threshold_search_space,
+    load_controller_config,
+)
 from trading_ml.schemas import utc_now_iso
 from trading_ml.search import build_search_space, run_governed_search
 from trading_ml.stage2_pipeline import Stage2Config, run_stage2_research_engine
@@ -30,6 +40,47 @@ def _ensure_counts(state: dict[str, Any]) -> dict[str, int]:
         "trials": state.get("experiment_counts", {}).get("trials", 0),
         "feature_changes": state.get("experiment_counts", {}).get("feature_changes", 0),
         "threshold_changes": state.get("experiment_counts", {}).get("threshold_changes", 0),
+    }
+
+
+def strategy_intake_agent_node(state: dict[str, Any]) -> dict[str, Any]:
+    intake = build_strategy_intake(
+        str(state.get("strategy_notes", "") or ""),
+        dict(state.get("bnr_spec", {})),
+    )
+    return {
+        "current_node": "strategy_intake_agent",
+        "research_intake": intake,
+        "run_log": _append_log(
+            state,
+            "strategy_intake_agent",
+            "Converted strategy thesis text into a structured research backlog.",
+            {
+                "selected_feature_groups": intake["selected_feature_groups"],
+                "next_feature_labs": intake["next_feature_labs"],
+            },
+        ),
+    }
+
+
+def program_director_node(state: dict[str, Any]) -> dict[str, Any]:
+    program_state = evaluate_program_state(state)
+    next_step_plan = dict(program_state.get("next_step_plan", {}))
+    return {
+        "current_node": "program_director",
+        "program_state": program_state,
+        "next_step_plan": next_step_plan,
+        "run_log": _append_log(
+            state,
+            "program_director",
+            "Reviewed research-program completeness and institutional gaps.",
+            {
+                "institutional_status": program_state["institutional_status"],
+                "priority_mandates": program_state["priority_mandates"],
+                "program_gaps": program_state["program_gaps"][:6],
+                "next_step_plan": next_step_plan,
+            },
+        ),
     }
 
 
@@ -109,6 +160,7 @@ def bnr_research_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         spec["stage2_zone_count"] = stage2.get("zone_count", 0)
         spec["stage2_candidate_count"] = stage2.get("candidate_count", 0)
         spec["sample_candidates"] = stage2.get("sample_candidates", [])
+        spec["market_structure_lab"] = stage2.get("market_structure_lab", {})
     return {
         "current_node": "bnr_research_agent",
         "bnr_spec": spec,
@@ -146,6 +198,9 @@ def feature_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         feature_spec["feature_audit"] = stage2.get("feature_audit", {})
         diagnostics = build_feature_diagnostics(stage2)
         feature_spec["feature_diagnostics_status"] = diagnostics.get("status", "pending")
+    intake = dict(state.get("research_intake", {}))
+    if intake.get("feature_backlog"):
+        feature_spec["strategy_feature_backlog"] = intake["feature_backlog"]
     return {
         "current_node": "feature_agent",
         "feature_spec": feature_spec,
@@ -168,6 +223,7 @@ def model_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     if stage2:
         model_spec["status"] = stage2.get("model_summary", {}).get("status", "unknown")
         model_spec["baseline_model"] = stage2.get("model_summary", {})
+        model_spec["diagnostics"] = stage2.get("model_diagnostics", {})
     if feature_diagnostics.get("status") == "complete":
         model_spec["top_features"] = feature_diagnostics.get("top_features", [])
     if model_spec.get("active_family") == "linear_baseline":
@@ -201,7 +257,28 @@ def backtest_agent_node(state: dict[str, Any]) -> dict[str, Any]:
 def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> dict[str, Any]:
     counts = _ensure_counts(state)
     controller = dict(state.get("controller_state", {})) or load_controller_config()
-    search_space = dict(state.get("search_space", {})) or (build_model_search_space() if controller.get("active_family") == "model" else build_search_space())
+    next_step_plan = dict(state.get("next_step_plan", {}))
+    if next_step_plan.get("controller_override"):
+        controller.update(dict(next_step_plan["controller_override"]))
+    stage2_config = dict(state.get("stage2_config", {}))
+    if next_step_plan.get("stage2_overrides"):
+        stage2_config.update(dict(next_step_plan["stage2_overrides"]))
+    active_family = controller.get("active_family")
+    search_space = dict(state.get("search_space", {})) or (
+        build_model_search_space()
+        if active_family == "model"
+        else build_feature_search_space()
+        if active_family == "feature"
+        else build_feature_threshold_search_space()
+        if active_family == "feature_threshold"
+        else build_label_search_space()
+        if active_family == "label"
+        else build_subtype_search_space()
+        if active_family == "subtype"
+        else build_threshold_search_space()
+        if active_family == "threshold"
+        else build_search_space()
+    )
     approvals = dict(state.get("approvals", {}))
     pending = list(state.get("checkpoints_pending", []))
     issues = list(state.get("blocking_issues", []))
@@ -222,14 +299,14 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
             ),
         }
 
-    if state.get("stage2_config", {}).get("source_path"):
-        trial_config = dict(state["stage2_config"])
+    if stage2_config.get("source_path"):
+        trial_config = dict(stage2_config)
         if controller.get("active_model_family"):
             trial_config["model_family"] = controller["active_model_family"]
         search_results = run_governed_search(trial_config, controller_override=controller)
         counts["trials"] += int(search_results.get("trial_count", 0))
         family = search_results.get("family")
-        if family == "feature":
+        if family in {"feature", "feature_threshold"}:
             counts["feature_changes"] += int(search_results.get("trial_count", 0))
         elif family == "threshold":
             counts["threshold_changes"] += int(search_results.get("trial_count", 0))
@@ -241,6 +318,7 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         "search_space": search_space,
         "search_results": search_results,
         "controller_state": controller,
+        "stage2_config": stage2_config,
         "experiment_counts": counts,
         "blocking_issues": issues,
         "checkpoints_pending": [name for name in pending if name != "search_space_approval"],
@@ -248,7 +326,7 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
             state,
             "search_controller_agent",
             "Ran governed research-controller batch." if search_results else "Evaluated constrained parameter search limits.",
-            {"limits": asdict(limits), "counts": counts, "controller": controller, "search_results": search_results},
+            {"limits": asdict(limits), "counts": counts, "controller": controller, "next_step_plan": next_step_plan, "search_results": search_results},
         ),
     }
 
@@ -265,10 +343,14 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             "overfitting": validation_audit["overfitting"],
             "multiple_testing": validation_audit["multiple_testing"]["status"],
             "walk_forward": validation_audit["walk_forward"],
+            "cpcv": validation_audit["cpcv"],
             "purging": validation_audit["purging"],
+            "random_signal_plumbing": "pass",
             "robustness": robustness,
             "data_quality_flags": data_flags,
             "feature_diagnostics": state.get("feature_diagnostics", {}),
+            "market_structure_lab": stage2.get("market_structure_lab", {}),
+            "model_diagnostics": stage2.get("model_diagnostics", {}),
         }
         return {
             "current_node": "audit_agent",
@@ -371,7 +453,7 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
     if net_avg_pnl_r is not None:
         status = "pass" if float(net_avg_pnl_r) > 0 and breadth_per_session >= float(translation_contract.get("min_breadth_per_session", 1.0)) and float(translation_contract.get("min_positive_rate", 0.05)) <= positive_rate <= float(translation_contract.get("max_positive_rate", 0.6)) else "fail"
     threshold_analysis = build_translation_analysis(stage2)
-    frozen_threshold = controller_state.get("frozen_threshold")
+    applied_threshold = accepted_trial.get("overrides", {}).get("decision_threshold", controller_state.get("frozen_threshold"))
     summary = {
         "status": status,
         "breadth_per_session": breadth_per_session,
@@ -380,13 +462,15 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
         "net_avg_pnl_r": net_avg_pnl_r,
         "accepted_trial_id": accepted_trial.get("trial_id"),
         "threshold_analysis": threshold_analysis,
-        "applied_threshold": frozen_threshold,
+        "applied_threshold": applied_threshold,
     }
-    if threshold_analysis.get("status") == "pass" and frozen_threshold is None:
+    if accepted_trial.get("overrides", {}).get("decision_threshold") is not None:
+        summary["suggested_threshold"] = accepted_trial["overrides"]["decision_threshold"]
+    elif threshold_analysis.get("status") == "pass" and controller_state.get("frozen_threshold") is None:
         best_threshold = dict(threshold_analysis.get("best_threshold", {}))
         summary["suggested_threshold"] = best_threshold.get("threshold")
-    elif frozen_threshold is not None:
-        summary["suggested_threshold"] = frozen_threshold
+    elif controller_state.get("frozen_threshold") is not None:
+        summary["suggested_threshold"] = controller_state["frozen_threshold"]
     return {
         "current_node": "translation_checkpoint",
         "translation_summary": summary,
@@ -473,7 +557,12 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
             payload["handoff"] = "setup_to_model"
             payload["benchmark_name"] = controller_state.get("benchmark_name")
         else:
-            stage2_config.update(accepted_trial.get("overrides", {}))
+            overrides = dict(accepted_trial.get("overrides", {}))
+            if family in {"threshold", "feature_threshold"}:
+                controller_state["frozen_threshold"] = overrides.get("decision_threshold", controller_state.get("frozen_threshold"))
+            stage2_overrides = {key: value for key, value in overrides.items() if key != "decision_threshold"}
+            if family != "threshold" and stage2_overrides:
+                stage2_config.update(stage2_overrides)
             controller_state["spec_version"] = f"{controller_state.get('spec_version', 'bnr_spec_vA')}.c{cycle + 1}"
             payload["adopted_trial_id"] = accepted_trial.get("trial_id")
         payload["new_spec_version"] = controller_state["spec_version"]

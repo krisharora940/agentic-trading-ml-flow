@@ -73,18 +73,114 @@ max_batch_trials = 2
 [model_search_v1.space]
 model_family = ["linear_baseline", "gbm"]
 
+[feature_search_v1]
+description = "Frozen-benchmark feature-family comparison batch."
+max_batch_trials = 3
+
+[feature_search_v1.space]
+feature_family = ["context_plus_reclaim", "context_plus_geometry", "context_plus_regime"]
+
+[feature_threshold_search_v1]
+description = "Frozen-benchmark joint feature-family x threshold comparison batch."
+max_batch_trials = 15
+
+[feature_threshold_search_v1.space]
+feature_family = ["context_plus_reclaim", "context_plus_geometry", "context_plus_regime"]
+decision_threshold = [0.45, 0.50, 0.55, 0.60, 0.65]
+
+[threshold_search_v1]
+description = "Frozen-benchmark threshold-policy comparison batch."
+max_batch_trials = 5
+
+[threshold_search_v1.space]
+decision_threshold = [0.45, 0.50, 0.55, 0.60, 0.65]
+
+[label_search_v1]
+description = "Frozen-benchmark label-policy comparison batch."
+max_batch_trials = 8
+
+[label_search_v1.space]
+horizon_bars = [20, 30]
+stop_multiple = [1.0, 1.25]
+target_multiple = [1.5, 2.0]
+
+[subtype_search_v1]
+description = "Frozen-benchmark BNR subtype comparison batch."
+max_batch_trials = 5
+
+[subtype_search_v1.space]
+setup_subtype = [
+  "all_subtypes",
+  "clean_break_continuation",
+  "balanced_reclaim_continuation",
+  "deep_retrace_repair",
+  "wick_reclaim_repair",
+]
+
+[subtype_policy_search_v1]
+description = "Subtype policy comparison batch on the frozen benchmark."
+max_batch_trials = 5
+
+[[subtype_policy_search_v1.policies]]
+name = "baseline_all"
+include_subtypes = []
+exclude_subtypes = []
+default_threshold = 0.45
+
+[[subtype_policy_search_v1.policies]]
+name = "exclude_weak_follow_through"
+include_subtypes = []
+exclude_subtypes = ["weak_follow_through"]
+default_threshold = 0.45
+
+[[subtype_policy_search_v1.policies]]
+name = "exclude_deep_and_weak"
+include_subtypes = []
+exclude_subtypes = ["weak_follow_through", "deep_retrace_repair"]
+default_threshold = 0.45
+
+[[subtype_policy_search_v1.policies]]
+name = "prefer_clean_strict_weak"
+include_subtypes = []
+exclude_subtypes = []
+default_threshold = 0.45
+
+[subtype_policy_search_v1.policies.threshold_overrides]
+weak_follow_through = 0.60
+deep_retrace_repair = 0.55
+
+[frozen_benchmark]
+feature_family = "bnr_plus_context"
+model_family = "linear_baseline"
+threshold = 0.45
+policy_gate = "balanced_deep_eff_ge_0.20"
+policy_meta = "balanced_clean_post_reclaim_ge_0.30"
+setup_earliest_trigger_time = "09:32:00"
+setup_horizon_bars = 20
+setup_target_multiple = 1.5
+setup_break_buffer_points = 1.0
+
 [translation_contract]
 min_breadth_per_session = 1.0
 min_positive_rate = 0.05
 max_positive_rate = 0.60
 threshold_grid = [0.45, 0.50, 0.55, 0.60, 0.65]
 
+[utility_contract]
+total_pnl_weight = 1.0
+avg_trade_weight = 0.5
+max_drawdown_penalty = 0.75
+trade_count_bonus = 0.05
+min_trade_count = 4
+
 [controller]
 spec_version = "bnr_spec_vA"
-active_family = "setup"
+active_family = "model"
 active_model_family = "linear_baseline"
 min_candidate_ratio_vs_baseline = 0.7
 require_positive_net_delta = true
 min_roc_auc_delta = 0.0
 frozen_threshold = 0.45
-benchmark_name = "bnr_hybrid_linear_v1"
+benchmark_name = "bnr_plus_context_balanced_deep_eff020_t045_v1"
+benchmark_meta_policy = "balanced_clean_post_reclaim_ge_0.30"
+frozen_feature_family = "bnr_plus_context"

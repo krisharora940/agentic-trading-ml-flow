@@ -36,8 +36,12 @@ class Stage2PipelineTests(unittest.TestCase):
         self.assertTrue(all(audit.status == "pass" for audit in audits))
         self.assertIn("first_break_wick_only", features.columns)
         self.assertIn("continuation_displacement_ratio", features.columns)
-        self.assertIn("eng_rsi", features.columns)
-        self.assertIn("eng_atr", features.columns)
+        self.assertIn("break_close_distance_to_zone", features.columns)
+        self.assertIn("reclaim_close_location", features.columns)
+        self.assertTrue(
+            {"eng_rsi", "eng_atr"} <= set(features.columns)
+            or {"reg_vol_10", "reg_trend_10"} <= set(features.columns)
+        )
 
 
 if __name__ == "__main__":

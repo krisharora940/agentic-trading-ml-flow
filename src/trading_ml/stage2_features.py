@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from trading_ml.engineer_adapter import compute_engineer_features, engineer_feature_snapshot, load_engineer_feature_config
+from trading_ml.stage2_regime_features import build_regime_features
 from trading_ml.stage2_bnr import CandidateSetup
 
 
@@ -39,6 +40,8 @@ def build_feature_matrix(bars: Any, candidates: list[CandidateSetup]) -> tuple[A
         trigger_start = pd.Timestamp(candidate.trigger_time)
         pre_trigger = session[session.index <= trigger_start]
         break_stats = _break_context(session, candidate)
+        break_lab = _break_quality_lab(session, pre_trigger, candidate, break_stats)
+        reclaim_lab = _reclaim_microstructure_lab(session, pre_trigger, candidate, break_stats)
         row = {
             "candidate_id": candidate.candidate_id,
             "session_date": candidate.session_date,
@@ -67,6 +70,9 @@ def build_feature_matrix(bars: Any, candidates: list[CandidateSetup]) -> tuple[A
             "post_reclaim_close_strength": break_stats["post_reclaim_close_strength"],
             "opposite_boundary_close_violation": break_stats["opposite_boundary_close_violation"],
         }
+        row.update(break_lab)
+        row.update(reclaim_lab)
+        row.update(build_regime_features(session, pre_trigger, candidate))
         if engineer_config.get("backend", "hybrid") != "bnr_only":
             row.update(engineer_feature_snapshot(engineer_frame, cutoff))
         rows.append(row)
@@ -190,6 +196,116 @@ def _break_context(session: Any, candidate: CandidateSetup) -> dict[str, float]:
         }
     )
     return default
+
+
+def _break_quality_lab(session: Any, pre_trigger: Any, candidate: CandidateSetup, break_stats: dict[str, float]) -> dict[str, float]:
+    pd = _require_pandas()
+    default = {
+        "break_close_distance_to_zone": 0.0,
+        "break_body_fraction": 0.0,
+        "break_speed_bars": 0.0,
+        "break_volume_surge": 0.0,
+        "break_range_expansion": 0.0,
+        "break_efficiency_ratio": 0.0,
+    }
+    first_break = _find_first_break(pre_trigger, candidate)
+    if first_break is None:
+        return default
+
+    break_ts, break_row = first_break
+    zone_width = max(candidate.zone.width, 0.25)
+    break_open = float(break_row["open"])
+    break_close = float(break_row["close"])
+    break_high = float(break_row["high"])
+    break_low = float(break_row["low"])
+    break_range = max(break_high - break_low, 1e-9)
+    break_body = abs(break_close - break_open)
+    pre_break = session[session.index < break_ts]
+    recent = pre_break.tail(6)
+    recent_range = _range(recent) / max(len(recent), 1) if not recent.empty else 0.0
+    recent_vol_mean = float(recent["volume"].mean()) if not recent.empty else 0.0
+    session_open = pd.Timestamp.combine(pd.Timestamp(candidate.session_date).date(), pd.Timestamp("09:31:00").time()).tz_localize(session.index.tz)
+    speed_bars = float(max(len(session[(session.index >= session_open) & (session.index <= break_ts)]) - 1, 0))
+
+    if candidate.direction == "long":
+        close_distance = (break_close - candidate.zone.high) / zone_width
+        directional_move = break_close - candidate.zone.high
+    else:
+        close_distance = (candidate.zone.low - break_close) / zone_width
+        directional_move = candidate.zone.low - break_close
+
+    return {
+        "break_close_distance_to_zone": float(max(close_distance, 0.0)),
+        "break_body_fraction": float(break_body / break_range),
+        "break_speed_bars": speed_bars,
+        "break_volume_surge": float(float(break_row["volume"]) / recent_vol_mean) if recent_vol_mean > 0 else 0.0,
+        "break_range_expansion": float((break_range / recent_range) if recent_range > 0 else 0.0),
+        "break_efficiency_ratio": float(max(directional_move, 0.0) / break_range),
+    }
+
+
+def _reclaim_microstructure_lab(session: Any, pre_trigger: Any, candidate: CandidateSetup, break_stats: dict[str, float]) -> dict[str, float]:
+    pd = _require_pandas()
+    default = {
+        "pivot_symmetry": 0.0,
+        "pivot_overlap_ratio": 0.0,
+        "reclaim_latency_bars": 0.0,
+        "reclaim_close_location": 0.0,
+        "reclaim_body_strength": 0.0,
+        "reclaim_failure_count": 0.0,
+    }
+    if pre_trigger.empty:
+        return default
+
+    break_ts = pd.Timestamp(candidate.break_time)
+    trigger_ts = pd.Timestamp(candidate.trigger_time)
+    pivot_window = pre_trigger[(pre_trigger.index > break_ts) & (pre_trigger.index <= trigger_ts)]
+    if pivot_window.empty:
+        return default
+
+    zone_width = max(candidate.zone.width, 0.25)
+    highs = pivot_window["high"].astype(float)
+    lows = pivot_window["low"].astype(float)
+    closes = pivot_window["close"].astype(float)
+    opens = pivot_window["open"].astype(float)
+    overlap_count = 0
+    previous_low = None
+    previous_high = None
+    reclaim_failures = 0
+    reclaim_bar = pivot_window.iloc[-1]
+
+    for _, row in pivot_window.iterrows():
+        low = float(row["low"])
+        high = float(row["high"])
+        close = float(row["close"])
+        if previous_low is not None and high >= previous_low and low <= previous_high:
+            overlap_count += 1
+        previous_low = low
+        previous_high = high
+        if candidate.direction == "long" and close < candidate.zone.high:
+            reclaim_failures += 1
+        if candidate.direction == "short" and close > candidate.zone.low:
+            reclaim_failures += 1
+
+    pivot_range = float(highs.max() - lows.min())
+    pivot_symmetry = abs(candidate.entry_reference_price - candidate.pivot_price) / zone_width
+    latency_bars = float(max(len(pivot_window) - 1, 0))
+    reclaim_range = max(float(reclaim_bar["high"]) - float(reclaim_bar["low"]), 1e-9)
+    reclaim_body = abs(float(reclaim_bar["close"]) - float(reclaim_bar["open"]))
+
+    if candidate.direction == "long":
+        close_location = (float(reclaim_bar["close"]) - float(reclaim_bar["low"])) / reclaim_range
+    else:
+        close_location = (float(reclaim_bar["high"]) - float(reclaim_bar["close"])) / reclaim_range
+
+    return {
+        "pivot_symmetry": float(pivot_symmetry),
+        "pivot_overlap_ratio": float(overlap_count / max(len(pivot_window), 1)),
+        "reclaim_latency_bars": latency_bars,
+        "reclaim_close_location": float(close_location),
+        "reclaim_body_strength": float(reclaim_body / reclaim_range),
+        "reclaim_failure_count": float(reclaim_failures),
+    }
 
 
 def _find_first_break(pre_trigger: Any, candidate: CandidateSetup) -> tuple[Any, Any] | None:

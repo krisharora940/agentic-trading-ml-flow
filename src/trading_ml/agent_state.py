@@ -26,6 +26,10 @@ FailureCategory = Literal[
 
 
 class AgentLoopState(TypedDict, total=False):
+    program_state: dict[str, Any]
+    next_step_plan: dict[str, Any]
+    strategy_notes: str
+    research_intake: dict[str, Any]
     phase: str
     current_node: str
     evidence_boundary: dict[str, Any]

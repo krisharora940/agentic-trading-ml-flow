@@ -20,9 +20,11 @@ sec_fee_per_dollar = 0.0
 exchange_fee_per_share = 0.0
 
 [slippage]
-model = "bps"
-entry_bps = 2.0
-exit_bps = 2.0
+model = "ticks"
+profile = "base"
+tick_size = 0.25
+base_ticks_per_side = 3.0
+stressed_ticks_per_side = 6.0
 
 [validation]
 exploration_start = "2024-01-01"

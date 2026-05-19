@@ -1,0 +1,103 @@
+{
+  "benchmark_name": "bnr_context_reclaim_linear_t045_v1",
+  "best_threshold": {
+    "avg_trade_r": 0.07646061297568621,
+    "max_drawdown_r": -10.85150404162389,
+    "negative_sessions": 105,
+    "overlap_skips": 0,
+    "positive_sessions": 134,
+    "session_count": 239,
+    "signal_count": 299,
+    "status": "complete",
+    "threshold": 0.45,
+    "total_pnl_r": 22.861723279730178,
+    "trade_count": 299,
+    "utility_score": 14.961325555000103,
+    "win_rate": 0.4882943143812709
+  },
+  "ranked_rows": [
+    {
+      "avg_trade_r": 0.07646061297568621,
+      "max_drawdown_r": -10.85150404162389,
+      "negative_sessions": 105,
+      "overlap_skips": 0,
+      "positive_sessions": 134,
+      "session_count": 239,
+      "signal_count": 299,
+      "status": "complete",
+      "threshold": 0.45,
+      "total_pnl_r": 22.861723279730178,
+      "trade_count": 299,
+      "utility_score": 14.961325555000103,
+      "win_rate": 0.4882943143812709
+    },
+    {
+      "avg_trade_r": 0.04654960353860818,
+      "max_drawdown_r": -10.582458960371314,
+      "negative_sessions": 96,
+      "overlap_skips": 0,
+      "positive_sessions": 107,
+      "session_count": 203,
+      "signal_count": 243,
+      "status": "complete",
+      "threshold": 0.5,
+      "total_pnl_r": 11.311553659881788,
+      "trade_count": 243,
+      "utility_score": 3.5979842413726066,
+      "win_rate": 0.46502057613168724
+    },
+    {
+      "avg_trade_r": 0.015681218546143925,
+      "max_drawdown_r": -9.19954026165263,
+      "negative_sessions": 51,
+      "overlap_skips": 0,
+      "positive_sessions": 44,
+      "session_count": 95,
+      "signal_count": 102,
+      "status": "complete",
+      "threshold": 0.6,
+      "total_pnl_r": 1.5994842917066805,
+      "trade_count": 102,
+      "utility_score": -5.092330295259719,
+      "win_rate": 0.4411764705882353
+    },
+    {
+      "avg_trade_r": -0.0011776739699624734,
+      "max_drawdown_r": -16.246285684666756,
+      "negative_sessions": 84,
+      "overlap_skips": 0,
+      "positive_sessions": 75,
+      "session_count": 159,
+      "signal_count": 181,
+      "status": "complete",
+      "threshold": 0.55,
+      "total_pnl_r": -0.2131589885632077,
+      "trade_count": 181,
+      "utility_score": -12.198462089048256,
+      "win_rate": 0.4419889502762431
+    },
+    {
+      "avg_trade_r": -0.20014534956479316,
+      "max_drawdown_r": -13.452315274013179,
+      "negative_sessions": 32,
+      "overlap_skips": 0,
+      "positive_sessions": 21,
+      "session_count": 53,
+      "signal_count": 58,
+      "status": "complete",
+      "threshold": 0.65,
+      "total_pnl_r": -11.608430274758003,
+      "trade_count": 58,
+      "utility_score": -21.597739405050284,
+      "win_rate": 0.3620689655172414
+    }
+  ],
+  "source": "walk_forward_stitched_event_driven",
+  "threshold_grid": [
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65
+  ]
+}

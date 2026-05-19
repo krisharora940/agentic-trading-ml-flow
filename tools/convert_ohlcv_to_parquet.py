@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 from trading_ml.stage2_data import build_data_quality_report, load_ohlcv_file
 
@@ -20,15 +21,17 @@ def main() -> None:
         timeframe=args.timeframe,
         timezone=args.timezone,
     )
-    bars.to_parquet(args.output)
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    bars.to_parquet(output)
     report = build_data_quality_report(
         bars,
-        source_path=args.output,
+        source_path=output,
         symbol=args.symbol,
         timeframe=args.timeframe,
         timezone=args.timezone,
     )
-    print(f"wrote {args.output}")
+    print(f"wrote {output}")
     print(report.to_dict())
 
 

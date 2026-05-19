@@ -1,0 +1,106 @@
+{
+  "source": "governed_reclaim_meta_filter_cycle",
+  "max_sessions": 160,
+  "feature_family": "bnr_plus_context",
+  "break_gate": "balanced_deep_eff_ge_0.20",
+  "threshold": 0.45,
+  "source_path": "/Users/radhikaarora/Documents/Trading ML V4/data/cache/mnq_30s_reclaim_meta_slice_160sessions.parquet",
+  "ranked_rows": [
+    {
+      "policy_name": "balanced_clean_post_reclaim_ge_0.30",
+      "selected_signal_count": 37,
+      "trade_count": 37,
+      "total_pnl_r": 13.939686787525403,
+      "avg_trade_r": 0.3767482915547406,
+      "win_rate": 0.6216216216216216,
+      "max_drawdown_r": -2.647955400180094,
+      "utility_score": 12.342094383167701,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5757173382173382
+    },
+    {
+      "policy_name": "balanced_clean_post_reclaim_ge_0.50",
+      "selected_signal_count": 37,
+      "trade_count": 37,
+      "total_pnl_r": 13.939686787525403,
+      "avg_trade_r": 0.3767482915547406,
+      "win_rate": 0.6216216216216216,
+      "max_drawdown_r": -2.647955400180094,
+      "utility_score": 12.342094383167701,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5757173382173382
+    },
+    {
+      "policy_name": "balanced_clean_close_ge_0.15_post_ge_0.30",
+      "selected_signal_count": 37,
+      "trade_count": 37,
+      "total_pnl_r": 13.939686787525403,
+      "avg_trade_r": 0.3767482915547406,
+      "win_rate": 0.6216216216216216,
+      "max_drawdown_r": -2.647955400180094,
+      "utility_score": 12.342094383167701,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5757173382173382
+    },
+    {
+      "policy_name": "balanced_clean_reclaim_body_ge_0.35",
+      "selected_signal_count": 32,
+      "trade_count": 32,
+      "total_pnl_r": 12.491992377781656,
+      "avg_trade_r": 0.39037476180567676,
+      "win_rate": 0.625,
+      "max_drawdown_r": -2.647955400180094,
+      "utility_score": 10.901213208549423,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5757173382173382
+    },
+    {
+      "policy_name": "balanced_clean_reclaim_close_ge_0.15",
+      "selected_signal_count": 38,
+      "trade_count": 38,
+      "total_pnl_r": 12.897433266398641,
+      "avg_trade_r": 0.3394061385894379,
+      "win_rate": 0.6052631578947368,
+      "max_drawdown_r": -3.4773943764763438,
+      "utility_score": 10.659090553336103,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5757173382173382
+    },
+    {
+      "policy_name": "balanced_clean_reclaim_close_ge_0.25",
+      "selected_signal_count": 38,
+      "trade_count": 38,
+      "total_pnl_r": 12.897433266398641,
+      "avg_trade_r": 0.3394061385894379,
+      "win_rate": 0.6052631578947368,
+      "max_drawdown_r": -3.4773943764763438,
+      "utility_score": 10.659090553336103,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5757173382173382
+    },
+    {
+      "policy_name": "baseline_gated",
+      "selected_signal_count": 62,
+      "trade_count": 62,
+      "total_pnl_r": 9.800965255787048,
+      "avg_trade_r": 0.15808008477075883,
+      "win_rate": 0.5,
+      "max_drawdown_r": -6.445632005435074,
+      "utility_score": 5.245781294096122,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5757173382173382
+    }
+  ],
+  "best_row": {
+    "policy_name": "balanced_clean_post_reclaim_ge_0.30",
+    "selected_signal_count": 37,
+    "trade_count": 37,
+    "total_pnl_r": 13.939686787525403,
+    "avg_trade_r": 0.3767482915547406,
+    "win_rate": 0.6216216216216216,
+    "max_drawdown_r": -2.647955400180094,
+    "utility_score": 12.342094383167701,
+    "walk_forward_status": "pass",
+    "walk_forward_mean_roc_auc": 0.5757173382173382
+  }
+}

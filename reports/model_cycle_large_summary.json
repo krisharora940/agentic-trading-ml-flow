@@ -1,0 +1,41 @@
+{
+  "family": "model",
+  "batch_decision": "revise",
+  "accepted_trial": null,
+  "best_trial": {
+    "trial_id": "trial-001",
+    "family": "model",
+    "spec_version": "bnr_spec_vA",
+    "overrides": {
+      "model_family": "linear_baseline"
+    },
+    "candidate_count": 595,
+    "positive_rate": 0.2571428571428571,
+    "avg_pnl_r": 0.05206979612990647,
+    "net_avg_pnl_r": 0.10950195411133463,
+    "net_delta_vs_baseline": 0.0,
+    "roc_auc": 0.5377289377289377,
+    "roc_auc_delta_vs_baseline": 0.0,
+    "precision": 0.18840579710144928,
+    "recall": 0.3333333333333333,
+    "status": "fit",
+    "decision": "reject"
+  },
+  "baseline": {
+    "trial_id": "baseline",
+    "family": "model",
+    "spec_version": "bnr_spec_vA",
+    "overrides": {},
+    "candidate_count": 595,
+    "positive_rate": 0.2571428571428571,
+    "avg_pnl_r": 0.05206979612990647,
+    "net_avg_pnl_r": 0.10950195411133463,
+    "net_delta_vs_baseline": 0.0,
+    "roc_auc": 0.5377289377289377,
+    "roc_auc_delta_vs_baseline": 0.0,
+    "precision": 0.18840579710144928,
+    "recall": 0.3333333333333333,
+    "status": "fit",
+    "decision": "baseline"
+  }
+}

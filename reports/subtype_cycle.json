@@ -1,0 +1,393 @@
+{
+  "source": "governed_subtype_cycle",
+  "max_sessions": 40,
+  "source_path": "/Users/radhikaarora/Documents/Trading ML V4/data/cache/mnq_30s_subtype_slice_40sessions.parquet",
+  "ranked_rows": [
+    {
+      "setup_subtype": "all_subtypes",
+      "candidate_count": 63,
+      "subtype_counts": {
+        "balanced_reclaim_continuation": 24,
+        "weak_follow_through": 24,
+        "deep_retrace_repair": 11,
+        "clean_break_continuation": 4
+      },
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.6,
+      "trade_count": 19,
+      "total_pnl_r": 2.99054375857592,
+      "avg_trade_r": 0.15739703992504842,
+      "max_drawdown_r": -2.378932372219767,
+      "utility_score": 1.4850429993736192,
+      "market_structure_lab": {
+        "status": "complete",
+        "candidate_count": 63,
+        "structure_families": [
+          {
+            "family": "close_break:shallow:single_reclaim:strong_cont",
+            "count": 4,
+            "positive_rate": 0.75,
+            "avg_pnl_r": 1.221875,
+            "reclaim_mean": 0.0,
+            "retrace_mean": 0.11860269360269361,
+            "continuation_strength_mean": 0.865077861952862
+          },
+          {
+            "family": "close_break:shallow:single_reclaim:weak_cont",
+            "count": 22,
+            "positive_rate": 0.18181818181818182,
+            "avg_pnl_r": 0.17937589756867406,
+            "reclaim_mean": 0.3181818181818182,
+            "retrace_mean": 0.22690215405144923,
+            "continuation_strength_mean": 0.18935083486551393
+          },
+          {
+            "family": "close_break:deep:single_reclaim:strong_cont",
+            "count": 8,
+            "positive_rate": 0.375,
+            "avg_pnl_r": 0.14393939393939392,
+            "reclaim_mean": 0.375,
+            "retrace_mean": 0.560573138686955,
+            "continuation_strength_mean": 0.6494795042400813
+          },
+          {
+            "family": "close_break:deep:single_reclaim:weak_cont",
+            "count": 29,
+            "positive_rate": 0.13793103448275862,
+            "avg_pnl_r": -0.18325581140779187,
+            "reclaim_mean": 0.6206896551724138,
+            "retrace_mean": 0.5684656109314182,
+            "continuation_strength_mean": 0.1816393096340117
+          }
+        ],
+        "failure_taxonomy": [
+          {
+            "failure_reason": "no_follow_through",
+            "count": 29,
+            "avg_pnl_r": 0.1265815988689661,
+            "common_family": "close_break:shallow:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "weak_continuation",
+            "count": 7,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "stop_before_target",
+            "count": 6,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "no_reclaim_edge",
+            "count": 4,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:shallow:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "deep_retrace_failure",
+            "count": 3,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          }
+        ],
+        "market_structure_questions": [
+          "How can the setup filter reduce no_follow_through without collapsing trade count?",
+          "Which pre-open and reclaim conditions best explain strength in close_break:deep:single_reclaim:strong_cont?"
+        ]
+      }
+    },
+    {
+      "setup_subtype": "balanced_reclaim_continuation",
+      "candidate_count": 24,
+      "subtype_counts": {
+        "balanced_reclaim_continuation": 24
+      },
+      "walk_forward_status": "fail",
+      "walk_forward_mean_roc_auc": 0.16666666666666666,
+      "trade_count": 3,
+      "total_pnl_r": -1.83681001979111,
+      "avg_trade_r": -0.6122700065970367,
+      "max_drawdown_r": -2.1484983314794217,
+      "utility_score": -3.6043187716991945,
+      "market_structure_lab": {
+        "status": "complete",
+        "candidate_count": 24,
+        "structure_families": [
+          {
+            "family": "close_break:shallow:single_reclaim:weak_cont",
+            "count": 9,
+            "positive_rate": 0.3333333333333333,
+            "avg_pnl_r": 0.31992363001996993,
+            "reclaim_mean": 0.3333333333333333,
+            "retrace_mean": 0.2567165094694236,
+            "continuation_strength_mean": 0.2990191186002525
+          },
+          {
+            "family": "close_break:deep:single_reclaim:strong_cont",
+            "count": 7,
+            "positive_rate": 0.42857142857142855,
+            "avg_pnl_r": 0.2699443413729128,
+            "reclaim_mean": 0.42857142857142855,
+            "retrace_mean": 0.5182060360503975,
+            "continuation_strength_mean": 0.6691330388594127
+          },
+          {
+            "family": "close_break:deep:single_reclaim:weak_cont",
+            "count": 8,
+            "positive_rate": 0.0,
+            "avg_pnl_r": -0.48968302782476975,
+            "reclaim_mean": 0.625,
+            "retrace_mean": 0.4426900281319096,
+            "continuation_strength_mean": 0.26936091762841474
+          }
+        ],
+        "failure_taxonomy": [
+          {
+            "failure_reason": "no_follow_through",
+            "count": 9,
+            "avg_pnl_r": 0.09460653746577341,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "stop_before_target",
+            "count": 5,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "no_reclaim_edge",
+            "count": 4,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:shallow:single_reclaim:weak_cont"
+          }
+        ],
+        "market_structure_questions": [
+          "How can the setup filter reduce no_follow_through without collapsing trade count?",
+          "Which pre-open and reclaim conditions best explain strength in close_break:deep:single_reclaim:strong_cont?"
+        ]
+      }
+    },
+    {
+      "setup_subtype": "clean_break_continuation",
+      "candidate_count": 4,
+      "subtype_counts": {
+        "clean_break_continuation": 4
+      },
+      "walk_forward_status": "pending",
+      "walk_forward_mean_roc_auc": null,
+      "trade_count": 0,
+      "total_pnl_r": 0.0,
+      "avg_trade_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "utility_score": null,
+      "market_structure_lab": {
+        "status": "complete",
+        "candidate_count": 4,
+        "structure_families": [
+          {
+            "family": "close_break:shallow:single_reclaim:strong_cont",
+            "count": 4,
+            "positive_rate": 0.75,
+            "avg_pnl_r": 1.221875,
+            "reclaim_mean": 0.0,
+            "retrace_mean": 0.11860269360269361,
+            "continuation_strength_mean": 0.865077861952862
+          }
+        ],
+        "failure_taxonomy": [
+          {
+            "failure_reason": "no_follow_through",
+            "count": 1,
+            "avg_pnl_r": 0.3875,
+            "common_family": "close_break:shallow:single_reclaim:strong_cont"
+          }
+        ],
+        "market_structure_questions": [
+          "How can the setup filter reduce no_follow_through without collapsing trade count?",
+          "Which pre-open and reclaim conditions best explain strength in close_break:shallow:single_reclaim:strong_cont?"
+        ]
+      }
+    },
+    {
+      "setup_subtype": "deep_retrace_repair",
+      "candidate_count": 11,
+      "subtype_counts": {
+        "deep_retrace_repair": 11
+      },
+      "walk_forward_status": "pending",
+      "walk_forward_mean_roc_auc": null,
+      "trade_count": 0,
+      "total_pnl_r": 0.0,
+      "avg_trade_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "utility_score": null,
+      "market_structure_lab": {
+        "status": "complete",
+        "candidate_count": 11,
+        "structure_families": [
+          {
+            "family": "close_break:deep:single_reclaim:weak_cont",
+            "count": 10,
+            "positive_rate": 0.2,
+            "avg_pnl_r": -0.051872673697270465,
+            "reclaim_mean": 0.7,
+            "retrace_mean": 0.8121757214754156,
+            "continuation_strength_mean": 0.19637026222708637
+          },
+          {
+            "family": "close_break:deep:single_reclaim:strong_cont",
+            "count": 1,
+            "positive_rate": 0.0,
+            "avg_pnl_r": -0.7380952380952381,
+            "reclaim_mean": 0.0,
+            "retrace_mean": 0.8571428571428571,
+            "continuation_strength_mean": 0.5119047619047619
+          }
+        ],
+        "failure_taxonomy": [
+          {
+            "failure_reason": "no_follow_through",
+            "count": 4,
+            "avg_pnl_r": 0.18579450623301427,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "deep_retrace_failure",
+            "count": 3,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "stop_before_target",
+            "count": 1,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "weak_continuation",
+            "count": 1,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          }
+        ],
+        "market_structure_questions": [
+          "How can the setup filter reduce no_follow_through without collapsing trade count?",
+          "Which pre-open and reclaim conditions best explain strength in close_break:deep:single_reclaim:strong_cont?"
+        ]
+      }
+    },
+    {
+      "setup_subtype": "wick_reclaim_repair",
+      "candidate_count": 0,
+      "subtype_counts": {},
+      "walk_forward_status": "pending",
+      "walk_forward_mean_roc_auc": null,
+      "trade_count": 0,
+      "total_pnl_r": 0.0,
+      "avg_trade_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "utility_score": null,
+      "market_structure_lab": {
+        "status": "pending",
+        "reason": "empty_inputs"
+      }
+    }
+  ],
+  "best_row": {
+    "setup_subtype": "all_subtypes",
+    "candidate_count": 63,
+    "subtype_counts": {
+      "balanced_reclaim_continuation": 24,
+      "weak_follow_through": 24,
+      "deep_retrace_repair": 11,
+      "clean_break_continuation": 4
+    },
+    "walk_forward_status": "pass",
+    "walk_forward_mean_roc_auc": 0.6,
+    "trade_count": 19,
+    "total_pnl_r": 2.99054375857592,
+    "avg_trade_r": 0.15739703992504842,
+    "max_drawdown_r": -2.378932372219767,
+    "utility_score": 1.4850429993736192,
+    "market_structure_lab": {
+      "status": "complete",
+      "candidate_count": 63,
+      "structure_families": [
+        {
+          "family": "close_break:shallow:single_reclaim:strong_cont",
+          "count": 4,
+          "positive_rate": 0.75,
+          "avg_pnl_r": 1.221875,
+          "reclaim_mean": 0.0,
+          "retrace_mean": 0.11860269360269361,
+          "continuation_strength_mean": 0.865077861952862
+        },
+        {
+          "family": "close_break:shallow:single_reclaim:weak_cont",
+          "count": 22,
+          "positive_rate": 0.18181818181818182,
+          "avg_pnl_r": 0.17937589756867406,
+          "reclaim_mean": 0.3181818181818182,
+          "retrace_mean": 0.22690215405144923,
+          "continuation_strength_mean": 0.18935083486551393
+        },
+        {
+          "family": "close_break:deep:single_reclaim:strong_cont",
+          "count": 8,
+          "positive_rate": 0.375,
+          "avg_pnl_r": 0.14393939393939392,
+          "reclaim_mean": 0.375,
+          "retrace_mean": 0.560573138686955,
+          "continuation_strength_mean": 0.6494795042400813
+        },
+        {
+          "family": "close_break:deep:single_reclaim:weak_cont",
+          "count": 29,
+          "positive_rate": 0.13793103448275862,
+          "avg_pnl_r": -0.18325581140779187,
+          "reclaim_mean": 0.6206896551724138,
+          "retrace_mean": 0.5684656109314182,
+          "continuation_strength_mean": 0.1816393096340117
+        }
+      ],
+      "failure_taxonomy": [
+        {
+          "failure_reason": "no_follow_through",
+          "count": 29,
+          "avg_pnl_r": 0.1265815988689661,
+          "common_family": "close_break:shallow:single_reclaim:weak_cont"
+        },
+        {
+          "failure_reason": "weak_continuation",
+          "count": 7,
+          "avg_pnl_r": -1.0,
+          "common_family": "close_break:deep:single_reclaim:weak_cont"
+        },
+        {
+          "failure_reason": "stop_before_target",
+          "count": 6,
+          "avg_pnl_r": -1.0,
+          "common_family": "close_break:deep:single_reclaim:weak_cont"
+        },
+        {
+          "failure_reason": "no_reclaim_edge",
+          "count": 4,
+          "avg_pnl_r": -1.0,
+          "common_family": "close_break:shallow:single_reclaim:weak_cont"
+        },
+        {
+          "failure_reason": "deep_retrace_failure",
+          "count": 3,
+          "avg_pnl_r": -1.0,
+          "common_family": "close_break:deep:single_reclaim:weak_cont"
+        }
+      ],
+      "market_structure_questions": [
+        "How can the setup filter reduce no_follow_through without collapsing trade count?",
+        "Which pre-open and reclaim conditions best explain strength in close_break:deep:single_reclaim:strong_cont?"
+      ]
+    }
+  }
+}
