@@ -165,6 +165,8 @@ def _multiple_testing_check(search_results: dict[str, Any]) -> dict[str, Any]:
     status = "pass" if adjusted_net_delta > 0 and roc_delta >= 0 else "fail"
     return {
         "status": status,
+        "method": "heuristic_placeholder",
+        "promotable_method": False,
         "trial_count": trial_count,
         "accepted_trial_id": accepted.get("trial_id"),
         "net_delta_vs_baseline": net_delta,

@@ -90,6 +90,16 @@ class AuditSummary:
 
 
 @dataclass(slots=True)
+class BlockingIssue:
+    code: str
+    severity: str
+    category: str
+    node: str
+    message: str
+    evidence: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
 class ExperimentRecord:
     experiment_id: str
     hypothesis: str

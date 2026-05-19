@@ -208,6 +208,8 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
         return iteration_controller_node(state)
 
     def route_after_governor(state: AgentLoopState) -> str:
+        if state.get("blocking_issues"):
+            return "diagnosis_agent"
         if "bnr_spec_approval" in state.get("checkpoints_pending", []):
             return "review_bnr_spec"
         return "cto_agent"

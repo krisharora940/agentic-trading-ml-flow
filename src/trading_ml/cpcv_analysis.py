@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from itertools import combinations
 from math import comb
+import random
 from typing import Any
 
 from trading_ml.config import load_bnr_config, load_global_config
@@ -45,7 +46,10 @@ def build_cpcv_audit(stage2_result: dict[str, Any]) -> dict[str, Any]:
     groups = _partition_sessions(session_dates, n_groups)
     group_index = {session: idx for idx, bucket in enumerate(groups) for session in bucket}
     total_paths = comb(n_groups, n_test_groups)
-    selected_combinations = list(combinations(range(n_groups), n_test_groups))[:max_combinations]
+    selected_combinations = list(combinations(range(n_groups), n_test_groups))
+    rng = random.Random(42)
+    rng.shuffle(selected_combinations)
+    selected_combinations = selected_combinations[:max_combinations]
     rows: list[dict[str, Any]] = []
     negative_paths = 0
 
@@ -90,8 +94,11 @@ def build_cpcv_audit(stage2_result: dict[str, Any]) -> dict[str, Any]:
 
     pbo = negative_paths / len(rows)
     mean_pnl = sum(row["total_pnl_r"] for row in rows) / len(rows)
+    median_pnl = sorted(row["total_pnl_r"] for row in rows)[len(rows) // 2]
+    min_path_pnl = min(row["total_pnl_r"] for row in rows)
+    path_positive_rate = sum(1 for row in rows if row["total_pnl_r"] > 0) / len(rows)
     mean_roc_auc = sum(row["roc_auc"] for row in rows) / len(rows)
-    status = "pass" if pbo <= 0.50 and mean_pnl > 0 else "fail"
+    status = "pass" if pbo <= 0.25 and mean_pnl > 0 and median_pnl > 0 and path_positive_rate >= 0.60 and min_path_pnl > -5.0 else "fail"
     return {
         "status": status,
         "backend": "local_cpcv",
@@ -103,6 +110,9 @@ def build_cpcv_audit(stage2_result: dict[str, Any]) -> dict[str, Any]:
         "evaluated_paths": len(rows),
         "pbo": pbo,
         "mean_total_pnl_r": mean_pnl,
+        "median_total_pnl_r": median_pnl,
+        "min_path_pnl_r": min_path_pnl,
+        "path_positive_rate": path_positive_rate,
         "mean_roc_auc": mean_roc_auc,
         "paths": rows,
     }

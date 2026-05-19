@@ -96,8 +96,8 @@ def _present_artifacts(state: dict[str, Any]) -> set[str]:
     purging = audit.get("purging")
     if purging not in (None, "pending"):
         present.add("purging")
-    multiple_testing = audit.get("multiple_testing")
-    if multiple_testing not in (None, "pending"):
+    multiple_testing = dict(audit.get("multiple_testing", {}))
+    if multiple_testing and multiple_testing.get("status") not in (None, "pending"):
         present.add("multiple_testing")
     if technical_review.get("score_to_signal_contract_required") is True or translation:
         present.add("signal_to_order_contract")
@@ -186,8 +186,11 @@ def _next_step_plan(state: dict[str, Any], program_gaps: list[str]) -> dict[str,
     cpcv = dict(audit.get("cpcv", {}))
     model_diagnostics = dict(stage2.get("model_diagnostics", {}))
     shap = dict(model_diagnostics.get("shap_analysis", {}))
+    calibration = dict(model_diagnostics.get("calibration_review", {}))
     top_features = [row.get("feature") for row in shap.get("top_features", []) if row.get("feature")]
     utility_status = translation.get("status")
+    best_translation = dict(translation.get("best_threshold", {}))
+    utility_gap = best_translation.get("utility_gap_vs_binary")
 
     if walk_forward.get("status") == "pass" and cpcv.get("status") == "fail":
         filter_family = "policy_meta"
@@ -205,6 +208,17 @@ def _next_step_plan(state: dict[str, Any], program_gaps: list[str]) -> dict[str,
             "policy_family": filter_family,
             "benchmark_contract": benchmark,
             "success_criteria": ["cpcv status = pass", "mean_total_pnl_r > 0", "walk_forward stays pass"],
+        }
+    if utility_status == "pass" and calibration.get("status") == "fail" and benchmark.get("sizing_policy") not in {None, "binary_threshold_v1"}:
+        return {
+            "status": "ready",
+            "lane": "translation_lab",
+            "action": "fallback_to_conservative_sizing",
+            "reason": "Utility passes, but calibration is weak for probability-driven sizing.",
+            "controller_override": {"active_family": "translation_policy"},
+            "stage2_overrides": {"feature_family": benchmark.get("feature_family") or state.get("stage2_config", {}).get("feature_family")},
+            "benchmark_contract": benchmark,
+            "success_criteria": ["binary or tiered sizing matches or beats current utility", "walk_forward stays pass", "cpcv stays pass"],
         }
     if walk_forward.get("status") == "fail":
         return {
@@ -238,6 +252,17 @@ def _next_step_plan(state: dict[str, Any], program_gaps: list[str]) -> dict[str,
             "stage2_overrides": {"feature_family": benchmark.get("feature_family") or state.get("stage2_config", {}).get("feature_family")},
             "benchmark_contract": benchmark,
             "success_criteria": ["utility improves versus frozen benchmark", "walk_forward stays pass", "cpcv stays pass"],
+        }
+    if utility_gap is not None and float(utility_gap) > 3.0:
+        return {
+            "status": "ready",
+            "lane": "translation_lab",
+            "action": "audit_sizing_lift",
+            "reason": "Sized utility materially exceeds binary utility; confirm the gain is not mostly sizing-driven.",
+            "controller_override": {"active_family": "translation_policy"},
+            "stage2_overrides": {"feature_family": benchmark.get("feature_family") or state.get("stage2_config", {}).get("feature_family")},
+            "benchmark_contract": benchmark,
+            "success_criteria": ["sizing lift is stable", "binary utility remains positive", "calibration is acceptable for probability-based sizing"],
         }
     return {
         "status": "ready",

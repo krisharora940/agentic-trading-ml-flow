@@ -1,7 +1,7 @@
 import unittest
 
 from trading_ml.event_driven_backtest import run_event_driven_policy_backtest
-from trading_ml.translation_policy import allow_signal_for_regime, compute_position_size
+from trading_ml.translation_policy import allow_signal_for_regime, compute_position_size, compute_regime_size_multiplier
 
 
 class TranslationPolicyTests(unittest.TestCase):
@@ -64,6 +64,17 @@ class TranslationPolicyTests(unittest.TestCase):
         self.assertEqual(summary["trade_count"], 1)
         self.assertEqual(summary["throttled_signals"], 1)
         self.assertGreater(summary["avg_size_multiplier"], 0.5)
+
+    def test_regime_size_multiplier_haircuts_bad_regime(self) -> None:
+        good = compute_regime_size_multiplier(
+            {"reg_high_vol_state": 0.0, "reg_trending_state": 1.0},
+            policy_name="trend_vol_scale_v1",
+        )
+        bad = compute_regime_size_multiplier(
+            {"reg_high_vol_state": 1.0, "reg_trending_state": 0.0},
+            policy_name="trend_vol_scale_v1",
+        )
+        self.assertGreater(good, bad)
 
 
 if __name__ == "__main__":

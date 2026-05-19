@@ -5,6 +5,7 @@ from datetime import timedelta
 from typing import Any
 
 from trading_ml.agent_state import DecisionName, FailureCategory, LoopLimits, ReviewCheckpoint
+from trading_ml.artifact_store import persist_node_artifact
 from trading_ml.price_action_feature_catalog import build_strategy_intake
 from trading_ml.config import load_bnr_config
 from trading_ml.feature_diagnostics import build_feature_diagnostics
@@ -19,6 +20,7 @@ from trading_ml.research_controller import (
     build_translation_policy_search_space,
     load_controller_config,
 )
+from trading_ml.schemas import BlockingIssue
 from trading_ml.schemas import utc_now_iso
 from trading_ml.search import build_search_space, run_governed_search
 from trading_ml.stage2_pipeline import Stage2Config, run_stage2_research_engine
@@ -33,6 +35,14 @@ def _append_log(state: dict[str, Any], actor: str, message: str, payload: dict[s
         "message": message,
         "payload": payload or {},
     }
+    persist_node_artifact(
+        run_id=str(state.get("run_id", "unknown-run")),
+        node_name=actor,
+        cycle=int(state.get("research_cycle", 1) or 1),
+        phase=str(state.get("phase", "unknown")),
+        state=state,
+        payload=entry["payload"],
+    )
     return [*state.get("run_log", []), entry]
 
 
@@ -42,6 +52,43 @@ def _ensure_counts(state: dict[str, Any]) -> dict[str, int]:
         "feature_changes": state.get("experiment_counts", {}).get("feature_changes", 0),
         "threshold_changes": state.get("experiment_counts", {}).get("threshold_changes", 0),
     }
+
+
+def _append_blocking_issue(
+    state: dict[str, Any],
+    *,
+    code: str,
+    severity: str,
+    category: str,
+    node: str,
+    message: str,
+    evidence: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    issues = list(state.get("blocking_issues", []))
+    records = list(state.get("blocking_issue_records", []))
+    if code not in {row.get("code") for row in records}:
+        issues.append(message)
+        records.append(
+            asdict(
+                BlockingIssue(
+                    code=code,
+                    severity=severity,
+                    category=category,
+                    node=node,
+                    message=message,
+                    evidence=evidence or {},
+                )
+            )
+        )
+    return {"blocking_issues": issues, "blocking_issue_records": records}
+
+
+def _source_boundary_role(state: dict[str, Any], source_path: str | None) -> str | None:
+    manifest = dict(state.get("data_manifest", {}))
+    for entry in manifest.get("files", []):
+        if entry.get("source_path") == source_path:
+            return entry.get("boundary_role")
+    return None
 
 
 def strategy_intake_agent_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -87,15 +134,43 @@ def program_director_node(state: dict[str, Any]) -> dict[str, Any]:
 
 def governor_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     blocking_issues = list(state.get("blocking_issues", []))
+    blocking_issue_records = list(state.get("blocking_issue_records", []))
     pending = list(state.get("checkpoints_pending", []))
     if state.get("phase") == "foundation" and "bnr_spec_approval" not in pending:
         pending.append("bnr_spec_approval")
+    source_path = dict(state.get("stage2_config", {})).get("source_path")
+    boundary_role = _source_boundary_role(state, source_path)
+    if state.get("phase") != "holdout_confirmation" and boundary_role == "holdout":
+        update = _append_blocking_issue(
+            state,
+            code="HOLDOUT_ACCESS_OUTSIDE_PHASE",
+            severity="blocker",
+            category="data_issue",
+            node="governor_agent",
+            message="Holdout source loaded outside holdout confirmation phase.",
+            evidence={"source_path": source_path, "phase": state.get("phase")},
+        )
+        blocking_issues = update["blocking_issues"]
+        blocking_issue_records = update["blocking_issue_records"]
+    if state.get("holdout_consumed") and state.get("phase") not in {"holdout_confirmation", "completed"}:
+        update = _append_blocking_issue(
+            state,
+            code="HOLDOUT_ALREADY_CONSUMED",
+            severity="blocker",
+            category="data_issue",
+            node="governor_agent",
+            message="Holdout has already been consumed; exploratory iteration is blocked.",
+            evidence={"phase": state.get("phase")},
+        )
+        blocking_issues = update["blocking_issues"]
+        blocking_issue_records = update["blocking_issue_records"]
     cycle = int(state.get("research_cycle", 1))
     max_cycles = int(state.get("max_research_cycles", 1))
     return {
         "current_node": "governor_agent",
         "checkpoints_pending": pending,
         "blocking_issues": blocking_issues,
+        "blocking_issue_records": blocking_issue_records,
         "run_log": _append_log(
             state,
             "governor_agent",
@@ -126,6 +201,7 @@ def cto_agent_node(state: dict[str, Any]) -> dict[str, Any]:
 def data_steward_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     stage2_config = dict(state.get("stage2_config", {}))
     if stage2_config.get("source_path"):
+        boundary_role = _source_boundary_role(state, stage2_config.get("source_path"))
         result = run_stage2_research_engine(Stage2Config(**stage2_config))
         summary = {
             "manifest_present": True,
@@ -134,13 +210,28 @@ def data_steward_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             "data_quality": result["data_quality"],
             "zone_count": result["zone_count"],
             "candidate_count": result["candidate_count"],
+            "boundary_role": boundary_role,
         }
-        return {
+        payload = {
             "current_node": "data_steward_agent",
             "data_summary": summary,
             "stage2_result": result,
+            "holdout_consumed": bool(state.get("holdout_consumed")) or boundary_role == "holdout",
             "run_log": _append_log(state, "data_steward_agent", "Ran Stage 2 data validation and BNR research engine.", summary),
         }
+        if state.get("phase") != "holdout_confirmation" and boundary_role == "holdout":
+            payload.update(
+                _append_blocking_issue(
+                    state,
+                    code="HOLDOUT_EXECUTED_OUTSIDE_PHASE",
+                    severity="blocker",
+                    category="data_issue",
+                    node="data_steward_agent",
+                    message="Holdout data execution attempted outside holdout confirmation.",
+                    evidence={"source_path": stage2_config.get("source_path")},
+                )
+            )
+        return payload
     summary = {
         "manifest_present": bool(state.get("data_manifest_loaded", False)),
         "timezone_expected": "America/New_York",
@@ -344,7 +435,7 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         audit_summary = {
             "leakage": "pass" if feature_audit.get("failed", 1) == 0 else "fail",
             "overfitting": validation_audit["overfitting"],
-            "multiple_testing": validation_audit["multiple_testing"]["status"],
+            "multiple_testing": validation_audit["multiple_testing"],
             "walk_forward": validation_audit["walk_forward"],
             "cpcv": validation_audit["cpcv"],
             "purging": validation_audit["purging"],
@@ -363,7 +454,7 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     audit_summary = {
         "leakage": "pending",
         "overfitting": "pending",
-        "multiple_testing": "pending",
+        "multiple_testing": {"status": "pending"},
         "robustness": "pending",
     }
     return {
@@ -374,6 +465,9 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def diagnose_failure(state: dict[str, Any]) -> FailureCategory:
+    issue_records = list(state.get("blocking_issue_records", []))
+    if issue_records:
+        return str(issue_records[0].get("category", "unknown"))  # type: ignore[return-value]
     issues = " ".join(state.get("blocking_issues", [])).lower()
     if "manifest" in issues or "data" in issues:
         return "data_issue"
@@ -386,6 +480,8 @@ def diagnose_failure(state: dict[str, Any]) -> FailureCategory:
     audit_summary = dict(state.get("audit_summary", {}))
     if audit_summary.get("purging", {}).get("status") == "fail":
         return "label_issue"
+    if audit_summary.get("cpcv", {}).get("status") == "fail":
+        return "model_issue"
     if audit_summary.get("walk_forward", {}).get("status") == "fail":
         return "model_issue"
     if "execution" in issues or "slippage" in issues or "parity" in issues:
@@ -459,6 +555,7 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
         prediction_records=translation_records or None,
         sizing_policy=str(controller_state.get("benchmark_sizing_policy") or "binary_threshold_v1"),
         regime_throttle_policy=str(controller_state.get("benchmark_regime_throttle_policy") or "none"),
+        regime_size_policy=str(controller_state.get("benchmark_regime_size_policy") or "none"),
     )
     status = threshold_analysis.get("status", "pending")
     if status == "pending" and net_avg_pnl_r is not None:
@@ -476,6 +573,7 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
         "applied_threshold": applied_threshold,
         "applied_sizing_policy": controller_state.get("benchmark_sizing_policy"),
         "applied_regime_throttle_policy": controller_state.get("benchmark_regime_throttle_policy"),
+        "applied_regime_size_policy": controller_state.get("benchmark_regime_size_policy"),
     }
     if accepted_trial.get("overrides", {}).get("decision_threshold") is not None:
         summary["suggested_threshold"] = accepted_trial["overrides"]["decision_threshold"]
@@ -486,6 +584,7 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
         summary["suggested_threshold"] = controller_state["frozen_threshold"]
     summary["suggested_sizing_policy"] = accepted_trial.get("overrides", {}).get("sizing_policy", controller_state.get("benchmark_sizing_policy"))
     summary["suggested_regime_throttle_policy"] = accepted_trial.get("overrides", {}).get("regime_throttle_policy", controller_state.get("benchmark_regime_throttle_policy"))
+    summary["suggested_regime_size_policy"] = accepted_trial.get("overrides", {}).get("regime_size_policy", controller_state.get("benchmark_regime_size_policy"))
     return {
         "current_node": "translation_checkpoint",
         "translation_summary": summary,
@@ -499,6 +598,12 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
     best_trial = dict(state.get("search_results", {}).get("best_trial", {}) or {})
     net_avg_pnl_r = best_trial.get("net_avg_pnl_r")
     translation_summary = dict(state.get("translation_summary", {}))
+    model_diagnostics = dict(audit_summary.get("model_diagnostics", {}))
+    calibration = dict(model_diagnostics.get("calibration_review", {}))
+    walk_forward = dict(audit_summary.get("walk_forward", {}))
+    cpcv = dict(audit_summary.get("cpcv", {}))
+    purging = dict(audit_summary.get("purging", {}))
+    multiple_testing = dict(audit_summary.get("multiple_testing", {}))
 
     if state.get("blocking_issues"):
         decision = "revise"
@@ -506,14 +611,26 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
         decision = "freeze"
     elif audit_summary.get("leakage") != "pass":
         decision = "reject"
+    elif purging.get("status") != "pass":
+        decision = "reject"
     elif str(audit_summary.get("robustness", "")).startswith("blocked"):
+        decision = "freeze"
+    elif walk_forward.get("status") != "pass":
+        decision = "freeze"
+    elif cpcv.get("status") != "pass":
         decision = "freeze"
     elif audit_summary.get("overfitting") in {"pending", "fail"}:
         decision = "freeze"
-    elif audit_summary.get("multiple_testing") != "pass":
+    elif multiple_testing.get("status") != "pass":
         decision = "freeze"
-    elif translation_summary.get("status") not in {"pass", "pending"}:
+    elif not bool(multiple_testing.get("promotable_method", False)):
+        decision = "freeze"
+    elif calibration.get("status") != "pass":
+        decision = "freeze"
+    elif translation_summary.get("status") == "fail":
         decision = "reject"
+    elif translation_summary.get("status") != "pass":
+        decision = "freeze"
     elif net_avg_pnl_r is not None and float(net_avg_pnl_r) <= 0:
         decision = "reject"
     else:
@@ -578,10 +695,11 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
             if family == "translation_policy":
                 controller_state["benchmark_sizing_policy"] = overrides.get("sizing_policy", controller_state.get("benchmark_sizing_policy"))
                 controller_state["benchmark_regime_throttle_policy"] = overrides.get("regime_throttle_policy", controller_state.get("benchmark_regime_throttle_policy"))
+                controller_state["benchmark_regime_size_policy"] = overrides.get("regime_size_policy", controller_state.get("benchmark_regime_size_policy"))
             stage2_overrides = {
                 key: value
                 for key, value in overrides.items()
-                if key not in {"decision_threshold", "sizing_policy", "regime_throttle_policy"}
+                if key not in {"decision_threshold", "sizing_policy", "regime_throttle_policy", "regime_size_policy"}
             }
             if family != "threshold" and stage2_overrides:
                 stage2_config.update(stage2_overrides)
@@ -602,6 +720,7 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
                 "frozen_threshold": controller_state.get("frozen_threshold"),
                 "sizing_policy": controller_state.get("benchmark_sizing_policy"),
                 "regime_throttle_policy": controller_state.get("benchmark_regime_throttle_policy"),
+                "regime_size_policy": controller_state.get("benchmark_regime_size_policy"),
             },
             "run_log": _append_log(state, "iteration_controller", "Adopted accepted exploratory trial as next frozen baseline.", payload),
         }

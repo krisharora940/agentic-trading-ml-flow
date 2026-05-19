@@ -8,7 +8,7 @@ def get_sizing_policies() -> list[dict[str, Any]]:
         {"name": "binary_threshold_v1", "kind": "binary"},
         {"name": "confidence_linear_v1", "kind": "confidence_linear", "min_size": 0.50, "max_size": 1.50},
         {"name": "confidence_tiered_v1", "kind": "confidence_tiered", "low_size": 0.50, "mid_size": 1.00, "high_size": 1.50, "high_threshold_offset": 0.20},
-        {"name": "fractional_kelly_proxy_v1", "kind": "fractional_kelly_proxy", "min_size": 0.25, "max_size": 1.50, "kelly_fraction": 0.50},
+        {"name": "fractional_kelly_proxy_v1", "kind": "fractional_kelly_proxy", "min_size": 0.25, "max_size": 1.25, "kelly_fraction": 0.50},
     ]
 
 
@@ -18,6 +18,14 @@ def get_regime_throttle_policies() -> list[dict[str, Any]]:
         {"name": "suppress_high_vol_v1", "max_high_vol_state": 0.0},
         {"name": "trending_only_v1", "require_trending_state": 1.0},
         {"name": "high_vol_or_non_trending_off_v1", "max_high_vol_state": 0.0, "require_trending_state": 1.0},
+    ]
+
+
+def get_regime_size_policies() -> list[dict[str, Any]]:
+    return [
+        {"name": "none"},
+        {"name": "trend_vol_scale_v1", "good_multiplier": 1.00, "ambiguous_multiplier": 0.75, "bad_multiplier": 0.35},
+        {"name": "high_vol_haircut_v1", "good_multiplier": 1.00, "ambiguous_multiplier": 0.80, "bad_multiplier": 0.50},
     ]
 
 
@@ -35,6 +43,14 @@ def get_regime_throttle_policy(name: str | None) -> dict[str, Any]:
         if policy["name"] == target:
             return policy
     raise KeyError(f"Unknown regime throttle policy: {target}")
+
+
+def get_regime_size_policy(name: str | None) -> dict[str, Any]:
+    target = name or "none"
+    for policy in get_regime_size_policies():
+        if policy["name"] == target:
+            return policy
+    raise KeyError(f"Unknown regime size policy: {target}")
 
 
 def compute_position_size(probability: float, *, threshold: float, policy_name: str | None) -> float:
@@ -76,3 +92,16 @@ def allow_signal_for_regime(record: dict[str, Any], *, policy_name: str | None) 
     if "require_trending_state" in policy and float(record.get("reg_trending_state", 0.0) or 0.0) < float(policy["require_trending_state"]):
         return False
     return True
+
+
+def compute_regime_size_multiplier(record: dict[str, Any], *, policy_name: str | None) -> float:
+    policy = get_regime_size_policy(policy_name)
+    if policy["name"] == "none":
+        return 1.0
+    high_vol = float(record.get("reg_high_vol_state", 0.0) or 0.0) >= 1.0
+    trending = float(record.get("reg_trending_state", 0.0) or 0.0) >= 1.0
+    if trending and not high_vol:
+        return float(policy.get("good_multiplier", 1.0) or 1.0)
+    if trending or not high_vol:
+        return float(policy.get("ambiguous_multiplier", 0.75) or 0.75)
+    return float(policy.get("bad_multiplier", 0.5) or 0.5)

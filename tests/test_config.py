@@ -40,6 +40,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config["frozen_benchmark"]["feature_family"], "bnr_plus_context")
         self.assertIn("sizing_policy", config["frozen_benchmark"])
         self.assertIn("regime_throttle_policy", config["frozen_benchmark"])
+        self.assertIn("regime_size_policy", config["frozen_benchmark"])
 
     def test_research_program_config_defines_institutional_workstreams(self) -> None:
         config = load_research_program_config()

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from trading_ml.config import load_global_config
-from trading_ml.translation_policy import allow_signal_for_regime, compute_position_size
+from trading_ml.translation_policy import allow_signal_for_regime, compute_position_size, compute_regime_size_multiplier
 
 
 def run_event_driven_policy_backtest(
@@ -13,6 +13,7 @@ def run_event_driven_policy_backtest(
     slippage_profile: str | None = None,
     sizing_policy: str | None = None,
     regime_throttle_policy: str | None = None,
+    regime_size_policy: str | None = None,
 ) -> dict[str, Any]:
     try:
         import pandas as pd
@@ -72,7 +73,9 @@ def run_event_driven_policy_backtest(
             threshold=float(threshold),
             policy_name=sizing_policy,
         )
-        if size_multiplier <= 0:
+        regime_multiplier = compute_regime_size_multiplier(row, policy_name=regime_size_policy)
+        final_size_multiplier = size_multiplier * regime_multiplier
+        if final_size_multiplier <= 0:
             continue
 
         filled_entry = _apply_slippage(
@@ -93,7 +96,7 @@ def run_event_driven_policy_backtest(
         )
         pnl_points = (filled_exit - filled_entry) if direction == "long" else (filled_entry - filled_exit)
         gross_pnl_r = pnl_points / risk_points
-        pnl_r = gross_pnl_r * size_multiplier
+        pnl_r = gross_pnl_r * final_size_multiplier
 
         cum_pnl_r += pnl_r
         peak_pnl_r = max(peak_pnl_r, cum_pnl_r)
@@ -114,7 +117,9 @@ def run_event_driven_policy_backtest(
                 "gross_label_pnl_r": float(row["pnl_r"]),
                 "gross_executed_pnl_r": gross_pnl_r,
                 "executed_pnl_r": pnl_r,
-                "size_multiplier": size_multiplier,
+                "base_size_multiplier": size_multiplier,
+                "regime_size_multiplier": regime_multiplier,
+                "size_multiplier": final_size_multiplier,
                 "cum_pnl_r": cum_pnl_r,
                 "drawdown_r": drawdown_r,
                 "bars_held": int(row.get("bars_held", 0) or 0),
@@ -152,6 +157,8 @@ def run_event_driven_policy_backtest(
         "total_pnl_r": float(executed_frame["executed_pnl_r"].sum()),
         "avg_trade_r": float(executed_frame["executed_pnl_r"].mean()),
         "avg_size_multiplier": float(executed_frame["size_multiplier"].mean()),
+        "avg_base_size_multiplier": float(executed_frame["base_size_multiplier"].mean()),
+        "avg_regime_size_multiplier": float(executed_frame["regime_size_multiplier"].mean()),
         "win_rate": float((executed_frame["executed_pnl_r"] > 0).mean()),
         "max_drawdown_r": float(executed_frame["drawdown_r"].min()),
         "session_count": int(len(session_rows)),
@@ -166,6 +173,7 @@ def run_event_driven_policy_backtest(
             "single_position": True,
             "sizing_policy": sizing_policy or "binary_threshold_v1",
             "regime_throttle_policy": regime_throttle_policy or "none",
+            "regime_size_policy": regime_size_policy or "none",
         },
         "session_rows": session_rows,
         "equity_curve": executed,

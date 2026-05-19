@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from typing import Any
+from uuid import uuid4
 
 from trading_ml.agent_config import load_agent_loop_config
 from trading_ml.config import load_bnr_config, load_databento_manifest
@@ -67,6 +68,7 @@ def build_agent_loop_state() -> AgentLoopState:
         blocking_issues = [issue for issue in blocking_issues if issue != "No candidate setup rules defined yet."]
     phase = "exploration" if not blocking_issues else config["graph"]["default_phase"]
     return AgentLoopState(
+        run_id=f"bnr-{uuid4().hex[:12]}",
         program_state=build_program_state(),
         next_step_plan={},
         strategy_notes=(
@@ -119,8 +121,10 @@ def build_agent_loop_state() -> AgentLoopState:
         technical_review={},
         candidate_setups_defined=False,
         promotion_decision="revise",
+        holdout_consumed=False,
         data_manifest_loaded=bool(manifest.get("files")),
         data_manifest=manifest,
+        blocking_issue_records=[],
         blocking_issues=blocking_issues,
         run_log=[],
     )
@@ -132,42 +136,7 @@ def build_loop_limits() -> LoopLimits:
 
 
 def run_linear_stage3_pass(state: AgentLoopState | None = None) -> AgentLoopState:
-    current = dict(state or build_agent_loop_state())
-    limits = build_loop_limits()
-    for node_name in NODE_SEQUENCE:
-        if node_name == "strategy_intake_agent":
-            current.update(strategy_intake_agent_node(current))
-        elif node_name == "program_director":
-            current.update(program_director_node(current))
-        elif node_name == "governor_agent":
-            current.update(governor_agent_node(current))
-        elif node_name == "cto_agent":
-            current.update(cto_agent_node(current))
-        elif node_name == "data_steward_agent":
-            current.update(data_steward_agent_node(current))
-        elif node_name == "bnr_research_agent":
-            current.update(bnr_research_agent_node(current))
-        elif node_name == "labeling_agent":
-            current.update(labeling_agent_node(current))
-        elif node_name == "feature_agent":
-            current.update(feature_agent_node(current))
-        elif node_name == "model_agent":
-            current.update(model_agent_node(current))
-        elif node_name == "backtest_agent":
-            current.update(backtest_agent_node(current))
-        elif node_name == "search_controller_agent":
-            current.update(search_controller_agent_node(current, limits))
-        elif node_name == "audit_agent":
-            current.update(audit_agent_node(current))
-        elif node_name == "translation_checkpoint":
-            current.update(translation_checkpoint_node(current))
-        elif node_name == "diagnosis_agent":
-            current.update(diagnosis_agent_node(current))
-        elif node_name == "promotion_decision":
-            current.update(promotion_decision_node(current))
-        elif node_name == "iteration_controller":
-            current.update(iteration_controller_node(current))
-    return AgentLoopState(**current)
+    raise RuntimeError("Linear runner disabled. Use compile_bnr_langgraph().")
 
 
 def pending_human_checkpoints(state: AgentLoopState) -> list[dict[str, Any]]:

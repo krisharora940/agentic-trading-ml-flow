@@ -42,11 +42,13 @@ def build_model_diagnostics_lab(
         "high_confidence_share": float((frame["probability"] >= 0.7).mean()),
         "low_confidence_share": float((frame["probability"] <= 0.3).mean()),
     }
+    calibration = _build_calibration_review(frame)
     return {
         "status": "complete",
         "bucket_rows": bucket_rows,
         "bucket_monotonicity": monotonic,
         "uncertainty_review": uncertainty,
+        "calibration_review": calibration,
         "shap_analysis": _build_shap_analysis(feature_records or [], labels_records or [], model_family=model_family),
     }
 
@@ -56,6 +58,51 @@ def _is_monotonic(bucket_rows: list[dict[str, Any]]) -> bool:
         return False
     positives = [row["positive_rate"] for row in sorted(bucket_rows, key=lambda row: row["probability_mean"])]
     return all(later >= earlier for earlier, later in zip(positives, positives[1:], strict=False))
+
+
+def _build_calibration_review(frame: Any) -> dict[str, Any]:
+    bucket_count = min(10, max(3, int(len(frame) ** 0.5)))
+    ranked = frame.sort_values("probability").reset_index(drop=True).copy()
+    ranked["calibration_bucket"] = ranked.index
+    ranked["calibration_bucket"] = ranked["calibration_bucket"].apply(
+        lambda idx: min(bucket_count - 1, int(idx * bucket_count / max(len(ranked), 1)))
+    )
+    rows = []
+    ece = 0.0
+    uncertainty = float(frame["label"].mean()) * (1.0 - float(frame["label"].mean()))
+    reliability = 0.0
+    resolution = 0.0
+    for bucket, group in ranked.groupby("calibration_bucket"):
+        count = int(len(group))
+        if count <= 0:
+            continue
+        prob_mean = float(group["probability"].mean())
+        hit_rate = float(group["label"].mean())
+        weight = count / max(len(ranked), 1)
+        gap = abs(prob_mean - hit_rate)
+        ece += weight * gap
+        reliability += weight * ((prob_mean - hit_rate) ** 2)
+        resolution += weight * ((hit_rate - float(frame["label"].mean())) ** 2)
+        rows.append(
+            {
+                "bucket": int(bucket),
+                "count": count,
+                "probability_mean": prob_mean,
+                "hit_rate": hit_rate,
+                "abs_gap": gap,
+            }
+        )
+    status = "pass" if ece <= 0.08 else "fail"
+    return {
+        "status": status,
+        "ece": ece,
+        "brier_decomposition": {
+            "uncertainty": uncertainty,
+            "reliability": reliability,
+            "resolution": resolution,
+        },
+        "reliability_rows": rows,
+    }
 
 
 def _build_shap_analysis(
