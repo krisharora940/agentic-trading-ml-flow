@@ -4,20 +4,27 @@ from typing import Any
 
 from trading_ml.cpcv_analysis import build_cpcv_audit
 from trading_ml.config import load_global_config
+from trading_ml.deflated_sharpe_analysis import build_deflated_sharpe_audit
 from trading_ml.validation_splits import build_walk_forward_splits
 
 
-def build_validation_audit(stage2_result: dict[str, Any], search_results: dict[str, Any]) -> dict[str, Any]:
+def build_validation_audit(
+    stage2_result: dict[str, Any],
+    search_results: dict[str, Any],
+    controller_state: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     features = list(stage2_result.get("features_records", []))
     labels = list(stage2_result.get("labels_records", []))
     walk_forward = _walk_forward_check(features, labels)
     cpcv = build_cpcv_audit(stage2_result)
+    deflated_sharpe = build_deflated_sharpe_audit(stage2_result, walk_forward, cpcv, search_results, controller_state=controller_state)
     purging = _purging_check(labels)
     multiple_testing = _multiple_testing_check(search_results)
-    overfitting = _overfitting_check(walk_forward, cpcv, multiple_testing)
+    overfitting = _overfitting_check(walk_forward, cpcv, multiple_testing, deflated_sharpe)
     return {
         "walk_forward": walk_forward,
         "cpcv": cpcv,
+        "deflated_sharpe": deflated_sharpe,
         "purging": purging,
         "multiple_testing": multiple_testing,
         "overfitting": overfitting,
@@ -176,9 +183,9 @@ def _multiple_testing_check(search_results: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _overfitting_check(walk_forward: dict[str, Any], cpcv: dict[str, Any], multiple_testing: dict[str, Any]) -> str:
-    if walk_forward.get("status") == "fail" or cpcv.get("status") == "fail" or multiple_testing.get("status") == "fail":
+def _overfitting_check(walk_forward: dict[str, Any], cpcv: dict[str, Any], multiple_testing: dict[str, Any], deflated_sharpe: dict[str, Any]) -> str:
+    if walk_forward.get("status") == "fail" or cpcv.get("status") == "fail" or multiple_testing.get("status") == "fail" or deflated_sharpe.get("status") == "fail":
         return "fail"
-    if walk_forward.get("status") == "pass" and cpcv.get("status") == "pass" and multiple_testing.get("status") == "pass":
+    if walk_forward.get("status") == "pass" and cpcv.get("status") == "pass" and multiple_testing.get("status") == "pass" and deflated_sharpe.get("status") == "pass":
         return "pass"
     return "pending"

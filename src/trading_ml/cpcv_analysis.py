@@ -6,6 +6,7 @@ import random
 from typing import Any
 
 from trading_ml.config import load_bnr_config, load_global_config
+from trading_ml.deflated_sharpe_analysis import compute_sharpe_ratio
 from trading_ml.event_driven_backtest import run_event_driven_policy_backtest
 from trading_ml.stage2_modeling import score_model_split
 
@@ -72,6 +73,8 @@ def build_cpcv_audit(stage2_result: dict[str, Any]) -> dict[str, Any]:
         prediction_frame = scored["prediction_frame"].copy()
         execution = run_event_driven_policy_backtest(prediction_frame.to_dict(orient="records"), threshold=threshold)
         total_pnl_r = float(execution.get("total_pnl_r", 0.0) or 0.0)
+        path_returns = [float(row.get("executed_pnl_r", 0.0) or 0.0) for row in execution.get("equity_curve", [])]
+        sharpe_r = compute_sharpe_ratio(path_returns)
         if total_pnl_r <= 0:
             negative_paths += 1
         rows.append(
@@ -86,6 +89,7 @@ def build_cpcv_audit(stage2_result: dict[str, Any]) -> dict[str, Any]:
                 "trade_count": int(execution.get("trade_count", 0) or 0),
                 "total_pnl_r": total_pnl_r,
                 "avg_trade_r": float(execution.get("avg_trade_r", 0.0) or 0.0),
+                "sharpe_r": sharpe_r,
             }
         )
 

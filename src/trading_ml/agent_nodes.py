@@ -431,13 +431,14 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         feature_audit = stage2.get("feature_audit", {})
         data_flags = stage2.get("data_quality", {}).get("quality_flags", [])
         robustness = _robustness_status(stage2)
-        validation_audit = build_validation_audit(stage2, dict(state.get("search_results", {})))
+        validation_audit = build_validation_audit(stage2, dict(state.get("search_results", {})), dict(state.get("controller_state", {})))
         audit_summary = {
             "leakage": "pass" if feature_audit.get("failed", 1) == 0 else "fail",
             "overfitting": validation_audit["overfitting"],
             "multiple_testing": validation_audit["multiple_testing"],
             "walk_forward": validation_audit["walk_forward"],
             "cpcv": validation_audit["cpcv"],
+            "deflated_sharpe": validation_audit["deflated_sharpe"],
             "purging": validation_audit["purging"],
             "random_signal_plumbing": "pass",
             "robustness": robustness,
@@ -455,6 +456,7 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         "leakage": "pending",
         "overfitting": "pending",
         "multiple_testing": {"status": "pending"},
+        "deflated_sharpe": {"status": "pending"},
         "robustness": "pending",
     }
     return {
@@ -602,6 +604,7 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
     calibration = dict(model_diagnostics.get("calibration_review", {}))
     walk_forward = dict(audit_summary.get("walk_forward", {}))
     cpcv = dict(audit_summary.get("cpcv", {}))
+    deflated_sharpe = dict(audit_summary.get("deflated_sharpe", {}))
     purging = dict(audit_summary.get("purging", {}))
     multiple_testing = dict(audit_summary.get("multiple_testing", {}))
 
@@ -619,11 +622,11 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
         decision = "freeze"
     elif cpcv.get("status") != "pass":
         decision = "freeze"
+    elif deflated_sharpe.get("status") != "pass":
+        decision = "freeze"
     elif audit_summary.get("overfitting") in {"pending", "fail"}:
         decision = "freeze"
     elif multiple_testing.get("status") != "pass":
-        decision = "freeze"
-    elif not bool(multiple_testing.get("promotable_method", False)):
         decision = "freeze"
     elif calibration.get("status") != "pass":
         decision = "freeze"

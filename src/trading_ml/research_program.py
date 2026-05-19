@@ -184,6 +184,7 @@ def _next_step_plan(state: dict[str, Any], program_gaps: list[str]) -> dict[str,
 
     walk_forward = dict(audit.get("walk_forward", {}))
     cpcv = dict(audit.get("cpcv", {}))
+    deflated_sharpe = dict(audit.get("deflated_sharpe", {}))
     model_diagnostics = dict(stage2.get("model_diagnostics", {}))
     shap = dict(model_diagnostics.get("shap_analysis", {}))
     calibration = dict(model_diagnostics.get("calibration_review", {}))
@@ -208,6 +209,17 @@ def _next_step_plan(state: dict[str, Any], program_gaps: list[str]) -> dict[str,
             "policy_family": filter_family,
             "benchmark_contract": benchmark,
             "success_criteria": ["cpcv status = pass", "mean_total_pnl_r > 0", "walk_forward stays pass"],
+        }
+    if walk_forward.get("status") == "pass" and cpcv.get("status") == "pass" and deflated_sharpe.get("status") == "fail":
+        return {
+            "status": "ready",
+            "lane": "research_cycle",
+            "action": "reduce_search_complexity_and_retest",
+            "reason": "Validation is acceptable, but DSR says observed performance is not yet above multiple-testing inflation.",
+            "controller_override": {"active_family": "translation_policy"},
+            "stage2_overrides": {"feature_family": benchmark.get("feature_family") or state.get("stage2_config", {}).get("feature_family")},
+            "benchmark_contract": benchmark,
+            "success_criteria": ["deflated sharpe probability >= 0.95", "walk_forward stays pass", "cpcv stays pass"],
         }
     if utility_status == "pass" and calibration.get("status") == "fail" and benchmark.get("sizing_policy") not in {None, "binary_threshold_v1"}:
         return {
