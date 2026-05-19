@@ -1,22 +1,34 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from trading_ml.agent_workflow import build_agent_loop_state
 from trading_ml.diagnostic_adapter import prepare_diagnostic_runtime
 from trading_ml.paths import REPORTS_DIR
 from trading_ml.stage2_pipeline import Stage2Config, run_stage2_research_engine
+from trading_ml.translation_analysis import build_translation_analysis
 from trading_ml.validation_audit import build_validation_audit
 
 
 def main() -> None:
     prepare_diagnostic_runtime()
+    os.environ.setdefault("TRADING_ML_DISABLE_SHAP", "1")
     state = build_agent_loop_state()
     config = Stage2Config(**state["stage2_config"])
     result = run_stage2_research_engine(config)
-    audit = build_validation_audit(result, {})
+    audit = build_validation_audit(result, {}, state.get("controller_state", {}))
     shap_analysis = result.get("model_diagnostics", {}).get("shap_analysis", {})
+    stitched = list(audit.get("walk_forward", {}).get("stitched_prediction_records", []))
+    translation = build_translation_analysis(
+        result,
+        prediction_records=stitched or None,
+        sizing_policy=state.get("controller_state", {}).get("benchmark_sizing_policy"),
+        regime_throttle_policy=state.get("controller_state", {}).get("benchmark_regime_throttle_policy"),
+        regime_size_policy=state.get("controller_state", {}).get("benchmark_regime_size_policy"),
+    )
+    best_translation = dict(translation.get("best_threshold", {}))
     payload = {
         "source": "exploration_benchmark_diagnostics",
         "source_path": config.source_path,
@@ -32,8 +44,22 @@ def main() -> None:
             "status": audit["cpcv"].get("status"),
             "pbo": audit["cpcv"].get("pbo"),
             "mean_total_pnl_r": audit["cpcv"].get("mean_total_pnl_r"),
+            "median_total_pnl_r": audit["cpcv"].get("median_total_pnl_r"),
+            "min_path_pnl_r": audit["cpcv"].get("min_path_pnl_r"),
+            "path_positive_rate": audit["cpcv"].get("path_positive_rate"),
             "mean_roc_auc": audit["cpcv"].get("mean_roc_auc"),
             "evaluated_paths": audit["cpcv"].get("evaluated_paths"),
+        },
+        "deflated_sharpe": audit.get("deflated_sharpe", {}),
+        "translation": {
+            "status": translation.get("status"),
+            "sizing_policy": translation.get("sizing_policy"),
+            "regime_throttle_policy": translation.get("regime_throttle_policy"),
+            "regime_size_policy": translation.get("regime_size_policy"),
+            "best_row": best_translation,
+            "utility_gap_vs_binary": best_translation.get("utility_gap_vs_binary"),
+            "binary_utility_score": best_translation.get("binary_utility_score"),
+            "sized_utility_score": best_translation.get("utility_score"),
         },
         "overfitting": audit.get("overfitting"),
         "shap_analysis": {

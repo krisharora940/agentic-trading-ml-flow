@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 
@@ -111,6 +112,8 @@ def _build_shap_analysis(
     *,
     model_family: str,
 ) -> dict[str, Any]:
+    if os.environ.get("TRADING_ML_DISABLE_SHAP") == "1":
+        return {"status": "pending", "reason": "shap_disabled"}
     try:
         import pandas as pd
         import shap

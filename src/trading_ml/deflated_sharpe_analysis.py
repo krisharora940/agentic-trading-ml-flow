@@ -117,10 +117,14 @@ def deflated_sharpe_probability(
 
 
 def _expected_max_sr(n_trials: int, sr_std: float) -> float:
+    if n_trials <= 1:
+        return 0.0
     euler_mascheroni = 0.5772156649
     normal = NormalDist()
-    term_a = (1.0 - euler_mascheroni) * normal.inv_cdf(1.0 - 1.0 / n_trials)
-    term_b = euler_mascheroni * normal.inv_cdf(1.0 - 1.0 / (n_trials * 2.718281828459045))
+    p_a = min(1.0 - 1e-12, max(1e-12, 1.0 - 1.0 / n_trials))
+    p_b = min(1.0 - 1e-12, max(1e-12, 1.0 - 1.0 / (n_trials * 2.718281828459045)))
+    term_a = (1.0 - euler_mascheroni) * normal.inv_cdf(p_a)
+    term_b = euler_mascheroni * normal.inv_cdf(p_b)
     return sr_std * (term_a + term_b)
 
 

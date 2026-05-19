@@ -11,10 +11,53 @@
   },
   "cpcv": {
     "status": "fail",
-    "pbo": 0.5789473684210527,
-    "mean_total_pnl_r": -3.437515485364161,
-    "mean_roc_auc": 0.5845094966422062,
+    "pbo": 0.3684210526315789,
+    "mean_total_pnl_r": -0.48997278333176064,
+    "median_total_pnl_r": 1.8638614040888029,
+    "min_path_pnl_r": -19.892268539240305,
+    "path_positive_rate": 0.631578947368421,
+    "mean_roc_auc": 0.594055050246628,
     "evaluated_paths": 19
+  },
+  "deflated_sharpe": {
+    "status": "pass",
+    "probability": 1.0,
+    "observed_sharpe": 0.5626640128961539,
+    "deflated_sharpe": 0.5626640128961539,
+    "n_trials": 1,
+    "n_obs": 215,
+    "sr_std": 1.007445670618403,
+    "variance_source": "cpcv_path_sharpe",
+    "skew": 0.24226517792874452,
+    "kurtosis": 1.2226418938681978,
+    "trade_count": 215,
+    "threshold": 0.45,
+    "sizing_policy": "binary_threshold_v1",
+    "regime_throttle_policy": "none",
+    "regime_size_policy": "trend_vol_scale_v1"
+  },
+  "translation": {
+    "status": "pass",
+    "sizing_policy": "binary_threshold_v1",
+    "regime_throttle_policy": "none",
+    "regime_size_policy": "trend_vol_scale_v1",
+    "best_row": {
+      "threshold": 0.45,
+      "trade_count": 215,
+      "avg_pnl_r": 0.03267139564206822,
+      "win_rate": 0.4558139534883721,
+      "total_pnl_r": 7.0243500630446665,
+      "avg_size_multiplier": 0.75,
+      "throttled_signals": 0,
+      "utility_score": 1.0245382825413294,
+      "binary_trade_count": 215,
+      "binary_total_pnl_r": 9.365800084059554,
+      "binary_utility_score": 1.299384376721769,
+      "utility_gap_vs_binary": -0.2748460941804396
+    },
+    "utility_gap_vs_binary": -0.2748460941804396,
+    "binary_utility_score": 1.299384376721769,
+    "sized_utility_score": 1.0245382825413294
   },
   "overfitting": "fail",
   "shap_analysis": {
@@ -22,43 +65,43 @@
     "top_features": [
       {
         "feature": "first_break_close_excess_points",
-        "mean_abs_shap": 0.1935633493674918
+        "mean_abs_shap": 0.18257722337261556
       },
       {
         "feature": "first_break_wick_excess_points",
-        "mean_abs_shap": 0.14941525528548463
+        "mean_abs_shap": 0.13961012969602485
       },
       {
         "feature": "reclaim_body_strength",
-        "mean_abs_shap": 0.11496162700310464
+        "mean_abs_shap": 0.1178073168739075
       },
       {
         "feature": "first_break_close_confirmed",
-        "mean_abs_shap": 0.1124984363501434
+        "mean_abs_shap": 0.11495782454109829
       },
       {
         "feature": "break_close_distance_to_zone",
-        "mean_abs_shap": 0.10251710267895836
+        "mean_abs_shap": 0.10463890946460275
       },
       {
         "feature": "zone_width",
-        "mean_abs_shap": 0.0779712679072348
+        "mean_abs_shap": 0.07951862144156631
       },
       {
         "feature": "direction_long",
-        "mean_abs_shap": 0.07402030572369173
+        "mean_abs_shap": 0.07331351344973826
       },
       {
         "feature": "prior_close_gap",
-        "mean_abs_shap": 0.06756117449069321
+        "mean_abs_shap": 0.06778130131897049
       },
       {
         "feature": "continuation_displacement_ratio",
-        "mean_abs_shap": 0.06106207943022001
+        "mean_abs_shap": 0.06213514330311658
       },
       {
         "feature": "break_efficiency_ratio",
-        "mean_abs_shap": 0.05834453719011624
+        "mean_abs_shap": 0.05960472568707855
       }
     ],
     "worst_trade_explanations": [
@@ -69,15 +112,15 @@
         "top_contributors": [
           {
             "feature": "first_break_close_confirmed",
-            "shap_value": 0.16555283522215067
+            "shap_value": 0.16734078368286132
           },
           {
             "feature": "first_break_close_excess_points",
-            "shap_value": 0.14304668132838877
+            "shap_value": 0.11270457328793153
           },
           {
-            "feature": "break_close_distance_to_zone",
-            "shap_value": -0.10860549270137168
+            "feature": "first_break_wick_excess_points",
+            "shap_value": -0.09935255184333418
           }
         ]
       },
@@ -88,15 +131,15 @@
         "top_contributors": [
           {
             "feature": "first_break_wick_excess_points",
-            "shap_value": 0.20745116105595526
+            "shap_value": 0.22802129995735537
           },
           {
             "feature": "break_close_distance_to_zone",
-            "shap_value": 0.1705381287750502
+            "shap_value": 0.16443805542107828
           },
           {
             "feature": "reclaim_body_strength",
-            "shap_value": 0.14507662405386443
+            "shap_value": 0.14642918966459414
           }
         ]
       },
@@ -107,15 +150,15 @@
         "top_contributors": [
           {
             "feature": "reclaim_body_strength",
-            "shap_value": -0.2271127270718454
+            "shap_value": -0.21568590655183817
           },
           {
             "feature": "first_break_close_confirmed",
-            "shap_value": 0.15857116831717485
+            "shap_value": 0.1458741540354161
           },
           {
             "feature": "first_break_close_excess_points",
-            "shap_value": 0.12132763393379312
+            "shap_value": 0.13601849023194768
           }
         ]
       },
@@ -126,15 +169,15 @@
         "top_contributors": [
           {
             "feature": "first_break_close_confirmed",
-            "shap_value": -0.10525441280004635
+            "shap_value": -0.116946567646833
           },
           {
             "feature": "first_break_close_excess_points",
-            "shap_value": -0.09911414752709471
+            "shap_value": -0.09022504805771916
           },
           {
             "feature": "reclaim_body_strength",
-            "shap_value": -0.08020131567265673
+            "shap_value": -0.07716919165117837
           }
         ]
       },
@@ -144,16 +187,16 @@
         "pnl_r": -1.0,
         "top_contributors": [
           {
-            "feature": "post_reclaim_close_strength",
-            "shap_value": 0.2319289116627435
+            "feature": "continuation_displacement_ratio",
+            "shap_value": 0.21037622539201725
           },
           {
-            "feature": "continuation_displacement_ratio",
-            "shap_value": 0.21891852428293515
+            "feature": "post_reclaim_close_strength",
+            "shap_value": 0.2083019723061969
           },
           {
             "feature": "first_break_wick_excess_points",
-            "shap_value": 0.18264060741092233
+            "shap_value": 0.1708309693447075
           }
         ]
       }
