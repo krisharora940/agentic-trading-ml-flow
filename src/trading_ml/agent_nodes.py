@@ -16,6 +16,7 @@ from trading_ml.research_controller import (
     build_model_search_space,
     build_subtype_search_space,
     build_threshold_search_space,
+    build_translation_policy_search_space,
     load_controller_config,
 )
 from trading_ml.schemas import utc_now_iso
@@ -277,6 +278,8 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         if active_family == "subtype"
         else build_threshold_search_space()
         if active_family == "threshold"
+        else build_translation_policy_search_space()
+        if active_family == "translation_policy"
         else build_search_space()
     )
     approvals = dict(state.get("approvals", {}))
@@ -308,7 +311,7 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         family = search_results.get("family")
         if family in {"feature", "feature_threshold"}:
             counts["feature_changes"] += int(search_results.get("trial_count", 0))
-        elif family == "threshold":
+        elif family in {"threshold", "translation_policy"}:
             counts["threshold_changes"] += int(search_results.get("trial_count", 0))
     blocked = counts["trials"] > limits.max_trials
     if blocked and "Max trials exceeded." not in issues:
@@ -441,6 +444,7 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
     label_summary = dict(stage2.get("label_summary", {}))
     search_results = dict(state.get("search_results", {}))
     controller_state = dict(state.get("controller_state", {}))
+    audit_summary = dict(state.get("audit_summary", {}))
     accepted_trial = dict(search_results.get("accepted_trial", {}) or {})
     candidate_count = int(stage2.get("candidate_count", 0))
     session_count = max(int(data_quality.get("sessions", 0) or 0), 1)
@@ -449,10 +453,16 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
     net_avg_pnl_r = accepted_trial.get("net_avg_pnl_r", search_results.get("baseline", {}).get("net_avg_pnl_r"))
     turnover_proxy = breadth_per_session
     translation_contract = dict(bnr_config.get("translation_contract", {}))
-    status = "pending"
-    if net_avg_pnl_r is not None:
+    translation_records = list(audit_summary.get("walk_forward", {}).get("stitched_prediction_records", []))
+    threshold_analysis = build_translation_analysis(
+        stage2,
+        prediction_records=translation_records or None,
+        sizing_policy=str(controller_state.get("benchmark_sizing_policy") or "binary_threshold_v1"),
+        regime_throttle_policy=str(controller_state.get("benchmark_regime_throttle_policy") or "none"),
+    )
+    status = threshold_analysis.get("status", "pending")
+    if status == "pending" and net_avg_pnl_r is not None:
         status = "pass" if float(net_avg_pnl_r) > 0 and breadth_per_session >= float(translation_contract.get("min_breadth_per_session", 1.0)) and float(translation_contract.get("min_positive_rate", 0.05)) <= positive_rate <= float(translation_contract.get("max_positive_rate", 0.6)) else "fail"
-    threshold_analysis = build_translation_analysis(stage2)
     applied_threshold = accepted_trial.get("overrides", {}).get("decision_threshold", controller_state.get("frozen_threshold"))
     summary = {
         "status": status,
@@ -462,7 +472,10 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
         "net_avg_pnl_r": net_avg_pnl_r,
         "accepted_trial_id": accepted_trial.get("trial_id"),
         "threshold_analysis": threshold_analysis,
+        "best_translation_row": threshold_analysis.get("best_threshold"),
         "applied_threshold": applied_threshold,
+        "applied_sizing_policy": controller_state.get("benchmark_sizing_policy"),
+        "applied_regime_throttle_policy": controller_state.get("benchmark_regime_throttle_policy"),
     }
     if accepted_trial.get("overrides", {}).get("decision_threshold") is not None:
         summary["suggested_threshold"] = accepted_trial["overrides"]["decision_threshold"]
@@ -471,6 +484,8 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
         summary["suggested_threshold"] = best_threshold.get("threshold")
     elif controller_state.get("frozen_threshold") is not None:
         summary["suggested_threshold"] = controller_state["frozen_threshold"]
+    summary["suggested_sizing_policy"] = accepted_trial.get("overrides", {}).get("sizing_policy", controller_state.get("benchmark_sizing_policy"))
+    summary["suggested_regime_throttle_policy"] = accepted_trial.get("overrides", {}).get("regime_throttle_policy", controller_state.get("benchmark_regime_throttle_policy"))
     return {
         "current_node": "translation_checkpoint",
         "translation_summary": summary,
@@ -558,9 +573,16 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
             payload["benchmark_name"] = controller_state.get("benchmark_name")
         else:
             overrides = dict(accepted_trial.get("overrides", {}))
-            if family in {"threshold", "feature_threshold"}:
+            if family in {"threshold", "feature_threshold", "translation_policy"}:
                 controller_state["frozen_threshold"] = overrides.get("decision_threshold", controller_state.get("frozen_threshold"))
-            stage2_overrides = {key: value for key, value in overrides.items() if key != "decision_threshold"}
+            if family == "translation_policy":
+                controller_state["benchmark_sizing_policy"] = overrides.get("sizing_policy", controller_state.get("benchmark_sizing_policy"))
+                controller_state["benchmark_regime_throttle_policy"] = overrides.get("regime_throttle_policy", controller_state.get("benchmark_regime_throttle_policy"))
+            stage2_overrides = {
+                key: value
+                for key, value in overrides.items()
+                if key not in {"decision_threshold", "sizing_policy", "regime_throttle_policy"}
+            }
             if family != "threshold" and stage2_overrides:
                 stage2_config.update(stage2_overrides)
             controller_state["spec_version"] = f"{controller_state.get('spec_version', 'bnr_spec_vA')}.c{cycle + 1}"
@@ -578,6 +600,8 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
                 "family": controller_state.get("active_family"),
                 "setup_trial_id": accepted_trial.get("trial_id"),
                 "frozen_threshold": controller_state.get("frozen_threshold"),
+                "sizing_policy": controller_state.get("benchmark_sizing_policy"),
+                "regime_throttle_policy": controller_state.get("benchmark_regime_throttle_policy"),
             },
             "run_log": _append_log(state, "iteration_controller", "Adopted accepted exploratory trial as next frozen baseline.", payload),
         }

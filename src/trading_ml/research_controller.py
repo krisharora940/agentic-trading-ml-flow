@@ -15,6 +15,7 @@ from trading_ml.registry import append_experiment_record
 from trading_ml.schemas import ExperimentRecord
 from trading_ml.stage2_pipeline import Stage2Config, run_stage2_research_engine
 from trading_ml.translation_analysis import build_translation_analysis
+from trading_ml.translation_policy import get_regime_throttle_policies, get_sizing_policies
 from trading_ml.utility_analysis import compute_execution_utility
 from trading_ml.validation_audit import build_validation_audit
 
@@ -61,6 +62,10 @@ def build_threshold_search_space() -> dict[str, Any]:
     return load_bnr_config()["threshold_search_v1"]
 
 
+def build_translation_policy_search_space() -> dict[str, Any]:
+    return load_bnr_config()["translation_policy_search_v1"]
+
+
 def build_label_search_space() -> dict[str, Any]:
     return load_bnr_config()["label_search_v1"]
 
@@ -80,6 +85,8 @@ def load_controller_config(override: dict[str, Any] | None = None) -> dict[str, 
     controller.setdefault("benchmark_name", config.get("controller", {}).get("benchmark_name", "bnr_hybrid_linear_v1"))
     controller.setdefault("benchmark_policy_gate", frozen.get("policy_gate"))
     controller.setdefault("benchmark_meta_policy", frozen.get("policy_meta"))
+    controller.setdefault("benchmark_sizing_policy", frozen.get("sizing_policy"))
+    controller.setdefault("benchmark_regime_throttle_policy", frozen.get("regime_throttle_policy"))
     controller.setdefault("min_candidate_ratio_vs_baseline", 0.7)
     controller.setdefault("require_positive_net_delta", True)
     controller.setdefault("min_roc_auc_delta", 0.0)
@@ -139,6 +146,23 @@ def generate_search_trials(base_config: dict[str, Any], family: str | None = Non
             trial["decision_threshold"] = float(decision_threshold)
             trials.append(trial)
         return trials[: int(search_v1["max_batch_trials"])]
+    if active_family == "translation_policy":
+        search_v1 = build_translation_policy_search_space()
+        valid_sizing = {policy["name"] for policy in get_sizing_policies()}
+        valid_throttles = {policy["name"] for policy in get_regime_throttle_policies()}
+        for decision_threshold, sizing_policy, regime_throttle_policy in product(
+            search_v1["space"]["decision_threshold"],
+            search_v1["space"]["sizing_policy"],
+            search_v1["space"]["regime_throttle_policy"],
+        ):
+            if sizing_policy not in valid_sizing or regime_throttle_policy not in valid_throttles:
+                continue
+            trial = dict(base_config)
+            trial["decision_threshold"] = float(decision_threshold)
+            trial["sizing_policy"] = sizing_policy
+            trial["regime_throttle_policy"] = regime_throttle_policy
+            trials.append(trial)
+        return trials[: int(search_v1["max_batch_trials"])]
     if active_family == "label":
         search_v1 = build_label_search_space()
         ordered_keys = ["horizon_bars", "stop_multiple", "target_multiple"]
@@ -176,6 +200,8 @@ def run_governed_research_cycle(
         return run_policy_gate_cycle(base_config, controller)
     if active_family == "policy_meta":
         return run_policy_meta_cycle(base_config, controller)
+    if active_family == "translation_policy":
+        return run_translation_policy_cycle(base_config, controller)
     if active_family == "validation_window":
         return run_boundary_confirmation_cycle(base_config, controller, boundary_role="validation")
     if active_family == "holdout_confirmation":
@@ -216,6 +242,8 @@ def run_governed_research_cycle(
             if active_family == "feature_threshold"
             else build_threshold_search_space()
             if active_family == "threshold"
+            else build_translation_policy_search_space()
+            if active_family == "translation_policy"
             else build_subtype_search_space()
             if active_family == "subtype"
             else build_label_search_space()
@@ -309,6 +337,12 @@ def _trial_overrides(family: str, config: dict[str, Any]) -> dict[str, Any]:
         }
     if family == "threshold":
         return {"decision_threshold": float(config["decision_threshold"])}
+    if family == "translation_policy":
+        return {
+            "decision_threshold": float(config["decision_threshold"]),
+            "sizing_policy": str(config["sizing_policy"]),
+            "regime_throttle_policy": str(config["regime_throttle_policy"]),
+        }
     if family == "label":
         return {
             "horizon_bars": config["horizon_bars"],
@@ -482,7 +516,12 @@ def run_policy_gate_cycle(base_config: dict[str, Any], controller: dict[str, Any
             gate_policy=policy["name"],
             meta_policy=controller.get("benchmark_meta_policy"),
         )
-        execution = run_event_driven_policy_backtest(filtered, threshold=0.0)
+        execution = run_event_driven_policy_backtest(
+            filtered,
+            threshold=float(controller.get("frozen_threshold", 0.45) or 0.45),
+            sizing_policy=controller.get("benchmark_sizing_policy"),
+            regime_throttle_policy=controller.get("benchmark_regime_throttle_policy"),
+        )
         utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
         rows.append(
             {
@@ -512,7 +551,12 @@ def run_policy_meta_cycle(base_config: dict[str, Any], controller: dict[str, Any
             gate_policy=controller.get("benchmark_policy_gate"),
             meta_policy=policy["name"],
         )
-        execution = run_event_driven_policy_backtest(filtered, threshold=0.0)
+        execution = run_event_driven_policy_backtest(
+            filtered,
+            threshold=float(controller.get("frozen_threshold", 0.45) or 0.45),
+            sizing_policy=controller.get("benchmark_sizing_policy"),
+            regime_throttle_policy=controller.get("benchmark_regime_throttle_policy"),
+        )
         utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
         rows.append(
             {
@@ -528,6 +572,51 @@ def run_policy_meta_cycle(base_config: dict[str, Any], controller: dict[str, Any
             }
         )
     return _package_policy_cycle("policy_meta", controller, rows)
+
+
+def run_translation_policy_cycle(base_config: dict[str, Any], controller: dict[str, Any]) -> dict[str, Any]:
+    result = run_stage2_research_engine(Stage2Config(**_stage2_config_kwargs(base_config)))
+    validation = build_validation_audit(result, {})
+    search_v1 = build_translation_policy_search_space()
+    rows: list[dict[str, Any]] = []
+    for decision_threshold, sizing_policy, regime_throttle_policy in product(
+        search_v1["space"]["decision_threshold"],
+        search_v1["space"]["sizing_policy"],
+        search_v1["space"]["regime_throttle_policy"],
+    ):
+        filtered = _apply_benchmark_contract(
+            result,
+            validation,
+            threshold=float(decision_threshold),
+            gate_policy=controller.get("benchmark_policy_gate"),
+            meta_policy=controller.get("benchmark_meta_policy"),
+        )
+        execution = run_event_driven_policy_backtest(
+            filtered,
+            threshold=float(decision_threshold),
+            sizing_policy=str(sizing_policy),
+            regime_throttle_policy=str(regime_throttle_policy),
+        )
+        utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+        rows.append(
+            {
+                "trial_id": f"trial-translation-{decision_threshold}-{sizing_policy}-{regime_throttle_policy}",
+                "family": "translation_policy",
+                "overrides": {
+                    "decision_threshold": float(decision_threshold),
+                    "sizing_policy": str(sizing_policy),
+                    "regime_throttle_policy": str(regime_throttle_policy),
+                },
+                "trade_count": int(execution.get("trade_count", 0) or 0),
+                "total_pnl_r": float(execution.get("total_pnl_r", 0.0) or 0.0),
+                "avg_trade_r": float(execution.get("avg_trade_r", 0.0) or 0.0),
+                "avg_size_multiplier": float(execution.get("avg_size_multiplier", 0.0) or 0.0),
+                "max_drawdown_r": float(execution.get("max_drawdown_r", 0.0) or 0.0),
+                "utility_score": utility.get("score"),
+                "decision": "accept",
+            }
+        )
+    return _package_policy_cycle("translation_policy", controller, rows)
 
 
 def run_boundary_confirmation_cycle(base_config: dict[str, Any], controller: dict[str, Any], *, boundary_role: str) -> dict[str, Any]:
@@ -555,9 +644,19 @@ def run_boundary_confirmation_cycle(base_config: dict[str, Any], controller: dic
         gate_policy=controller.get("benchmark_policy_gate"),
         meta_policy=controller.get("benchmark_meta_policy"),
     )
-    execution = run_event_driven_policy_backtest(filtered, threshold=0.0)
+    execution = run_event_driven_policy_backtest(
+        filtered,
+        threshold=float(controller.get("frozen_threshold", 0.45) or 0.45),
+        sizing_policy=controller.get("benchmark_sizing_policy"),
+        regime_throttle_policy=controller.get("benchmark_regime_throttle_policy"),
+    )
     utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
-    translation = build_translation_analysis(result, filtered)
+    translation = build_translation_analysis(
+        result,
+        filtered,
+        sizing_policy=controller.get("benchmark_sizing_policy"),
+        regime_throttle_policy=controller.get("benchmark_regime_throttle_policy"),
+    )
     row = {
         "trial_id": f"{boundary_role}-benchmark",
         "family": f"{boundary_role}_confirmation",
@@ -595,7 +694,12 @@ def _apply_benchmark_contract(
     gate_policy: str | None,
     meta_policy: str | None,
 ) -> list[dict[str, Any]]:
-    filtered = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []))
+    feature_map = {str(row["candidate_id"]): row for row in result.get("features_records", [])}
+    filtered = []
+    for row in validation.get("walk_forward", {}).get("stitched_prediction_records", []):
+        merged = dict(row)
+        merged.update(feature_map.get(str(row.get("candidate_id")), {}))
+        filtered.append(merged)
     if gate_policy:
         filtered = apply_break_quality_policy(filtered, result.get("features_records", []), policy_name=gate_policy, threshold=threshold)
         threshold = 0.0

@@ -156,6 +156,8 @@ def _next_step_plan(state: dict[str, Any], program_gaps: list[str]) -> dict[str,
         "feature_family": frozen.get("feature_family"),
         "model_family": frozen.get("model_family"),
         "threshold": frozen.get("threshold"),
+        "sizing_policy": frozen.get("sizing_policy"),
+        "regime_throttle_policy": frozen.get("regime_throttle_policy"),
         "policy_gate": frozen.get("policy_gate"),
         "policy_meta": frozen.get("policy_meta"),
     }
@@ -225,6 +227,17 @@ def _next_step_plan(state: dict[str, Any], program_gaps: list[str]) -> dict[str,
             "stage2_overrides": {},
             "benchmark_contract": benchmark,
             "success_criteria": ["validation utility positive", "validation CPCV pass or not applicable", "no benchmark edits during validation"],
+        }
+    if walk_forward.get("status") == "pass" and cpcv.get("status") == "pass" and utility_status == "fail":
+        return {
+            "status": "ready",
+            "lane": "translation_lab",
+            "action": "run_translation_policy_cycle",
+            "reason": "Robustness is acceptable, but score-to-trade translation is weak.",
+            "controller_override": {"active_family": "translation_policy"},
+            "stage2_overrides": {"feature_family": benchmark.get("feature_family") or state.get("stage2_config", {}).get("feature_family")},
+            "benchmark_contract": benchmark,
+            "success_criteria": ["utility improves versus frozen benchmark", "walk_forward stays pass", "cpcv stays pass"],
         }
     return {
         "status": "ready",

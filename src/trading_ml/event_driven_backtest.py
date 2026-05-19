@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from trading_ml.config import load_global_config
+from trading_ml.translation_policy import allow_signal_for_regime, compute_position_size
 
 
 def run_event_driven_policy_backtest(
@@ -10,6 +11,8 @@ def run_event_driven_policy_backtest(
     *,
     threshold: float,
     slippage_profile: str | None = None,
+    sizing_policy: str | None = None,
+    regime_throttle_policy: str | None = None,
 ) -> dict[str, Any]:
     try:
         import pandas as pd
@@ -41,10 +44,15 @@ def run_event_driven_policy_backtest(
     active_exit_time = None
     executed: list[dict[str, Any]] = []
     skipped_overlaps = 0
+    throttled_signals = 0
     cum_pnl_r = 0.0
     peak_pnl_r = 0.0
 
     for row in frame.to_dict(orient="records"):
+        if not allow_signal_for_regime(row, policy_name=regime_throttle_policy):
+            throttled_signals += 1
+            continue
+
         entry_time = row["entry_time"]
         exit_time = row["exit_time"]
         if active_exit_time is not None and entry_time < active_exit_time:
@@ -57,6 +65,14 @@ def run_event_driven_policy_backtest(
         stop_price = float(row["stop_price"])
         risk_points = abs(entry_price - stop_price)
         if risk_points <= 0:
+            continue
+
+        size_multiplier = compute_position_size(
+            float(row.get("probability", 0.0) or 0.0),
+            threshold=float(threshold),
+            policy_name=sizing_policy,
+        )
+        if size_multiplier <= 0:
             continue
 
         filled_entry = _apply_slippage(
@@ -76,7 +92,8 @@ def run_event_driven_policy_backtest(
             is_entry=False,
         )
         pnl_points = (filled_exit - filled_entry) if direction == "long" else (filled_entry - filled_exit)
-        pnl_r = pnl_points / risk_points
+        gross_pnl_r = pnl_points / risk_points
+        pnl_r = gross_pnl_r * size_multiplier
 
         cum_pnl_r += pnl_r
         peak_pnl_r = max(peak_pnl_r, cum_pnl_r)
@@ -95,7 +112,9 @@ def run_event_driven_policy_backtest(
                 "filled_entry_price": filled_entry,
                 "filled_exit_price": filled_exit,
                 "gross_label_pnl_r": float(row["pnl_r"]),
+                "gross_executed_pnl_r": gross_pnl_r,
                 "executed_pnl_r": pnl_r,
+                "size_multiplier": size_multiplier,
                 "cum_pnl_r": cum_pnl_r,
                 "drawdown_r": drawdown_r,
                 "bars_held": int(row.get("bars_held", 0) or 0),
@@ -109,6 +128,7 @@ def run_event_driven_policy_backtest(
             "reason": "no_executed_trades",
             "threshold": float(threshold),
             "overlap_skips": skipped_overlaps,
+            "throttled_signals": throttled_signals,
         }
 
     executed_frame = pd.DataFrame(executed)
@@ -126,10 +146,12 @@ def run_event_driven_policy_backtest(
         "status": "complete",
         "threshold": float(threshold),
         "signal_count": int(len(frame)),
+        "throttled_signals": throttled_signals,
         "trade_count": int(len(executed)),
         "overlap_skips": skipped_overlaps,
         "total_pnl_r": float(executed_frame["executed_pnl_r"].sum()),
         "avg_trade_r": float(executed_frame["executed_pnl_r"].mean()),
+        "avg_size_multiplier": float(executed_frame["size_multiplier"].mean()),
         "win_rate": float((executed_frame["executed_pnl_r"] > 0).mean()),
         "max_drawdown_r": float(executed_frame["drawdown_r"].min()),
         "session_count": int(len(session_rows)),
@@ -142,6 +164,8 @@ def run_event_driven_policy_backtest(
             "ticks_per_side": ticks_per_side,
             "order_type": "market_on_signal_close_proxy",
             "single_position": True,
+            "sizing_policy": sizing_policy or "binary_threshold_v1",
+            "regime_throttle_policy": regime_throttle_policy or "none",
         },
         "session_rows": session_rows,
         "equity_curve": executed,

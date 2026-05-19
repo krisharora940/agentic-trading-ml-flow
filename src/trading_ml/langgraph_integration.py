@@ -18,8 +18,10 @@ from trading_ml.agent_nodes import (
     iteration_controller_node,
     labeling_agent_node,
     model_agent_node,
+    program_director_node,
     promotion_decision_node,
     search_controller_agent_node,
+    strategy_intake_agent_node,
     translation_checkpoint_node,
 )
 from trading_ml.agent_workflow import build_agent_loop_state, build_loop_limits
@@ -83,6 +85,12 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     llm_client = llm
     if llm_client is None and use_llm and llm_enabled():
         llm_client = create_chat_model(temperature=0)
+
+    def strategy_intake(state: AgentLoopState) -> dict[str, Any]:
+        return strategy_intake_agent_node(state)
+
+    def program_director(state: AgentLoopState) -> dict[str, Any]:
+        return program_director_node(state)
 
     def governor(state: AgentLoopState) -> dict[str, Any]:
         return governor_agent_node(state)
@@ -204,7 +212,14 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
             return "review_bnr_spec"
         return "cto_agent"
 
+    def route_after_program_director(state: AgentLoopState) -> str:
+        if state.get("translation_summary"):
+            return "review_frozen_spec"
+        return "governor_agent"
+
     graph = StateGraph(AgentLoopState)
+    graph.add_node("strategy_intake_agent", strategy_intake)
+    graph.add_node("program_director", program_director)
     graph.add_node("governor_agent", governor)
     graph.add_node("cto_agent", cto)
     graph.add_node("data_steward_agent", data_steward)
@@ -224,7 +239,9 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     graph.add_node("promotion_decision", promotion)
     graph.add_node("iteration_controller", iteration_controller)
 
-    graph.add_edge(START, "governor_agent")
+    graph.add_edge(START, "strategy_intake_agent")
+    graph.add_edge("strategy_intake_agent", "program_director")
+    graph.add_conditional_edges("program_director", route_after_program_director)
     graph.add_conditional_edges("governor_agent", route_after_governor)
     graph.add_edge("cto_agent", "data_steward_agent")
     graph.add_edge("data_steward_agent", "bnr_research_agent")
@@ -238,7 +255,7 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     graph.add_edge("review_search_space", "search_controller_agent")
     graph.add_edge("search_controller_agent", "audit_agent")
     graph.add_edge("audit_agent", "translation_checkpoint")
-    graph.add_edge("translation_checkpoint", "review_frozen_spec")
+    graph.add_edge("translation_checkpoint", "program_director")
     graph.add_edge("review_frozen_spec", "diagnosis_agent")
     graph.add_edge("diagnosis_agent", "promotion_decision")
     graph.add_edge("promotion_decision", "iteration_controller")

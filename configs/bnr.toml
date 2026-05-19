@@ -95,6 +95,15 @@ max_batch_trials = 5
 [threshold_search_v1.space]
 decision_threshold = [0.45, 0.50, 0.55, 0.60, 0.65]
 
+[translation_policy_search_v1]
+description = "Frozen-benchmark translation-policy comparison batch."
+max_batch_trials = 12
+
+[translation_policy_search_v1.space]
+decision_threshold = [0.45, 0.50, 0.55]
+sizing_policy = ["binary_threshold_v1", "confidence_linear_v1", "confidence_tiered_v1"]
+regime_throttle_policy = ["none", "suppress_high_vol_v1", "trending_only_v1", "high_vol_or_non_trending_off_v1"]
+
 [label_search_v1]
 description = "Frozen-benchmark label-policy comparison batch."
 max_batch_trials = 8
@@ -153,6 +162,8 @@ deep_retrace_repair = 0.55
 feature_family = "bnr_plus_context"
 model_family = "linear_baseline"
 threshold = 0.45
+sizing_policy = "confidence_linear_v1"
+regime_throttle_policy = "high_vol_or_non_trending_off_v1"
 policy_gate = "balanced_deep_eff_ge_0.20"
 policy_meta = "balanced_clean_post_reclaim_ge_0.30"
 setup_earliest_trigger_time = "09:32:00"
@@ -183,4 +194,6 @@ min_roc_auc_delta = 0.0
 frozen_threshold = 0.45
 benchmark_name = "bnr_plus_context_balanced_deep_eff020_t045_v1"
 benchmark_meta_policy = "balanced_clean_post_reclaim_ge_0.30"
+benchmark_sizing_policy = "confidence_linear_v1"
+benchmark_regime_throttle_policy = "high_vol_or_non_trending_off_v1"
 frozen_feature_family = "bnr_plus_context"
