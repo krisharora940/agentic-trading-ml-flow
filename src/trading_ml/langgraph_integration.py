@@ -21,6 +21,7 @@ from trading_ml.agent_nodes import (
     program_director_node,
     promotion_decision_node,
     search_controller_agent_node,
+    setup_redesign_agent_node,
     strategy_intake_agent_node,
     translation_checkpoint_node,
 )
@@ -91,6 +92,9 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
 
     def program_director(state: AgentLoopState) -> dict[str, Any]:
         return program_director_node(state)
+
+    def setup_redesign(state: AgentLoopState) -> dict[str, Any]:
+        return setup_redesign_agent_node(state)
 
     def governor(state: AgentLoopState) -> dict[str, Any]:
         return governor_agent_node(state)
@@ -215,13 +219,35 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
         return "cto_agent"
 
     def route_after_program_director(state: AgentLoopState) -> str:
+        plan = dict(state.get("next_step_plan", {}) or {})
+        if plan.get("benchmark_status") == "exhausted_or_structurally_fragile":
+            return "setup_redesign_agent"
+        planned_family = dict(plan.get("controller_override", {}) or {}).get("active_family")
+        executed_family = state.get("executed_research_family") or dict(state.get("search_results", {}) or {}).get("family")
+        executed_cycle = int(state.get("executed_family_cycle", 0) or 0)
+        current_cycle = int(state.get("research_cycle", 1) or 1)
+        already_executed = (
+            state.get("search_batch_status") == "complete"
+            and executed_family == planned_family
+            and executed_cycle == current_cycle
+        )
+        if already_executed:
+            return "audit_agent"
+        if plan.get("approval_required") == "search_space_approval" and planned_family and not already_executed and not state.get("translation_summary"):
+            return "governor_agent"
         if state.get("translation_summary"):
             return "review_frozen_spec"
         return "governor_agent"
 
+    def route_after_translation(state: AgentLoopState) -> str:
+        if state.get("search_batch_status") == "complete":
+            return "review_frozen_spec"
+        return "program_director"
+
     graph = StateGraph(AgentLoopState)
     graph.add_node("strategy_intake_agent", strategy_intake)
     graph.add_node("program_director", program_director)
+    graph.add_node("setup_redesign_agent", setup_redesign)
     graph.add_node("governor_agent", governor)
     graph.add_node("cto_agent", cto)
     graph.add_node("data_steward_agent", data_steward)
@@ -244,6 +270,7 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     graph.add_edge(START, "strategy_intake_agent")
     graph.add_edge("strategy_intake_agent", "program_director")
     graph.add_conditional_edges("program_director", route_after_program_director)
+    graph.add_edge("setup_redesign_agent", END)
     graph.add_conditional_edges("governor_agent", route_after_governor)
     graph.add_edge("cto_agent", "data_steward_agent")
     graph.add_edge("data_steward_agent", "bnr_research_agent")
@@ -257,7 +284,7 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     graph.add_edge("review_search_space", "search_controller_agent")
     graph.add_edge("search_controller_agent", "audit_agent")
     graph.add_edge("audit_agent", "translation_checkpoint")
-    graph.add_edge("translation_checkpoint", "program_director")
+    graph.add_conditional_edges("translation_checkpoint", route_after_translation)
     graph.add_edge("review_frozen_spec", "diagnosis_agent")
     graph.add_edge("diagnosis_agent", "promotion_decision")
     graph.add_edge("promotion_decision", "iteration_controller")

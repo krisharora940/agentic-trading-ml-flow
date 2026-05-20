@@ -6,6 +6,12 @@ default_phase = "foundation"
 max_trials = 50
 max_feature_changes = 12
 max_threshold_changes = 10
+max_runtime_seconds = 1800
+max_full_validations = 3
+max_cpcv_runs = 3
+max_model_trains = 25
+reuse_artifacts = true
+stop_on_budget_exhaustion = true
 
 [checkpoints]
 bnr_spec_approval = true

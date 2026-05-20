@@ -74,7 +74,8 @@ def run_event_driven_policy_backtest(
             policy_name=sizing_policy,
         )
         regime_multiplier = compute_regime_size_multiplier(row, policy_name=regime_size_policy)
-        final_size_multiplier = size_multiplier * regime_multiplier
+        policy_multiplier = float(row.get("policy_size_multiplier", 1.0) or 1.0)
+        final_size_multiplier = size_multiplier * regime_multiplier * policy_multiplier
         if final_size_multiplier <= 0:
             continue
 
@@ -119,6 +120,7 @@ def run_event_driven_policy_backtest(
                 "executed_pnl_r": pnl_r,
                 "base_size_multiplier": size_multiplier,
                 "regime_size_multiplier": regime_multiplier,
+                "policy_size_multiplier": policy_multiplier,
                 "size_multiplier": final_size_multiplier,
                 "cum_pnl_r": cum_pnl_r,
                 "drawdown_r": drawdown_r,
@@ -159,6 +161,7 @@ def run_event_driven_policy_backtest(
         "avg_size_multiplier": float(executed_frame["size_multiplier"].mean()),
         "avg_base_size_multiplier": float(executed_frame["base_size_multiplier"].mean()),
         "avg_regime_size_multiplier": float(executed_frame["regime_size_multiplier"].mean()),
+        "avg_policy_size_multiplier": float(executed_frame["policy_size_multiplier"].mean()),
         "win_rate": float((executed_frame["executed_pnl_r"] > 0).mean()),
         "max_drawdown_r": float(executed_frame["drawdown_r"].min()),
         "session_count": int(len(session_rows)),

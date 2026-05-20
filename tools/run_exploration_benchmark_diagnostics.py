@@ -18,7 +18,12 @@ def main() -> None:
     state = build_agent_loop_state()
     config = Stage2Config(**state["stage2_config"])
     result = run_stage2_research_engine(config)
-    audit = build_validation_audit(result, {}, state.get("controller_state", {}))
+    audit = build_validation_audit(
+        result,
+        {},
+        state.get("controller_state", {}),
+        artifact_context={"run_id": state.get("run_id")},
+    )
     shap_analysis = result.get("model_diagnostics", {}).get("shap_analysis", {})
     stitched = list(audit.get("walk_forward", {}).get("stitched_prediction_records", []))
     translation = build_translation_analysis(
@@ -42,6 +47,7 @@ def main() -> None:
         },
         "cpcv": {
             "status": audit["cpcv"].get("status"),
+            "artifact_root": audit["cpcv"].get("artifact_root"),
             "pbo": audit["cpcv"].get("pbo"),
             "mean_total_pnl_r": audit["cpcv"].get("mean_total_pnl_r"),
             "median_total_pnl_r": audit["cpcv"].get("median_total_pnl_r"),
@@ -49,6 +55,9 @@ def main() -> None:
             "path_positive_rate": audit["cpcv"].get("path_positive_rate"),
             "mean_roc_auc": audit["cpcv"].get("mean_roc_auc"),
             "evaluated_paths": audit["cpcv"].get("evaluated_paths"),
+            "worst_paths": audit["cpcv"].get("worst_paths", []),
+            "best_paths": audit["cpcv"].get("best_paths", []),
+            "distribution": audit["cpcv"].get("distribution", {}),
         },
         "deflated_sharpe": audit.get("deflated_sharpe", {}),
         "translation": {

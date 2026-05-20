@@ -29,6 +29,8 @@ class AgentLoopState(TypedDict, total=False):
     run_id: str
     program_state: dict[str, Any]
     next_step_plan: dict[str, Any]
+    benchmark_status: str
+    setup_redesign_plan: dict[str, Any]
     strategy_notes: str
     research_intake: dict[str, Any]
     phase: str
@@ -44,6 +46,13 @@ class AgentLoopState(TypedDict, total=False):
     controller_state: dict[str, Any]
     search_space: dict[str, Any]
     search_results: dict[str, Any]
+    executed_research_family: str
+    executed_family_cycle: int
+    search_batch_status: str
+    execution_mode: Literal["diagnostic_only", "cheap_search", "full_validation"]
+    compute_budgets: dict[str, Any]
+    budget_usage: dict[str, Any]
+    route_decisions: list[dict[str, Any]]
     translation_summary: dict[str, Any]
     frozen_benchmark: dict[str, Any]
     approvals: dict[str, bool]
@@ -75,6 +84,12 @@ class LoopLimits:
     max_trials: int
     max_feature_changes: int
     max_threshold_changes: int
+    max_runtime_seconds: int = 1800
+    max_full_validations: int = 3
+    max_cpcv_runs: int = 3
+    max_model_trains: int = 25
+    reuse_artifacts: bool = True
+    stop_on_budget_exhaustion: bool = True
 
 
 @dataclass(slots=True)

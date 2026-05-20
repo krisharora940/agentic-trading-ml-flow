@@ -105,6 +105,32 @@ sizing_policy = ["binary_threshold_v1", "confidence_tiered_v1", "fractional_kell
 regime_throttle_policy = ["none", "suppress_high_vol_v1", "trending_only_v1", "high_vol_or_non_trending_off_v1"]
 regime_size_policy = ["none", "trend_vol_scale_v1", "high_vol_haircut_v1"]
 
+[tail_path_cleanup_search_v1]
+description = "CPCV failure-attribution cleanup batch constrained to observed tail-loss axes."
+max_batch_trials = 7
+diagnostic_artifact = "reports/cpcv_failure_attribution.json"
+
+[[tail_path_cleanup_search_v1.policies]]
+name = "exclude_deep_retrace"
+
+[[tail_path_cleanup_search_v1.policies]]
+name = "deep_retrace_threshold_070"
+
+[[tail_path_cleanup_search_v1.policies]]
+name = "deep_retrace_size_half"
+
+[[tail_path_cleanup_search_v1.policies]]
+name = "exclude_1432_bucket"
+
+[[tail_path_cleanup_search_v1.policies]]
+name = "haircut_1432_bucket"
+
+[[tail_path_cleanup_search_v1.policies]]
+name = "deep_retrace_high_conf_cap"
+
+[[tail_path_cleanup_search_v1.policies]]
+name = "deep_retrace_regime_confirmed_only"
+
 [label_search_v1]
 description = "Frozen-benchmark label-policy comparison batch."
 max_batch_trials = 8
@@ -113,6 +139,15 @@ max_batch_trials = 8
 horizon_bars = [20, 30]
 stop_multiple = [1.0, 1.25]
 target_multiple = [1.5, 2.0]
+
+[sample_expansion_search_v1]
+description = "BNR sample-expansion batch constrained to trigger-window breadth and setup relaxation."
+max_batch_trials = 4
+
+[sample_expansion_search_v1.space]
+earliest_trigger_time = ["09:31:00", "09:32:00"]
+latest_trigger_time = ["11:00:00", "16:00:00"]
+break_buffer_points = [0.0]
 
 [subtype_search_v1]
 description = "Frozen-benchmark BNR subtype comparison batch."

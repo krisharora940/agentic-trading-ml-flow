@@ -12,11 +12,12 @@ def build_validation_audit(
     stage2_result: dict[str, Any],
     search_results: dict[str, Any],
     controller_state: dict[str, Any] | None = None,
+    artifact_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     features = list(stage2_result.get("features_records", []))
     labels = list(stage2_result.get("labels_records", []))
     walk_forward = _walk_forward_check(features, labels)
-    cpcv = build_cpcv_audit(stage2_result)
+    cpcv = build_cpcv_audit(stage2_result, artifact_context=artifact_context)
     deflated_sharpe = build_deflated_sharpe_audit(stage2_result, walk_forward, cpcv, search_results, controller_state=controller_state)
     purging = _purging_check(labels)
     multiple_testing = _multiple_testing_check(search_results)

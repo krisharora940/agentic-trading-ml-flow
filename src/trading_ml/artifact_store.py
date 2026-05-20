@@ -44,7 +44,7 @@ def persist_node_artifact(
         "payload": payload,
     }
     path = root / f"{cycle:03d}_{node_name}_{created_at.replace(':', '-')}.json"
-    path.write_text(json.dumps(record, sort_keys=True, indent=2), encoding="utf-8")
+    path.write_text(json.dumps(record, sort_keys=True, indent=2, default=str), encoding="utf-8")
     return path
 
 

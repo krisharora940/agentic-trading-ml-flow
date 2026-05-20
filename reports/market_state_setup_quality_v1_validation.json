@@ -1,0 +1,4776 @@
+{
+  "status": "complete",
+  "candidate": "market_state_setup_quality_v1",
+  "definition": {
+    "base": "BNR benchmark exploration data only",
+    "policy": "exclude weak_or_grindy_continuation + pre-entry breakout quality gate",
+    "threshold": 0.45,
+    "holdout_status": "locked",
+    "variants_tested_this_pass": 1,
+    "n_trials_for_dsr_psr": 11
+  },
+  "validation": {
+    "walk_forward": {
+      "status": "pass",
+      "mean_roc_auc": 0.571033215755438,
+      "fold_count": 54
+    },
+    "purging": {
+      "status": "pass",
+      "overlap_ratio": 0.0,
+      "overlapping_pairs": 0
+    },
+    "cpcv": {
+      "status": "fail",
+      "pbo": 0.3684210526315789,
+      "mean_total_pnl_r": 3.074138598359722,
+      "median_total_pnl_r": 2.563703511425801,
+      "min_path_pnl_r": -4.146469780183633,
+      "path_positive_rate": 0.631578947368421,
+      "worst_paths": [
+        {
+          "path_id": "cpcv_015",
+          "baseline_total_pnl_r": -3.0192146725114593,
+          "total_pnl_r": -4.146469780183633,
+          "pnl_delta_r": -1.1272551076721737,
+          "trade_count": 40,
+          "effective_trade_count": 40.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 31,
+              "total_pnl_r": -1.4488567041658158
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 17,
+              "total_pnl_r": 0.9163563300688773
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 11,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 10,
+              "total_pnl_r": -2.5380200389980874
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 8,
+              "total_pnl_r": -1.0759493670886076
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_014",
+          "baseline_total_pnl_r": -2.52108354440045,
+          "total_pnl_r": -2.81314787305839,
+          "pnl_delta_r": -0.29206432865793985,
+          "trade_count": 33,
+          "effective_trade_count": 33.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 24,
+              "total_pnl_r": -1.2680536508673412
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 14,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 12,
+              "total_pnl_r": 1.6158342417154636
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 9,
+              "total_pnl_r": -4.616484019462067
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 3,
+              "total_pnl_r": 1.4555555555555555
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_003",
+          "baseline_total_pnl_r": -13.52616957964863,
+          "total_pnl_r": -2.710682531664731,
+          "pnl_delta_r": 10.8154870479839,
+          "trade_count": 40,
+          "effective_trade_count": 40.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 32,
+              "total_pnl_r": -4.669755553132875
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 23,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 10,
+              "total_pnl_r": -2.113162986251736
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 10,
+              "total_pnl_r": 2.655569341053212
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 3,
+              "total_pnl_r": 1.4166666666666667
+            }
+          ]
+        }
+      ],
+      "prior_worst_path_effect": [
+        {
+          "path_id": "cpcv_002",
+          "baseline_total_pnl_r": -11.794017320006716,
+          "total_pnl_r": -2.613723929155127,
+          "pnl_delta_r": 9.18029339085159,
+          "trade_count": 17,
+          "effective_trade_count": 17.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 11,
+              "total_pnl_r": -1.2287147330066903
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 10,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 7,
+              "total_pnl_r": 0.33666666666666667
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 4,
+              "total_pnl_r": 0.37960618846694794
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 4,
+              "total_pnl_r": -2.1012820512820514
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_003",
+          "baseline_total_pnl_r": -13.52616957964863,
+          "total_pnl_r": -2.710682531664731,
+          "pnl_delta_r": 10.8154870479839,
+          "trade_count": 40,
+          "effective_trade_count": 40.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 32,
+              "total_pnl_r": -4.669755553132875
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 23,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 10,
+              "total_pnl_r": -2.113162986251736
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 10,
+              "total_pnl_r": 2.655569341053212
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 3,
+              "total_pnl_r": 1.4166666666666667
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_010",
+          "baseline_total_pnl_r": -19.8922685392403,
+          "total_pnl_r": 0.4787991271246983,
+          "pnl_delta_r": 20.371067666364997,
+          "trade_count": 29,
+          "effective_trade_count": 29.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 27,
+              "total_pnl_r": -0.6802827716566193
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 24,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 19,
+              "total_pnl_r": 1.9183817753338572
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 6,
+              "total_pnl_r": -1.792468193384224
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 4,
+              "total_pnl_r": 1.0331683168316832
+            }
+          ]
+        }
+      ],
+      "paths": [
+        {
+          "path_id": "cpcv_001",
+          "baseline_total_pnl_r": 2.295884893542116,
+          "total_pnl_r": 7.632963352485233,
+          "pnl_delta_r": 5.337078458943117,
+          "trade_count": 24,
+          "effective_trade_count": 24.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 18,
+              "total_pnl_r": 5.018999767618372
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 17,
+              "total_pnl_r": -0.6896099836190619
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 15,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 7,
+              "total_pnl_r": 1.9207588488254632
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 4,
+              "total_pnl_r": 1.3828147196604605
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_002",
+          "baseline_total_pnl_r": -11.794017320006716,
+          "total_pnl_r": -2.613723929155127,
+          "pnl_delta_r": 9.18029339085159,
+          "trade_count": 17,
+          "effective_trade_count": 17.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 11,
+              "total_pnl_r": -1.2287147330066903
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 10,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 7,
+              "total_pnl_r": 0.33666666666666667
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 4,
+              "total_pnl_r": 0.37960618846694794
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 4,
+              "total_pnl_r": -2.1012820512820514
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_003",
+          "baseline_total_pnl_r": -13.52616957964863,
+          "total_pnl_r": -2.710682531664731,
+          "pnl_delta_r": 10.8154870479839,
+          "trade_count": 40,
+          "effective_trade_count": 40.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 32,
+              "total_pnl_r": -4.669755553132875
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 23,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 10,
+              "total_pnl_r": -2.113162986251736
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 10,
+              "total_pnl_r": 2.655569341053212
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 3,
+              "total_pnl_r": 1.4166666666666667
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_004",
+          "baseline_total_pnl_r": 12.151388933027865,
+          "total_pnl_r": 9.056775125676893,
+          "pnl_delta_r": -3.0946138073509726,
+          "trade_count": 26,
+          "effective_trade_count": 26.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 20,
+              "total_pnl_r": 2.520126379032578
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 10,
+              "total_pnl_r": 3.778916259925759
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 9,
+              "total_pnl_r": 0.48860467610467617
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 6,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 5,
+              "total_pnl_r": 2.269127810613879
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_005",
+          "baseline_total_pnl_r": 8.53670260995606,
+          "total_pnl_r": -1.920461639132632,
+          "pnl_delta_r": -10.457164249088693,
+          "trade_count": 27,
+          "effective_trade_count": 27.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 21,
+              "total_pnl_r": 0.3918701359603723
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 18,
+              "total_pnl_r": 0.47715306997329954
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 12,
+              "total_pnl_r": -1.7382027937842524
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 6,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 5,
+              "total_pnl_r": -1.0512820512820513
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_007",
+          "baseline_total_pnl_r": -6.858598862185829,
+          "total_pnl_r": 0.9978481326998812,
+          "pnl_delta_r": 7.85644699488571,
+          "trade_count": 13,
+          "effective_trade_count": 13.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 10,
+              "total_pnl_r": -1.0758086886784595
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 6,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 5,
+              "total_pnl_r": 0.33666666666666667
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 2,
+              "total_pnl_r": 0.3481012658227849
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 1,
+              "total_pnl_r": 1.3888888888888888
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_008",
+          "baseline_total_pnl_r": -9.06794977587601,
+          "total_pnl_r": -0.8567749313222692,
+          "pnl_delta_r": 8.21117484455374,
+          "trade_count": 30,
+          "effective_trade_count": 30.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 21,
+              "total_pnl_r": -2.554125430364854
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 14,
+              "total_pnl_r": 0.7255220883534137
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 13,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 7,
+              "total_pnl_r": -0.3781715893108297
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 3,
+              "total_pnl_r": 1.35
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_009",
+          "baseline_total_pnl_r": 0.7276960716569629,
+          "total_pnl_r": 9.411947545055808,
+          "pnl_delta_r": 8.684251473398845,
+          "trade_count": 26,
+          "effective_trade_count": 26.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 21,
+              "total_pnl_r": 6.750827032745253
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 18,
+              "total_pnl_r": 4.698198166640875
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 16,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 4,
+              "total_pnl_r": -2.4468316831683166
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 4,
+              "total_pnl_r": 0.40975402883799816
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_010",
+          "baseline_total_pnl_r": -19.8922685392403,
+          "total_pnl_r": 0.4787991271246983,
+          "pnl_delta_r": 20.371067666364997,
+          "trade_count": 29,
+          "effective_trade_count": 29.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 27,
+              "total_pnl_r": -0.6802827716566193
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 24,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 19,
+              "total_pnl_r": 1.9183817753338572
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 6,
+              "total_pnl_r": -1.792468193384224
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 4,
+              "total_pnl_r": 1.0331683168316832
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_011",
+          "baseline_total_pnl_r": 2.8026392877326254,
+          "total_pnl_r": 6.886439965320387,
+          "pnl_delta_r": 4.083800677587762,
+          "trade_count": 26,
+          "effective_trade_count": 26.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 21,
+              "total_pnl_r": 7.454406205510443
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 17,
+              "total_pnl_r": 2.518811177366214
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 12,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 6,
+              "total_pnl_r": -0.6622534266956447
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 5,
+              "total_pnl_r": -2.4245239908606244
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_012",
+          "baseline_total_pnl_r": 1.8638614040888033,
+          "total_pnl_r": -0.5265715154741568,
+          "pnl_delta_r": -2.39043291956296,
+          "trade_count": 17,
+          "effective_trade_count": 17.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 16,
+              "total_pnl_r": -1.196715934702545
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 11,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 3,
+              "total_pnl_r": 1.445945945945946
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 2,
+              "total_pnl_r": 0.30419847328244276
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 1,
+              "total_pnl_r": -1.08
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_013",
+          "baseline_total_pnl_r": 3.8733867904900126,
+          "total_pnl_r": 7.5164631500440855,
+          "pnl_delta_r": 3.643076359554073,
+          "trade_count": 40,
+          "effective_trade_count": 40.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 26,
+              "total_pnl_r": 3.2858204103262083
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 14,
+              "total_pnl_r": 1.6158342417154636
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 14,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 11,
+              "total_pnl_r": -0.3517518775406059
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 8,
+              "total_pnl_r": 2.9665603755430205
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_014",
+          "baseline_total_pnl_r": -2.52108354440045,
+          "total_pnl_r": -2.81314787305839,
+          "pnl_delta_r": -0.29206432865793985,
+          "trade_count": 33,
+          "effective_trade_count": 33.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 24,
+              "total_pnl_r": -1.2680536508673412
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 14,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 12,
+              "total_pnl_r": 1.6158342417154636
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 9,
+              "total_pnl_r": -4.616484019462067
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 3,
+              "total_pnl_r": 1.4555555555555555
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_015",
+          "baseline_total_pnl_r": -3.0192146725114593,
+          "total_pnl_r": -4.146469780183633,
+          "pnl_delta_r": -1.1272551076721737,
+          "trade_count": 40,
+          "effective_trade_count": 40.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 31,
+              "total_pnl_r": -1.4488567041658158
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 17,
+              "total_pnl_r": 0.9163563300688773
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 11,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 10,
+              "total_pnl_r": -2.5380200389980874
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 8,
+              "total_pnl_r": -1.0759493670886076
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_016",
+          "baseline_total_pnl_r": 1.8253722902735943,
+          "total_pnl_r": 10.282664124805589,
+          "pnl_delta_r": 8.457291834531993,
+          "trade_count": 42,
+          "effective_trade_count": 42.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 33,
+              "total_pnl_r": 5.0935567067168135
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 31,
+              "total_pnl_r": 0.214976055009644
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 13,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 7,
+              "total_pnl_r": 1.8098002973194944
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 6,
+              "total_pnl_r": 3.1643310657596366
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_017",
+          "baseline_total_pnl_r": 11.333545222412244,
+          "total_pnl_r": 7.300324424746058,
+          "pnl_delta_r": -4.0332207976661865,
+          "trade_count": 28,
+          "effective_trade_count": 28.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 18,
+              "total_pnl_r": -0.6566955179242011
+            },
+            {
+              "market_state": "messy_transition",
+              "trade_count": 18,
+              "total_pnl_r": 3.2628422566371524
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 11,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 8,
+              "total_pnl_r": 4.413712569754038
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 2,
+              "total_pnl_r": 0.28046511627906967
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_018",
+          "baseline_total_pnl_r": 2.6039199728463727,
+          "total_pnl_r": 8.81142067314965,
+          "pnl_delta_r": 6.207500700303277,
+          "trade_count": 37,
+          "effective_trade_count": 37.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 32,
+              "total_pnl_r": -1.2152849488052853
+            },
+            {
+              "market_state": "messy_transition",
+              "trade_count": 28,
+              "total_pnl_r": 0.42268051621060887
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 15,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 9,
+              "total_pnl_r": 3.99922892370562
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 6,
+              "total_pnl_r": 5.604796182038706
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_019",
+          "baseline_total_pnl_r": 5.18831010215815,
+          "total_pnl_r": 3.057116436291567,
+          "pnl_delta_r": -2.131193665866583,
+          "trade_count": 25,
+          "effective_trade_count": 25.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 18,
+              "total_pnl_r": 1.4756477205426832
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 12,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 8,
+              "total_pnl_r": 2.3018789099253034
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 6,
+              "total_pnl_r": -1.2559803642734444
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 6,
+              "total_pnl_r": 0.5355701700970241
+            }
+          ]
+        },
+        {
+          "path_id": "cpcv_020",
+          "baseline_total_pnl_r": 4.1671118323811385,
+          "total_pnl_r": 2.563703511425801,
+          "pnl_delta_r": -1.6034083209553374,
+          "trade_count": 38,
+          "effective_trade_count": 38.0,
+          "delayed_entry_fill_impact_r": 0.0,
+          "state_contribution_table": [
+            {
+              "market_state": "messy_transition",
+              "trade_count": 30,
+              "total_pnl_r": 4.547640727165067
+            },
+            {
+              "market_state": "balanced_chop",
+              "trade_count": 15,
+              "total_pnl_r": 1.3512111559710016
+            },
+            {
+              "market_state": "weak_or_grindy_continuation",
+              "trade_count": 11,
+              "total_pnl_r": 0.0
+            },
+            {
+              "market_state": "clean_strong_continuation",
+              "trade_count": 8,
+              "total_pnl_r": -2.415162986251736
+            },
+            {
+              "market_state": "auction_repair",
+              "trade_count": 7,
+              "total_pnl_r": -0.9199853854585313
+            }
+          ]
+        }
+      ]
+    },
+    "dsr_psr": {
+      "status": "fail",
+      "dsr_status": "fail",
+      "psr_status": "pass",
+      "dsr_probability": 0.0,
+      "psr_probability": 0.9999999999999895,
+      "observed_sharpe": 0.8611073588492482,
+      "n_trials": 11,
+      "n_obs": 109,
+      "sr_std": 1.593079066360165
+    },
+    "translation": {
+      "status": "pass",
+      "sizing_policy": "binary_threshold_v1",
+      "regime_throttle_policy": "none",
+      "regime_size_policy": "trend_vol_scale_v1",
+      "rows": [
+        {
+          "threshold": 0.45,
+          "trade_count": 109,
+          "avg_pnl_r": 0.08511457831029517,
+          "win_rate": 0.46788990825688076,
+          "total_pnl_r": 9.277489035822175,
+          "avg_size_multiplier": 0.9527522935779816,
+          "throttled_signals": 0,
+          "utility_score": 4.7222442788924335,
+          "binary_trade_count": 109,
+          "binary_total_pnl_r": 10.105391119321386,
+          "binary_utility_score": 5.2269574020628,
+          "utility_gap_vs_binary": -0.5047131231703661
+        },
+        {
+          "threshold": 0.5,
+          "trade_count": 103,
+          "avg_pnl_r": 0.07099725628463614,
+          "win_rate": 0.46601941747572817,
+          "total_pnl_r": 7.312717397317522,
+          "avg_size_multiplier": 0.95,
+          "throttled_signals": 0,
+          "utility_score": 2.4379109862232813,
+          "binary_trade_count": 103,
+          "binary_total_pnl_r": 8.140619480816735,
+          "binary_utility_score": 2.9428453355672053,
+          "utility_gap_vs_binary": -0.504934349343924
+        },
+        {
+          "threshold": 0.55,
+          "trade_count": 90,
+          "avg_pnl_r": 0.050042914077386653,
+          "win_rate": 0.45555555555555555,
+          "total_pnl_r": 4.5038622669647985,
+          "avg_size_multiplier": 0.951111111111111,
+          "throttled_signals": 0,
+          "utility_score": -1.4900450575891633,
+          "binary_trade_count": 90,
+          "binary_total_pnl_r": 4.877724262069787,
+          "binary_utility_score": -1.5149831836145113,
+          "utility_gap_vs_binary": 0.024938126025348062
+        },
+        {
+          "threshold": 0.6,
+          "trade_count": 79,
+          "avg_pnl_r": 0.038957616324312515,
+          "win_rate": 0.4430379746835443,
+          "total_pnl_r": 3.077651689620689,
+          "avg_size_multiplier": 0.9537974683544304,
+          "throttled_signals": 0,
+          "utility_score": -1.1899670605830315,
+          "binary_trade_count": 79,
+          "binary_total_pnl_r": 2.9935090378002087,
+          "binary_utility_score": -1.585255468379925,
+          "utility_gap_vs_binary": 0.39528840779689345
+        },
+        {
+          "threshold": 0.65,
+          "trade_count": 67,
+          "avg_pnl_r": 0.10227104191168285,
+          "win_rate": 0.4626865671641791,
+          "total_pnl_r": 6.85215980808275,
+          "avg_size_multiplier": 0.9552238805970149,
+          "throttled_signals": 0,
+          "utility_score": 2.6161977706727155,
+          "binary_trade_count": 67,
+          "binary_total_pnl_r": 7.009146188520331,
+          "binary_utility_score": 2.463742483715647,
+          "utility_gap_vs_binary": 0.15245528695706856
+        }
+      ],
+      "best_threshold": {
+        "threshold": 0.45,
+        "trade_count": 109,
+        "avg_pnl_r": 0.08511457831029517,
+        "win_rate": 0.46788990825688076,
+        "total_pnl_r": 9.277489035822175,
+        "avg_size_multiplier": 0.9527522935779816,
+        "throttled_signals": 0,
+        "utility_score": 4.7222442788924335,
+        "binary_trade_count": 109,
+        "binary_total_pnl_r": 10.105391119321386,
+        "binary_utility_score": 5.2269574020628,
+        "utility_gap_vs_binary": -0.5047131231703661
+      }
+    },
+    "execution": {
+      "status": "complete",
+      "threshold": 0.45,
+      "signal_count": 109,
+      "throttled_signals": 0,
+      "trade_count": 109,
+      "overlap_skips": 0,
+      "total_pnl_r": 10.105391119321386,
+      "avg_trade_r": 0.09271001026900354,
+      "avg_size_multiplier": 1.0,
+      "avg_base_size_multiplier": 1.0,
+      "avg_regime_size_multiplier": 1.0,
+      "avg_policy_size_multiplier": 1.0,
+      "win_rate": 0.46788990825688076,
+      "max_drawdown_r": -6.83305162985745,
+      "session_count": 101,
+      "positive_sessions": 48,
+      "negative_sessions": 53,
+      "fill_assumptions": {
+        "model": "ticks",
+        "profile": "base",
+        "tick_size": 0.25,
+        "ticks_per_side": 3.0,
+        "order_type": "market_on_signal_close_proxy",
+        "single_position": true,
+        "sizing_policy": "binary_threshold_v1",
+        "regime_throttle_policy": "none",
+        "regime_size_policy": "none"
+      },
+      "session_rows": [
+        {
+          "session_date": "2024-01-17",
+          "trade_count": 1,
+          "session_pnl_r": 1.4387755102040816,
+          "avg_trade_r": 1.4387755102040816
+        },
+        {
+          "session_date": "2024-01-19",
+          "trade_count": 1,
+          "session_pnl_r": -1.082191780821918,
+          "avg_trade_r": -1.082191780821918
+        },
+        {
+          "session_date": "2024-01-29",
+          "trade_count": 1,
+          "session_pnl_r": -1.08,
+          "avg_trade_r": -1.08
+        },
+        {
+          "session_date": "2024-01-30",
+          "trade_count": 1,
+          "session_pnl_r": -0.8095238095238095,
+          "avg_trade_r": -0.8095238095238095
+        },
+        {
+          "session_date": "2024-05-07",
+          "trade_count": 1,
+          "session_pnl_r": -0.3709677419354839,
+          "avg_trade_r": -0.3709677419354839
+        },
+        {
+          "session_date": "2024-05-09",
+          "trade_count": 1,
+          "session_pnl_r": 1.4240506329113924,
+          "avg_trade_r": 1.4240506329113924
+        },
+        {
+          "session_date": "2024-05-10",
+          "trade_count": 1,
+          "session_pnl_r": 0.6538461538461539,
+          "avg_trade_r": 0.6538461538461539
+        },
+        {
+          "session_date": "2024-05-15",
+          "trade_count": 1,
+          "session_pnl_r": -1.0588235294117647,
+          "avg_trade_r": -1.0588235294117647
+        },
+        {
+          "session_date": "2024-05-16",
+          "trade_count": 1,
+          "session_pnl_r": 0.3548387096774194,
+          "avg_trade_r": 0.3548387096774194
+        },
+        {
+          "session_date": "2024-05-21",
+          "trade_count": 1,
+          "session_pnl_r": 0.640625,
+          "avg_trade_r": 0.640625
+        },
+        {
+          "session_date": "2024-05-22",
+          "trade_count": 1,
+          "session_pnl_r": -1.1304347826086956,
+          "avg_trade_r": -1.1304347826086956
+        },
+        {
+          "session_date": "2024-05-23",
+          "trade_count": 1,
+          "session_pnl_r": 1.3888888888888888,
+          "avg_trade_r": 1.3888888888888888
+        },
+        {
+          "session_date": "2024-05-27",
+          "trade_count": 1,
+          "session_pnl_r": 1.35,
+          "avg_trade_r": 1.35
+        },
+        {
+          "session_date": "2024-05-28",
+          "trade_count": 1,
+          "session_pnl_r": 1.3604651162790697,
+          "avg_trade_r": 1.3604651162790697
+        },
+        {
+          "session_date": "2024-05-30",
+          "trade_count": 1,
+          "session_pnl_r": 1.4325842696629214,
+          "avg_trade_r": 1.4325842696629214
+        },
+        {
+          "session_date": "2024-05-31",
+          "trade_count": 2,
+          "session_pnl_r": -2.1666666666666665,
+          "avg_trade_r": -1.0833333333333333
+        },
+        {
+          "session_date": "2024-06-03",
+          "trade_count": 2,
+          "session_pnl_r": 2.85,
+          "avg_trade_r": 1.425
+        },
+        {
+          "session_date": "2024-06-06",
+          "trade_count": 1,
+          "session_pnl_r": 1.4166666666666667,
+          "avg_trade_r": 1.4166666666666667
+        },
+        {
+          "session_date": "2024-06-17",
+          "trade_count": 1,
+          "session_pnl_r": -0.5333333333333333,
+          "avg_trade_r": -0.5333333333333333
+        },
+        {
+          "session_date": "2024-06-24",
+          "trade_count": 1,
+          "session_pnl_r": 1.4090909090909092,
+          "avg_trade_r": 1.4090909090909092
+        },
+        {
+          "session_date": "2024-06-25",
+          "trade_count": 1,
+          "session_pnl_r": -1.0731707317073171,
+          "avg_trade_r": -1.0731707317073171
+        },
+        {
+          "session_date": "2024-07-01",
+          "trade_count": 2,
+          "session_pnl_r": -2.1132075471698113,
+          "avg_trade_r": -1.0566037735849056
+        },
+        {
+          "session_date": "2024-07-05",
+          "trade_count": 1,
+          "session_pnl_r": -1.0689655172413792,
+          "avg_trade_r": -1.0689655172413792
+        },
+        {
+          "session_date": "2024-07-08",
+          "trade_count": 1,
+          "session_pnl_r": -0.6,
+          "avg_trade_r": -0.6
+        },
+        {
+          "session_date": "2024-07-10",
+          "trade_count": 1,
+          "session_pnl_r": -0.12903225806451613,
+          "avg_trade_r": -0.12903225806451613
+        },
+        {
+          "session_date": "2024-07-30",
+          "trade_count": 1,
+          "session_pnl_r": 0.47096774193548385,
+          "avg_trade_r": 0.47096774193548385
+        },
+        {
+          "session_date": "2024-07-31",
+          "trade_count": 1,
+          "session_pnl_r": -1.0422535211267605,
+          "avg_trade_r": -1.0422535211267605
+        },
+        {
+          "session_date": "2024-08-01",
+          "trade_count": 1,
+          "session_pnl_r": 1.4433962264150944,
+          "avg_trade_r": 1.4433962264150944
+        },
+        {
+          "session_date": "2024-08-02",
+          "trade_count": 1,
+          "session_pnl_r": -1.0346820809248556,
+          "avg_trade_r": -1.0346820809248556
+        },
+        {
+          "session_date": "2024-08-09",
+          "trade_count": 1,
+          "session_pnl_r": -1.0458015267175573,
+          "avg_trade_r": -1.0458015267175573
+        },
+        {
+          "session_date": "2024-08-27",
+          "trade_count": 1,
+          "session_pnl_r": 1.4325842696629214,
+          "avg_trade_r": 1.4325842696629214
+        },
+        {
+          "session_date": "2024-09-02",
+          "trade_count": 1,
+          "session_pnl_r": -1.25,
+          "avg_trade_r": -1.25
+        },
+        {
+          "session_date": "2024-09-03",
+          "trade_count": 1,
+          "session_pnl_r": 1.4555555555555555,
+          "avg_trade_r": 1.4555555555555555
+        },
+        {
+          "session_date": "2024-09-06",
+          "trade_count": 1,
+          "session_pnl_r": 1.4661016949152543,
+          "avg_trade_r": 1.4661016949152543
+        },
+        {
+          "session_date": "2024-09-10",
+          "trade_count": 1,
+          "session_pnl_r": -1.05,
+          "avg_trade_r": -1.05
+        },
+        {
+          "session_date": "2024-09-16",
+          "trade_count": 1,
+          "session_pnl_r": 1.4597315436241611,
+          "avg_trade_r": 1.4597315436241611
+        },
+        {
+          "session_date": "2024-09-18",
+          "trade_count": 1,
+          "session_pnl_r": -0.5222222222222223,
+          "avg_trade_r": -0.5222222222222223
+        },
+        {
+          "session_date": "2024-09-23",
+          "trade_count": 2,
+          "session_pnl_r": 0.3309859154929575,
+          "avg_trade_r": 0.16549295774647876
+        },
+        {
+          "session_date": "2024-09-25",
+          "trade_count": 1,
+          "session_pnl_r": -0.2767857142857143,
+          "avg_trade_r": -0.2767857142857143
+        },
+        {
+          "session_date": "2024-09-30",
+          "trade_count": 1,
+          "session_pnl_r": 1.411764705882353,
+          "avg_trade_r": 1.411764705882353
+        },
+        {
+          "session_date": "2024-10-01",
+          "trade_count": 1,
+          "session_pnl_r": 1.417808219178082,
+          "avg_trade_r": 1.417808219178082
+        },
+        {
+          "session_date": "2024-10-02",
+          "trade_count": 1,
+          "session_pnl_r": -1.0612244897959184,
+          "avg_trade_r": -1.0612244897959184
+        },
+        {
+          "session_date": "2024-10-04",
+          "trade_count": 1,
+          "session_pnl_r": -1.058252427184466,
+          "avg_trade_r": -1.058252427184466
+        },
+        {
+          "session_date": "2024-10-25",
+          "trade_count": 1,
+          "session_pnl_r": 0.6666666666666666,
+          "avg_trade_r": 0.6666666666666666
+        },
+        {
+          "session_date": "2024-10-29",
+          "trade_count": 1,
+          "session_pnl_r": 0.09027777777777778,
+          "avg_trade_r": 0.09027777777777778
+        },
+        {
+          "session_date": "2024-11-06",
+          "trade_count": 1,
+          "session_pnl_r": -1.0444444444444445,
+          "avg_trade_r": -1.0444444444444445
+        },
+        {
+          "session_date": "2024-11-07",
+          "trade_count": 1,
+          "session_pnl_r": 1.4473684210526316,
+          "avg_trade_r": 1.4473684210526316
+        },
+        {
+          "session_date": "2024-11-12",
+          "trade_count": 1,
+          "session_pnl_r": -0.6,
+          "avg_trade_r": -0.6
+        },
+        {
+          "session_date": "2024-11-15",
+          "trade_count": 1,
+          "session_pnl_r": 1.427710843373494,
+          "avg_trade_r": 1.427710843373494
+        },
+        {
+          "session_date": "2024-11-21",
+          "trade_count": 1,
+          "session_pnl_r": -1.05,
+          "avg_trade_r": -1.05
+        },
+        {
+          "session_date": "2024-12-03",
+          "trade_count": 1,
+          "session_pnl_r": 0.017857142857142856,
+          "avg_trade_r": 0.017857142857142856
+        },
+        {
+          "session_date": "2024-12-11",
+          "trade_count": 1,
+          "session_pnl_r": 1.422077922077922,
+          "avg_trade_r": 1.422077922077922
+        },
+        {
+          "session_date": "2024-12-17",
+          "trade_count": 1,
+          "session_pnl_r": -1.0606060606060606,
+          "avg_trade_r": -1.0606060606060606
+        },
+        {
+          "session_date": "2024-12-18",
+          "trade_count": 1,
+          "session_pnl_r": -0.31683168316831684,
+          "avg_trade_r": -0.31683168316831684
+        },
+        {
+          "session_date": "2024-12-23",
+          "trade_count": 1,
+          "session_pnl_r": -0.1092896174863388,
+          "avg_trade_r": -0.1092896174863388
+        },
+        {
+          "session_date": "2024-12-30",
+          "trade_count": 1,
+          "session_pnl_r": 1.455223880597015,
+          "avg_trade_r": 1.455223880597015
+        },
+        {
+          "session_date": "2025-01-02",
+          "trade_count": 1,
+          "session_pnl_r": 1.4508196721311475,
+          "avg_trade_r": 1.4508196721311475
+        },
+        {
+          "session_date": "2025-01-03",
+          "trade_count": 1,
+          "session_pnl_r": 1.4620253164556962,
+          "avg_trade_r": 1.4620253164556962
+        },
+        {
+          "session_date": "2025-01-13",
+          "trade_count": 1,
+          "session_pnl_r": 1.435483870967742,
+          "avg_trade_r": 1.435483870967742
+        },
+        {
+          "session_date": "2025-01-15",
+          "trade_count": 2,
+          "session_pnl_r": -2.0794701986754967,
+          "avg_trade_r": -1.0397350993377483
+        },
+        {
+          "session_date": "2025-01-20",
+          "trade_count": 2,
+          "session_pnl_r": 2.793103448275862,
+          "avg_trade_r": 1.396551724137931
+        },
+        {
+          "session_date": "2025-01-22",
+          "trade_count": 1,
+          "session_pnl_r": -1.0740740740740742,
+          "avg_trade_r": -1.0740740740740742
+        },
+        {
+          "session_date": "2025-01-24",
+          "trade_count": 1,
+          "session_pnl_r": -0.22388059701492538,
+          "avg_trade_r": -0.22388059701492538
+        },
+        {
+          "session_date": "2025-01-30",
+          "trade_count": 1,
+          "session_pnl_r": -1.0638297872340425,
+          "avg_trade_r": -1.0638297872340425
+        },
+        {
+          "session_date": "2025-01-31",
+          "trade_count": 1,
+          "session_pnl_r": -1.0560747663551402,
+          "avg_trade_r": -1.0560747663551402
+        },
+        {
+          "session_date": "2025-02-03",
+          "trade_count": 1,
+          "session_pnl_r": -1.0365853658536586,
+          "avg_trade_r": -1.0365853658536586
+        },
+        {
+          "session_date": "2025-02-04",
+          "trade_count": 1,
+          "session_pnl_r": 1.4325842696629214,
+          "avg_trade_r": 1.4325842696629214
+        },
+        {
+          "session_date": "2025-02-05",
+          "trade_count": 2,
+          "session_pnl_r": -0.532608695652174,
+          "avg_trade_r": -0.266304347826087
+        },
+        {
+          "session_date": "2025-02-07",
+          "trade_count": 1,
+          "session_pnl_r": 1.4534883720930232,
+          "avg_trade_r": 1.4534883720930232
+        },
+        {
+          "session_date": "2025-02-10",
+          "trade_count": 2,
+          "session_pnl_r": -2.131868131868132,
+          "avg_trade_r": -1.065934065934066
+        },
+        {
+          "session_date": "2025-02-14",
+          "trade_count": 1,
+          "session_pnl_r": -1.0594059405940595,
+          "avg_trade_r": -1.0594059405940595
+        },
+        {
+          "session_date": "2025-02-17",
+          "trade_count": 1,
+          "session_pnl_r": 1.401639344262295,
+          "avg_trade_r": 1.401639344262295
+        },
+        {
+          "session_date": "2025-02-19",
+          "trade_count": 1,
+          "session_pnl_r": -1.0833333333333333,
+          "avg_trade_r": -1.0833333333333333
+        },
+        {
+          "session_date": "2025-02-24",
+          "trade_count": 1,
+          "session_pnl_r": 1.4423076923076923,
+          "avg_trade_r": 1.4423076923076923
+        },
+        {
+          "session_date": "2025-02-27",
+          "trade_count": 1,
+          "session_pnl_r": 1.4555555555555555,
+          "avg_trade_r": 1.4555555555555555
+        },
+        {
+          "session_date": "2025-02-28",
+          "trade_count": 1,
+          "session_pnl_r": -0.2222222222222222,
+          "avg_trade_r": -0.2222222222222222
+        },
+        {
+          "session_date": "2025-03-04",
+          "trade_count": 1,
+          "session_pnl_r": -1.0382165605095541,
+          "avg_trade_r": -1.0382165605095541
+        },
+        {
+          "session_date": "2025-03-05",
+          "trade_count": 1,
+          "session_pnl_r": -1.036144578313253,
+          "avg_trade_r": -1.036144578313253
+        },
+        {
+          "session_date": "2025-03-10",
+          "trade_count": 1,
+          "session_pnl_r": -1.0495867768595042,
+          "avg_trade_r": -1.0495867768595042
+        },
+        {
+          "session_date": "2025-03-14",
+          "trade_count": 1,
+          "session_pnl_r": 1.4617834394904459,
+          "avg_trade_r": 1.4617834394904459
+        },
+        {
+          "session_date": "2025-03-19",
+          "trade_count": 1,
+          "session_pnl_r": 1.4428571428571428,
+          "avg_trade_r": 1.4428571428571428
+        },
+        {
+          "session_date": "2025-03-24",
+          "trade_count": 1,
+          "session_pnl_r": 1.4166666666666667,
+          "avg_trade_r": 1.4166666666666667
+        },
+        {
+          "session_date": "2025-03-25",
+          "trade_count": 1,
+          "session_pnl_r": -1.0759493670886076,
+          "avg_trade_r": -1.0759493670886076
+        },
+        {
+          "session_date": "2025-03-26",
+          "trade_count": 1,
+          "session_pnl_r": -1.08,
+          "avg_trade_r": -1.08
+        },
+        {
+          "session_date": "2025-04-04",
+          "trade_count": 1,
+          "session_pnl_r": 1.0421686746987953,
+          "avg_trade_r": 1.0421686746987953
+        },
+        {
+          "session_date": "2025-04-11",
+          "trade_count": 1,
+          "session_pnl_r": -1.0227272727272727,
+          "avg_trade_r": -1.0227272727272727
+        },
+        {
+          "session_date": "2025-04-15",
+          "trade_count": 1,
+          "session_pnl_r": -1.0625,
+          "avg_trade_r": -1.0625
+        },
+        {
+          "session_date": "2025-04-16",
+          "trade_count": 1,
+          "session_pnl_r": 0.4051094890510949,
+          "avg_trade_r": 0.4051094890510949
+        },
+        {
+          "session_date": "2025-04-17",
+          "trade_count": 1,
+          "session_pnl_r": 1.4534883720930232,
+          "avg_trade_r": 1.4534883720930232
+        },
+        {
+          "session_date": "2025-04-24",
+          "trade_count": 1,
+          "session_pnl_r": -1.0512820512820513,
+          "avg_trade_r": -1.0512820512820513
+        },
+        {
+          "session_date": "2025-04-25",
+          "trade_count": 1,
+          "session_pnl_r": -1.0413793103448277,
+          "avg_trade_r": -1.0413793103448277
+        },
+        {
+          "session_date": "2025-05-05",
+          "trade_count": 1,
+          "session_pnl_r": -1.0451127819548873,
+          "avg_trade_r": -1.0451127819548873
+        },
+        {
+          "session_date": "2025-05-06",
+          "trade_count": 1,
+          "session_pnl_r": -0.2074074074074074,
+          "avg_trade_r": -0.2074074074074074
+        },
+        {
+          "session_date": "2025-05-09",
+          "trade_count": 1,
+          "session_pnl_r": -1.0465116279069768,
+          "avg_trade_r": -1.0465116279069768
+        },
+        {
+          "session_date": "2025-05-14",
+          "trade_count": 1,
+          "session_pnl_r": 0.13043478260869565,
+          "avg_trade_r": 0.13043478260869565
+        },
+        {
+          "session_date": "2025-05-28",
+          "trade_count": 1,
+          "session_pnl_r": 1.435483870967742,
+          "avg_trade_r": 1.435483870967742
+        },
+        {
+          "session_date": "2025-06-04",
+          "trade_count": 1,
+          "session_pnl_r": 1.445945945945946,
+          "avg_trade_r": 1.445945945945946
+        },
+        {
+          "session_date": "2025-06-06",
+          "trade_count": 1,
+          "session_pnl_r": 1.4310344827586208,
+          "avg_trade_r": 1.4310344827586208
+        },
+        {
+          "session_date": "2025-06-10",
+          "trade_count": 1,
+          "session_pnl_r": -1.050420168067227,
+          "avg_trade_r": -1.050420168067227
+        },
+        {
+          "session_date": "2025-06-18",
+          "trade_count": 1,
+          "session_pnl_r": -0.3684210526315789,
+          "avg_trade_r": -0.3684210526315789
+        },
+        {
+          "session_date": "2025-06-23",
+          "trade_count": 1,
+          "session_pnl_r": 1.455223880597015,
+          "avg_trade_r": 1.455223880597015
+        }
+      ],
+      "equity_curve": [
+        {
+          "candidate_id": "MNQ-2024-01-17-break_reentry_reclaim_short-2024-01-17T09:31:30-05:00",
+          "session_date": "2024-01-17",
+          "direction": "short",
+          "probability": 0.997324932286765,
+          "entry_time": "2024-01-17T14:32:00+00:00",
+          "exit_time": "2024-01-17T14:36:00+00:00",
+          "entry_price": 16794.75,
+          "exit_price": 16758.0,
+          "filled_entry_price": 16794.0,
+          "filled_exit_price": 16758.75,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4387755102040816,
+          "executed_pnl_r": 1.4387755102040816,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 1.4387755102040816,
+          "drawdown_r": 0.0,
+          "bars_held": 9
+        },
+        {
+          "candidate_id": "MNQ-2024-01-19-break_reentry_reclaim_short-2024-01-19T09:31:30-05:00",
+          "session_date": "2024-01-19",
+          "direction": "short",
+          "probability": 0.6929961271832648,
+          "entry_time": "2024-01-19T14:32:00+00:00",
+          "exit_time": "2024-01-19T14:34:00+00:00",
+          "entry_price": 17177.75,
+          "exit_price": 17196.0,
+          "filled_entry_price": 17177.0,
+          "filled_exit_price": 17196.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.082191780821918,
+          "executed_pnl_r": -1.082191780821918,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 0.35658372938216365,
+          "drawdown_r": -1.082191780821918,
+          "bars_held": 5
+        },
+        {
+          "candidate_id": "MNQ-2024-01-29-break_reentry_reclaim_short-2024-01-29T10:04:00-05:00",
+          "session_date": "2024-01-29",
+          "direction": "short",
+          "probability": 0.6132175681169519,
+          "entry_time": "2024-01-29T15:04:30+00:00",
+          "exit_time": "2024-01-29T15:08:30+00:00",
+          "entry_price": 17528.25,
+          "exit_price": 17547.0,
+          "filled_entry_price": 17527.5,
+          "filled_exit_price": 17547.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.08,
+          "executed_pnl_r": -1.08,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": -0.7234162706178364,
+          "drawdown_r": -2.162191780821918,
+          "bars_held": 9
+        },
+        {
+          "candidate_id": "MNQ-2024-01-30-break_reentry_reclaim_short-2024-01-30T10:00:00-05:00",
+          "session_date": "2024-01-30",
+          "direction": "short",
+          "probability": 0.9995271566109726,
+          "entry_time": "2024-01-30T15:00:30+00:00",
+          "exit_time": "2024-01-30T15:10:00+00:00",
+          "entry_price": 17643.25,
+          "exit_price": 17658.75,
+          "filled_entry_price": 17642.5,
+          "filled_exit_price": 17659.5,
+          "gross_label_pnl_r": -0.7380952380952381,
+          "gross_executed_pnl_r": -0.8095238095238095,
+          "executed_pnl_r": -0.8095238095238095,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": -1.532940080141646,
+          "drawdown_r": -2.9717155903457275,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-05-07-break_reentry_reclaim_short-2024-05-07T09:57:00-04:00",
+          "session_date": "2024-05-07",
+          "direction": "short",
+          "probability": 0.6422738257530833,
+          "entry_time": "2024-05-07T13:57:30+00:00",
+          "exit_time": "2024-05-07T14:07:00+00:00",
+          "entry_price": 18195.0,
+          "exit_price": 18199.25,
+          "filled_entry_price": 18194.25,
+          "filled_exit_price": 18200.0,
+          "gross_label_pnl_r": -0.27419354838709675,
+          "gross_executed_pnl_r": -0.3709677419354839,
+          "executed_pnl_r": -0.3709677419354839,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": -1.9039078220771297,
+          "drawdown_r": -3.3426833322812115,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-05-09-break_reentry_reclaim_short-2024-05-09T09:33:00-04:00",
+          "session_date": "2024-05-09",
+          "direction": "short",
+          "probability": 0.5591327730070722,
+          "entry_time": "2024-05-09T13:33:30+00:00",
+          "exit_time": "2024-05-09T13:40:00+00:00",
+          "entry_price": 18177.25,
+          "exit_price": 18147.625,
+          "filled_entry_price": 18176.5,
+          "filled_exit_price": 18148.375,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4240506329113924,
+          "executed_pnl_r": 1.4240506329113924,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": -0.4798571891657373,
+          "drawdown_r": -1.9186326993698188,
+          "bars_held": 14
+        },
+        {
+          "candidate_id": "MNQ-2024-05-10-break_reentry_reclaim_short-2024-05-10T10:19:00-04:00",
+          "session_date": "2024-05-10",
+          "direction": "short",
+          "probability": 0.8571413415545391,
+          "entry_time": "2024-05-10T14:19:30+00:00",
+          "exit_time": "2024-05-10T14:29:00+00:00",
+          "entry_price": 18251.0,
+          "exit_price": 18236.75,
+          "filled_entry_price": 18250.25,
+          "filled_exit_price": 18237.5,
+          "gross_label_pnl_r": 0.7307692307692307,
+          "gross_executed_pnl_r": 0.6538461538461539,
+          "executed_pnl_r": 0.6538461538461539,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 0.17398896468041658,
+          "drawdown_r": -1.2647865455236649,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-05-15-break_reentry_reclaim_long-2024-05-15T09:32:00-04:00",
+          "session_date": "2024-05-15",
+          "direction": "long",
+          "probability": 0.8645949568651045,
+          "entry_time": "2024-05-15T13:32:30+00:00",
+          "exit_time": "2024-05-15T13:38:00+00:00",
+          "entry_price": 18520.25,
+          "exit_price": 18494.75,
+          "filled_entry_price": 18521.0,
+          "filled_exit_price": 18494.0,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0588235294117647,
+          "executed_pnl_r": -1.0588235294117647,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": -0.8848345647313481,
+          "drawdown_r": -2.32361007493543,
+          "bars_held": 12
+        },
+        {
+          "candidate_id": "MNQ-2024-05-16-break_reentry_reclaim_long-2024-05-16T09:37:00-04:00",
+          "session_date": "2024-05-16",
+          "direction": "long",
+          "probability": 0.6730059769794375,
+          "entry_time": "2024-05-16T13:37:30+00:00",
+          "exit_time": "2024-05-16T13:47:00+00:00",
+          "entry_price": 18692.0,
+          "exit_price": 18699.0,
+          "filled_entry_price": 18692.75,
+          "filled_exit_price": 18698.25,
+          "gross_label_pnl_r": 0.45161290322580644,
+          "gross_executed_pnl_r": 0.3548387096774194,
+          "executed_pnl_r": 0.3548387096774194,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": -0.5299958550539288,
+          "drawdown_r": -1.9687713652580103,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-05-21-break_reentry_reclaim_long-2024-05-21T09:32:00-04:00",
+          "session_date": "2024-05-21",
+          "direction": "long",
+          "probability": 0.8722673853627582,
+          "entry_time": "2024-05-21T13:32:30+00:00",
+          "exit_time": "2024-05-21T13:42:00+00:00",
+          "entry_price": 18697.0,
+          "exit_price": 18708.75,
+          "filled_entry_price": 18697.75,
+          "filled_exit_price": 18708.0,
+          "gross_label_pnl_r": 0.734375,
+          "gross_executed_pnl_r": 0.640625,
+          "executed_pnl_r": 0.640625,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 0.11062914494607123,
+          "drawdown_r": -1.3281463652580103,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-05-22-break_reentry_reclaim_long-2024-05-22T09:32:00-04:00",
+          "session_date": "2024-05-22",
+          "direction": "long",
+          "probability": 0.8278896742985594,
+          "entry_time": "2024-05-22T13:32:30+00:00",
+          "exit_time": "2024-05-22T13:36:00+00:00",
+          "entry_price": 18818.5,
+          "exit_price": 18807.0,
+          "filled_entry_price": 18819.25,
+          "filled_exit_price": 18806.25,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.1304347826086956,
+          "executed_pnl_r": -1.1304347826086956,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": -1.0198056376626243,
+          "drawdown_r": -2.458581147866706,
+          "bars_held": 8
+        },
+        {
+          "candidate_id": "MNQ-2024-05-23-break_reentry_reclaim_short-2024-05-23T09:31:30-04:00",
+          "session_date": "2024-05-23",
+          "direction": "short",
+          "probability": 0.9962632515308734,
+          "entry_time": "2024-05-23T13:32:00+00:00",
+          "exit_time": "2024-05-23T13:40:30+00:00",
+          "entry_price": 18947.0,
+          "exit_price": 18926.75,
+          "filled_entry_price": 18946.25,
+          "filled_exit_price": 18927.5,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.3888888888888888,
+          "executed_pnl_r": 1.3888888888888888,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 0.3690832512262645,
+          "drawdown_r": -1.069692258977817,
+          "bars_held": 18
+        },
+        {
+          "candidate_id": "MNQ-2024-05-27-break_reentry_reclaim_long-2024-05-27T09:31:30-04:00",
+          "session_date": "2024-05-27",
+          "direction": "long",
+          "probability": 0.9439588819788086,
+          "entry_time": "2024-05-27T13:32:00+00:00",
+          "exit_time": "2024-05-27T13:37:00+00:00",
+          "entry_price": 18892.5,
+          "exit_price": 18907.5,
+          "filled_entry_price": 18893.25,
+          "filled_exit_price": 18906.75,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.35,
+          "executed_pnl_r": 1.35,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 1.7190832512262646,
+          "drawdown_r": 0.0,
+          "bars_held": 11
+        },
+        {
+          "candidate_id": "MNQ-2024-05-28-break_reentry_reclaim_short-2024-05-28T09:33:00-04:00",
+          "session_date": "2024-05-28",
+          "direction": "short",
+          "probability": 0.8333742903494177,
+          "entry_time": "2024-05-28T13:33:30+00:00",
+          "exit_time": "2024-05-28T13:36:00+00:00",
+          "entry_price": 18911.25,
+          "exit_price": 18895.125,
+          "filled_entry_price": 18910.5,
+          "filled_exit_price": 18895.875,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.3604651162790697,
+          "executed_pnl_r": 1.3604651162790697,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 3.0795483675053346,
+          "drawdown_r": 0.0,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2024-05-30-break_reentry_reclaim_short-2024-05-30T09:34:00-04:00",
+          "session_date": "2024-05-30",
+          "direction": "short",
+          "probability": 0.8209558725086643,
+          "entry_time": "2024-05-30T13:34:30+00:00",
+          "exit_time": "2024-05-30T13:37:00+00:00",
+          "entry_price": 18730.0,
+          "exit_price": 18696.625,
+          "filled_entry_price": 18729.25,
+          "filled_exit_price": 18697.375,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4325842696629214,
+          "executed_pnl_r": 1.4325842696629214,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 4.512132637168256,
+          "drawdown_r": 0.0,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2024-05-31-break_reentry_reclaim_short-2024-05-31T09:33:00-04:00",
+          "session_date": "2024-05-31",
+          "direction": "short",
+          "probability": 0.5969682410137693,
+          "entry_time": "2024-05-31T13:33:30+00:00",
+          "exit_time": "2024-05-31T13:36:30+00:00",
+          "entry_price": 18585.0,
+          "exit_price": 18603.0,
+          "filled_entry_price": 18584.25,
+          "filled_exit_price": 18603.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0833333333333333,
+          "executed_pnl_r": -1.0833333333333333,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 3.428799303834923,
+          "drawdown_r": -1.083333333333333,
+          "bars_held": 7
+        },
+        {
+          "candidate_id": "MNQ-2024-05-31-break_reentry_reclaim_long-2024-05-31T09:40:00-04:00",
+          "session_date": "2024-05-31",
+          "direction": "long",
+          "probability": 0.6735091830497436,
+          "entry_time": "2024-05-31T13:40:30+00:00",
+          "exit_time": "2024-05-31T13:45:00+00:00",
+          "entry_price": 18624.75,
+          "exit_price": 18606.75,
+          "filled_entry_price": 18625.5,
+          "filled_exit_price": 18606.0,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0833333333333333,
+          "executed_pnl_r": -1.0833333333333333,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 2.34546597050159,
+          "drawdown_r": -2.166666666666666,
+          "bars_held": 10
+        },
+        {
+          "candidate_id": "MNQ-2024-06-03-break_reentry_reclaim_long-2024-06-03T09:37:00-04:00",
+          "session_date": "2024-06-03",
+          "direction": "long",
+          "probability": 0.6575191378887423,
+          "entry_time": "2024-06-03T13:37:30+00:00",
+          "exit_time": "2024-06-03T13:46:00+00:00",
+          "entry_price": 18724.75,
+          "exit_price": 18754.75,
+          "filled_entry_price": 18725.5,
+          "filled_exit_price": 18754.0,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.425,
+          "executed_pnl_r": 1.425,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 3.77046597050159,
+          "drawdown_r": -0.7416666666666663,
+          "bars_held": 18
+        },
+        {
+          "candidate_id": "MNQ-2024-06-03-break_reentry_reclaim_short-2024-06-03T09:51:00-04:00",
+          "session_date": "2024-06-03",
+          "direction": "short",
+          "probability": 0.7932458639194169,
+          "entry_time": "2024-06-03T13:51:30+00:00",
+          "exit_time": "2024-06-03T13:56:00+00:00",
+          "entry_price": 18694.5,
+          "exit_price": 18664.5,
+          "filled_entry_price": 18693.75,
+          "filled_exit_price": 18665.25,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.425,
+          "executed_pnl_r": 1.425,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.19546597050159,
+          "drawdown_r": 0.0,
+          "bars_held": 10
+        },
+        {
+          "candidate_id": "MNQ-2024-06-06-break_reentry_reclaim_short-2024-06-06T09:47:30-04:00",
+          "session_date": "2024-06-06",
+          "direction": "short",
+          "probability": 0.5255843856452642,
+          "entry_time": "2024-06-06T13:48:00+00:00",
+          "exit_time": "2024-06-06T13:55:00+00:00",
+          "entry_price": 19086.0,
+          "exit_price": 19059.0,
+          "filled_entry_price": 19085.25,
+          "filled_exit_price": 19059.75,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4166666666666667,
+          "executed_pnl_r": 1.4166666666666667,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.612132637168257,
+          "drawdown_r": 0.0,
+          "bars_held": 15
+        },
+        {
+          "candidate_id": "MNQ-2024-06-17-break_reentry_reclaim_short-2024-06-17T09:33:00-04:00",
+          "session_date": "2024-06-17",
+          "direction": "short",
+          "probability": 0.7949237503035446,
+          "entry_time": "2024-06-17T13:33:30+00:00",
+          "exit_time": "2024-06-17T13:43:00+00:00",
+          "entry_price": 19682.5,
+          "exit_price": 19689.0,
+          "filled_entry_price": 19681.75,
+          "filled_exit_price": 19689.75,
+          "gross_label_pnl_r": -0.43333333333333335,
+          "gross_executed_pnl_r": -0.5333333333333333,
+          "executed_pnl_r": -0.5333333333333333,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.0787993038349235,
+          "drawdown_r": -0.5333333333333332,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-06-24-break_reentry_reclaim_long-2024-06-24T09:32:00-04:00",
+          "session_date": "2024-06-24",
+          "direction": "long",
+          "probability": 0.8273358545286983,
+          "entry_time": "2024-06-24T13:32:30+00:00",
+          "exit_time": "2024-06-24T13:34:00+00:00",
+          "entry_price": 19934.75,
+          "exit_price": 19959.5,
+          "filled_entry_price": 19935.5,
+          "filled_exit_price": 19958.75,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4090909090909092,
+          "executed_pnl_r": 1.4090909090909092,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.487890212925833,
+          "drawdown_r": 0.0,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2024-06-25-break_reentry_reclaim_short-2024-06-25T09:37:00-04:00",
+          "session_date": "2024-06-25",
+          "direction": "short",
+          "probability": 0.7693356885689917,
+          "entry_time": "2024-06-25T13:37:30+00:00",
+          "exit_time": "2024-06-25T13:41:30+00:00",
+          "entry_price": 19801.75,
+          "exit_price": 19822.25,
+          "filled_entry_price": 19801.0,
+          "filled_exit_price": 19823.0,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0731707317073171,
+          "executed_pnl_r": -1.0731707317073171,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.4147194812185155,
+          "drawdown_r": -1.0731707317073171,
+          "bars_held": 9
+        },
+        {
+          "candidate_id": "MNQ-2024-07-01-break_reentry_reclaim_long-2024-07-01T09:31:30-04:00",
+          "session_date": "2024-07-01",
+          "direction": "long",
+          "probability": 0.6875217639026708,
+          "entry_time": "2024-07-01T13:32:00+00:00",
+          "exit_time": "2024-07-01T13:32:30+00:00",
+          "entry_price": 19976.5,
+          "exit_price": 19950.0,
+          "filled_entry_price": 19977.25,
+          "filled_exit_price": 19949.25,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0566037735849056,
+          "executed_pnl_r": -1.0566037735849056,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.35811570763361,
+          "drawdown_r": -2.1297745052922226,
+          "bars_held": 2
+        },
+        {
+          "candidate_id": "MNQ-2024-07-01-break_reentry_reclaim_short-2024-07-01T09:34:00-04:00",
+          "session_date": "2024-07-01",
+          "direction": "short",
+          "probability": 0.9566184888369635,
+          "entry_time": "2024-07-01T13:34:30+00:00",
+          "exit_time": "2024-07-01T13:38:00+00:00",
+          "entry_price": 19937.5,
+          "exit_price": 19964.0,
+          "filled_entry_price": 19936.75,
+          "filled_exit_price": 19964.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0566037735849056,
+          "executed_pnl_r": -1.0566037735849056,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 4.301511934048705,
+          "drawdown_r": -3.186378278877128,
+          "bars_held": 8
+        },
+        {
+          "candidate_id": "MNQ-2024-07-05-break_reentry_reclaim_short-2024-07-05T09:46:00-04:00",
+          "session_date": "2024-07-05",
+          "direction": "short",
+          "probability": 0.8849522451977332,
+          "entry_time": "2024-07-05T13:46:30+00:00",
+          "exit_time": "2024-07-05T13:48:00+00:00",
+          "entry_price": 20433.0,
+          "exit_price": 20454.75,
+          "filled_entry_price": 20432.25,
+          "filled_exit_price": 20455.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0689655172413792,
+          "executed_pnl_r": -1.0689655172413792,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 3.2325464168073257,
+          "drawdown_r": -4.255343796118507,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2024-07-08-break_reentry_reclaim_short-2024-07-08T09:35:00-04:00",
+          "session_date": "2024-07-08",
+          "direction": "short",
+          "probability": 0.8208185906651522,
+          "entry_time": "2024-07-08T13:35:30+00:00",
+          "exit_time": "2024-07-08T13:45:00+00:00",
+          "entry_price": 20613.75,
+          "exit_price": 20623.5,
+          "filled_entry_price": 20613.0,
+          "filled_exit_price": 20624.25,
+          "gross_label_pnl_r": -0.52,
+          "gross_executed_pnl_r": -0.6,
+          "executed_pnl_r": -0.6,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 2.6325464168073256,
+          "drawdown_r": -4.8553437961185075,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-07-10-break_reentry_reclaim_short-2024-07-10T09:32:00-04:00",
+          "session_date": "2024-07-10",
+          "direction": "short",
+          "probability": 0.8416378872832272,
+          "entry_time": "2024-07-10T13:32:30+00:00",
+          "exit_time": "2024-07-10T13:42:00+00:00",
+          "entry_price": 20742.0,
+          "exit_price": 20742.5,
+          "filled_entry_price": 20741.25,
+          "filled_exit_price": 20743.25,
+          "gross_label_pnl_r": -0.03225806451612903,
+          "gross_executed_pnl_r": -0.12903225806451613,
+          "executed_pnl_r": -0.12903225806451613,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 2.5035141587428096,
+          "drawdown_r": -4.9843760541830235,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-07-30-break_reentry_reclaim_short-2024-07-30T09:45:00-04:00",
+          "session_date": "2024-07-30",
+          "direction": "short",
+          "probability": 0.7526195027420383,
+          "entry_time": "2024-07-30T13:45:30+00:00",
+          "exit_time": "2024-07-30T13:55:00+00:00",
+          "entry_price": 19248.75,
+          "exit_price": 19229.0,
+          "filled_entry_price": 19248.0,
+          "filled_exit_price": 19229.75,
+          "gross_label_pnl_r": 0.5096774193548387,
+          "gross_executed_pnl_r": 0.47096774193548385,
+          "executed_pnl_r": 0.47096774193548385,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 2.9744819006782937,
+          "drawdown_r": -4.513408312247539,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-07-31-break_reentry_reclaim_short-2024-07-31T09:31:30-04:00",
+          "session_date": "2024-07-31",
+          "direction": "short",
+          "probability": 0.8214649013005532,
+          "entry_time": "2024-07-31T13:32:00+00:00",
+          "exit_time": "2024-07-31T13:40:00+00:00",
+          "entry_price": 19344.5,
+          "exit_price": 19380.0,
+          "filled_entry_price": 19343.75,
+          "filled_exit_price": 19380.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0422535211267605,
+          "executed_pnl_r": -1.0422535211267605,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 1.9322283795515331,
+          "drawdown_r": -5.5556618333743,
+          "bars_held": 17
+        },
+        {
+          "candidate_id": "MNQ-2024-08-01-break_reentry_reclaim_short-2024-08-01T10:22:00-04:00",
+          "session_date": "2024-08-01",
+          "direction": "short",
+          "probability": 0.9898161751525797,
+          "entry_time": "2024-08-01T14:22:30+00:00",
+          "exit_time": "2024-08-01T14:29:30+00:00",
+          "entry_price": 19491.0,
+          "exit_price": 19451.25,
+          "filled_entry_price": 19490.25,
+          "filled_exit_price": 19452.0,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4433962264150944,
+          "executed_pnl_r": 1.4433962264150944,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 3.3756246059666273,
+          "drawdown_r": -4.112265606959205,
+          "bars_held": 15
+        },
+        {
+          "candidate_id": "MNQ-2024-08-02-break_reentry_reclaim_short-2024-08-02T09:33:00-04:00",
+          "session_date": "2024-08-02",
+          "direction": "short",
+          "probability": 0.7428986754162024,
+          "entry_time": "2024-08-02T13:33:30+00:00",
+          "exit_time": "2024-08-02T13:36:30+00:00",
+          "entry_price": 18582.5,
+          "exit_price": 18625.75,
+          "filled_entry_price": 18581.75,
+          "filled_exit_price": 18626.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0346820809248556,
+          "executed_pnl_r": -1.0346820809248556,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 2.340942525041772,
+          "drawdown_r": -5.146947687884061,
+          "bars_held": 7
+        },
+        {
+          "candidate_id": "MNQ-2024-08-09-break_reentry_reclaim_short-2024-08-09T09:46:00-04:00",
+          "session_date": "2024-08-09",
+          "direction": "short",
+          "probability": 0.5186697195506121,
+          "entry_time": "2024-08-09T13:46:30+00:00",
+          "exit_time": "2024-08-09T13:48:30+00:00",
+          "entry_price": 18442.5,
+          "exit_price": 18475.25,
+          "filled_entry_price": 18441.75,
+          "filled_exit_price": 18476.0,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0458015267175573,
+          "executed_pnl_r": -1.0458015267175573,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 1.2951409983242146,
+          "drawdown_r": -6.192749214601618,
+          "bars_held": 5
+        },
+        {
+          "candidate_id": "MNQ-2024-08-27-break_reentry_reclaim_short-2024-08-27T09:37:00-04:00",
+          "session_date": "2024-08-27",
+          "direction": "short",
+          "probability": 0.5508745413313866,
+          "entry_time": "2024-08-27T13:37:30+00:00",
+          "exit_time": "2024-08-27T13:38:30+00:00",
+          "entry_price": 19502.25,
+          "exit_price": 19468.875,
+          "filled_entry_price": 19501.5,
+          "filled_exit_price": 19469.625,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4325842696629214,
+          "executed_pnl_r": 1.4325842696629214,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 2.727725267987136,
+          "drawdown_r": -4.760164944938697,
+          "bars_held": 3
+        },
+        {
+          "candidate_id": "MNQ-2024-09-02-break_reentry_reclaim_short-2024-09-02T09:35:00-04:00",
+          "session_date": "2024-09-02",
+          "direction": "short",
+          "probability": 0.7025490909249938,
+          "entry_time": "2024-09-02T13:35:30+00:00",
+          "exit_time": "2024-09-02T13:38:00+00:00",
+          "entry_price": 19617.25,
+          "exit_price": 19623.25,
+          "filled_entry_price": 19616.5,
+          "filled_exit_price": 19624.0,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.25,
+          "executed_pnl_r": -1.25,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 1.477725267987136,
+          "drawdown_r": -6.010164944938697,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2024-09-03-break_reentry_reclaim_short-2024-09-03T09:32:00-04:00",
+          "session_date": "2024-09-03",
+          "direction": "short",
+          "probability": 0.8062243903936165,
+          "entry_time": "2024-09-03T13:32:30+00:00",
+          "exit_time": "2024-09-03T13:36:00+00:00",
+          "entry_price": 19433.25,
+          "exit_price": 19382.625,
+          "filled_entry_price": 19432.5,
+          "filled_exit_price": 19383.375,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4555555555555555,
+          "executed_pnl_r": 1.4555555555555555,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 2.9332808235426917,
+          "drawdown_r": -4.554609389383141,
+          "bars_held": 8
+        },
+        {
+          "candidate_id": "MNQ-2024-09-06-break_reentry_reclaim_short-2024-09-06T09:32:00-04:00",
+          "session_date": "2024-09-06",
+          "direction": "short",
+          "probability": 0.7036719870748877,
+          "entry_time": "2024-09-06T13:32:30+00:00",
+          "exit_time": "2024-09-06T13:37:00+00:00",
+          "entry_price": 18919.0,
+          "exit_price": 18852.625,
+          "filled_entry_price": 18918.25,
+          "filled_exit_price": 18853.375,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4661016949152543,
+          "executed_pnl_r": 1.4661016949152543,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 4.399382518457946,
+          "drawdown_r": -3.0885076944678866,
+          "bars_held": 10
+        },
+        {
+          "candidate_id": "MNQ-2024-09-10-break_reentry_reclaim_long-2024-09-10T09:31:30-04:00",
+          "session_date": "2024-09-10",
+          "direction": "long",
+          "probability": 0.627384334680604,
+          "entry_time": "2024-09-10T13:32:00+00:00",
+          "exit_time": "2024-09-10T13:34:30+00:00",
+          "entry_price": 18799.0,
+          "exit_price": 18769.0,
+          "filled_entry_price": 18799.75,
+          "filled_exit_price": 18768.25,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.05,
+          "executed_pnl_r": -1.05,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 3.349382518457946,
+          "drawdown_r": -4.1385076944678865,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2024-09-16-break_reentry_reclaim_short-2024-09-16T09:32:00-04:00",
+          "session_date": "2024-09-16",
+          "direction": "short",
+          "probability": 0.8965912119093878,
+          "entry_time": "2024-09-16T13:32:30+00:00",
+          "exit_time": "2024-09-16T13:34:00+00:00",
+          "entry_price": 19399.0,
+          "exit_price": 19343.125,
+          "filled_entry_price": 19398.25,
+          "filled_exit_price": 19343.875,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4597315436241611,
+          "executed_pnl_r": 1.4597315436241611,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 4.809114062082108,
+          "drawdown_r": -2.678776150843725,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2024-09-18-break_reentry_reclaim_short-2024-09-18T09:34:00-04:00",
+          "session_date": "2024-09-18",
+          "direction": "short",
+          "probability": 0.5082807586875457,
+          "entry_time": "2024-09-18T13:34:30+00:00",
+          "exit_time": "2024-09-18T13:44:00+00:00",
+          "entry_price": 19460.25,
+          "exit_price": 19470.5,
+          "filled_entry_price": 19459.5,
+          "filled_exit_price": 19471.25,
+          "gross_label_pnl_r": -0.45555555555555555,
+          "gross_executed_pnl_r": -0.5222222222222223,
+          "executed_pnl_r": -0.5222222222222223,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 4.286891839859885,
+          "drawdown_r": -3.2009983730659473,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-09-23-break_reentry_reclaim_short-2024-09-23T09:32:00-04:00",
+          "session_date": "2024-09-23",
+          "direction": "short",
+          "probability": 0.7213329649490183,
+          "entry_time": "2024-09-23T13:32:30+00:00",
+          "exit_time": "2024-09-23T13:33:00+00:00",
+          "entry_price": 20062.0,
+          "exit_price": 20035.375,
+          "filled_entry_price": 20061.25,
+          "filled_exit_price": 20036.125,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4154929577464788,
+          "executed_pnl_r": 1.4154929577464788,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.702384797606364,
+          "drawdown_r": -1.7855054153194683,
+          "bars_held": 2
+        },
+        {
+          "candidate_id": "MNQ-2024-09-23-break_reentry_reclaim_long-2024-09-23T09:49:00-04:00",
+          "session_date": "2024-09-23",
+          "direction": "long",
+          "probability": 0.4931645918519294,
+          "entry_time": "2024-09-23T13:49:30+00:00",
+          "exit_time": "2024-09-23T13:51:30+00:00",
+          "entry_price": 20087.0,
+          "exit_price": 20069.25,
+          "filled_entry_price": 20087.75,
+          "filled_exit_price": 20068.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0845070422535212,
+          "executed_pnl_r": -1.0845070422535212,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 4.617877755352843,
+          "drawdown_r": -2.8700124575729893,
+          "bars_held": 5
+        },
+        {
+          "candidate_id": "MNQ-2024-09-25-break_reentry_reclaim_long-2024-09-25T09:31:30-04:00",
+          "session_date": "2024-09-25",
+          "direction": "long",
+          "probability": 0.45367232048475625,
+          "entry_time": "2024-09-25T13:32:00+00:00",
+          "exit_time": "2024-09-25T13:41:30+00:00",
+          "entry_price": 20169.25,
+          "exit_price": 20163.0,
+          "filled_entry_price": 20170.0,
+          "filled_exit_price": 20162.25,
+          "gross_label_pnl_r": -0.22321428571428573,
+          "gross_executed_pnl_r": -0.2767857142857143,
+          "executed_pnl_r": -0.2767857142857143,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 4.341092041067129,
+          "drawdown_r": -3.1467981718587037,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-09-30-break_reentry_reclaim_long-2024-09-30T09:31:30-04:00",
+          "session_date": "2024-09-30",
+          "direction": "long",
+          "probability": 0.8258732439179467,
+          "entry_time": "2024-09-30T13:32:00+00:00",
+          "exit_time": "2024-09-30T13:36:30+00:00",
+          "entry_price": 20219.5,
+          "exit_price": 20245.0,
+          "filled_entry_price": 20220.25,
+          "filled_exit_price": 20244.25,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.411764705882353,
+          "executed_pnl_r": 1.411764705882353,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.752856746949482,
+          "drawdown_r": -1.7350334659763504,
+          "bars_held": 10
+        },
+        {
+          "candidate_id": "MNQ-2024-10-01-break_reentry_reclaim_short-2024-10-01T09:32:00-04:00",
+          "session_date": "2024-10-01",
+          "direction": "short",
+          "probability": 0.6094812123055527,
+          "entry_time": "2024-10-01T13:32:30+00:00",
+          "exit_time": "2024-10-01T13:32:30+00:00",
+          "entry_price": 20235.25,
+          "exit_price": 20207.875,
+          "filled_entry_price": 20234.5,
+          "filled_exit_price": 20208.625,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.417808219178082,
+          "executed_pnl_r": 1.417808219178082,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.170664966127564,
+          "drawdown_r": -0.3172252467982686,
+          "bars_held": 1
+        },
+        {
+          "candidate_id": "MNQ-2024-10-02-break_reentry_reclaim_long-2024-10-02T09:32:00-04:00",
+          "session_date": "2024-10-02",
+          "direction": "long",
+          "probability": 0.6607320935532399,
+          "entry_time": "2024-10-02T13:32:30+00:00",
+          "exit_time": "2024-10-02T13:34:30+00:00",
+          "entry_price": 19963.5,
+          "exit_price": 19939.0,
+          "filled_entry_price": 19964.25,
+          "filled_exit_price": 19938.25,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0612244897959184,
+          "executed_pnl_r": -1.0612244897959184,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.109440476331645,
+          "drawdown_r": -1.3784497365941872,
+          "bars_held": 5
+        },
+        {
+          "candidate_id": "MNQ-2024-10-04-break_reentry_reclaim_short-2024-10-04T09:32:00-04:00",
+          "session_date": "2024-10-04",
+          "direction": "short",
+          "probability": 0.6083316613454756,
+          "entry_time": "2024-10-04T13:32:30+00:00",
+          "exit_time": "2024-10-04T13:35:30+00:00",
+          "entry_price": 20199.25,
+          "exit_price": 20225.0,
+          "filled_entry_price": 20198.5,
+          "filled_exit_price": 20225.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.058252427184466,
+          "executed_pnl_r": -1.058252427184466,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.0511880491471794,
+          "drawdown_r": -2.4367021637786532,
+          "bars_held": 7
+        },
+        {
+          "candidate_id": "MNQ-2024-10-25-break_reentry_reclaim_long-2024-10-25T09:32:00-04:00",
+          "session_date": "2024-10-25",
+          "direction": "long",
+          "probability": 0.7247047707636897,
+          "entry_time": "2024-10-25T13:32:30+00:00",
+          "exit_time": "2024-10-25T13:42:00+00:00",
+          "entry_price": 20530.25,
+          "exit_price": 20557.25,
+          "filled_entry_price": 20531.0,
+          "filled_exit_price": 20556.5,
+          "gross_label_pnl_r": 0.7058823529411765,
+          "gross_executed_pnl_r": 0.6666666666666666,
+          "executed_pnl_r": 0.6666666666666666,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.717854715813846,
+          "drawdown_r": -1.7700354971119863,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-10-29-break_reentry_reclaim_long-2024-10-29T10:03:00-04:00",
+          "session_date": "2024-10-29",
+          "direction": "long",
+          "probability": 0.6001437357613538,
+          "entry_time": "2024-10-29T14:03:30+00:00",
+          "exit_time": "2024-10-29T14:13:00+00:00",
+          "entry_price": 20531.0,
+          "exit_price": 20535.75,
+          "filled_entry_price": 20531.75,
+          "filled_exit_price": 20535.0,
+          "gross_label_pnl_r": 0.13194444444444445,
+          "gross_executed_pnl_r": 0.09027777777777778,
+          "executed_pnl_r": 0.09027777777777778,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.808132493591624,
+          "drawdown_r": -1.6797577193342086,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-11-06-break_reentry_reclaim_short-2024-11-06T09:50:00-05:00",
+          "session_date": "2024-11-06",
+          "direction": "short",
+          "probability": 0.7440756607708775,
+          "entry_time": "2024-11-06T14:50:30+00:00",
+          "exit_time": "2024-11-06T14:53:00+00:00",
+          "entry_price": 20651.0,
+          "exit_price": 20684.75,
+          "filled_entry_price": 20650.25,
+          "filled_exit_price": 20685.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0444444444444445,
+          "executed_pnl_r": -1.0444444444444445,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 4.76368804914718,
+          "drawdown_r": -2.724202163778653,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2024-11-07-break_reentry_reclaim_long-2024-11-07T09:32:00-05:00",
+          "session_date": "2024-11-07",
+          "direction": "long",
+          "probability": 0.4969058222356708,
+          "entry_time": "2024-11-07T14:32:30+00:00",
+          "exit_time": "2024-11-07T14:40:30+00:00",
+          "entry_price": 21038.5,
+          "exit_price": 21081.25,
+          "filled_entry_price": 21039.25,
+          "filled_exit_price": 21080.5,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4473684210526316,
+          "executed_pnl_r": 1.4473684210526316,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.211056470199812,
+          "drawdown_r": -1.276833742726021,
+          "bars_held": 17
+        },
+        {
+          "candidate_id": "MNQ-2024-11-12-break_reentry_reclaim_long-2024-11-12T09:35:00-05:00",
+          "session_date": "2024-11-12",
+          "direction": "long",
+          "probability": 0.6759070933799884,
+          "entry_time": "2024-11-12T14:35:30+00:00",
+          "exit_time": "2024-11-12T14:45:00+00:00",
+          "entry_price": 21227.0,
+          "exit_price": 21214.25,
+          "filled_entry_price": 21227.75,
+          "filled_exit_price": 21213.5,
+          "gross_label_pnl_r": -0.5368421052631579,
+          "gross_executed_pnl_r": -0.6,
+          "executed_pnl_r": -0.6,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.611056470199812,
+          "drawdown_r": -1.8768337427260207,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-11-15-break_reentry_reclaim_short-2024-11-15T09:33:00-05:00",
+          "session_date": "2024-11-15",
+          "direction": "short",
+          "probability": 0.7620077570938051,
+          "entry_time": "2024-11-15T14:33:30+00:00",
+          "exit_time": "2024-11-15T14:35:30+00:00",
+          "entry_price": 20745.75,
+          "exit_price": 20714.625,
+          "filled_entry_price": 20745.0,
+          "filled_exit_price": 20715.375,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.427710843373494,
+          "executed_pnl_r": 1.427710843373494,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.038767313573306,
+          "drawdown_r": -0.4491228993525267,
+          "bars_held": 5
+        },
+        {
+          "candidate_id": "MNQ-2024-11-21-break_reentry_reclaim_long-2024-11-21T09:31:30-05:00",
+          "session_date": "2024-11-21",
+          "direction": "long",
+          "probability": 0.6999067945201597,
+          "entry_time": "2024-11-21T14:32:00+00:00",
+          "exit_time": "2024-11-21T14:32:00+00:00",
+          "entry_price": 20903.0,
+          "exit_price": 20873.0,
+          "filled_entry_price": 20903.75,
+          "filled_exit_price": 20872.25,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.05,
+          "executed_pnl_r": -1.05,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.988767313573306,
+          "drawdown_r": -1.4991228993525265,
+          "bars_held": 1
+        },
+        {
+          "candidate_id": "MNQ-2024-12-03-break_reentry_reclaim_long-2024-12-03T09:34:00-05:00",
+          "session_date": "2024-12-03",
+          "direction": "long",
+          "probability": 0.5728769459702474,
+          "entry_time": "2024-12-03T14:34:30+00:00",
+          "exit_time": "2024-12-03T14:44:00+00:00",
+          "entry_price": 21176.0,
+          "exit_price": 21178.0,
+          "filled_entry_price": 21176.75,
+          "filled_exit_price": 21177.25,
+          "gross_label_pnl_r": 0.07142857142857142,
+          "gross_executed_pnl_r": 0.017857142857142856,
+          "executed_pnl_r": 0.017857142857142856,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.006624456430449,
+          "drawdown_r": -1.4812657564953833,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-12-11-break_reentry_reclaim_long-2024-12-11T09:33:00-05:00",
+          "session_date": "2024-12-11",
+          "direction": "long",
+          "probability": 0.5284765890032482,
+          "entry_time": "2024-12-11T14:33:30+00:00",
+          "exit_time": "2024-12-11T14:40:30+00:00",
+          "entry_price": 21597.75,
+          "exit_price": 21626.625,
+          "filled_entry_price": 21598.5,
+          "filled_exit_price": 21625.875,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.422077922077922,
+          "executed_pnl_r": 1.422077922077922,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.428702378508372,
+          "drawdown_r": -0.059187834417461005,
+          "bars_held": 15
+        },
+        {
+          "candidate_id": "MNQ-2024-12-17-break_reentry_reclaim_long-2024-12-17T09:44:00-05:00",
+          "session_date": "2024-12-17",
+          "direction": "long",
+          "probability": 0.6489090774902674,
+          "entry_time": "2024-12-17T14:44:30+00:00",
+          "exit_time": "2024-12-17T14:47:00+00:00",
+          "entry_price": 22052.0,
+          "exit_price": 22027.25,
+          "filled_entry_price": 22052.75,
+          "filled_exit_price": 22026.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0606060606060606,
+          "executed_pnl_r": -1.0606060606060606,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.368096317902311,
+          "drawdown_r": -1.1197938950235216,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2024-12-18-break_reentry_reclaim_short-2024-12-18T09:31:30-05:00",
+          "session_date": "2024-12-18",
+          "direction": "short",
+          "probability": 0.8097121237705813,
+          "entry_time": "2024-12-18T14:32:00+00:00",
+          "exit_time": "2024-12-18T14:41:30+00:00",
+          "entry_price": 21945.25,
+          "exit_price": 21951.75,
+          "filled_entry_price": 21944.5,
+          "filled_exit_price": 21952.5,
+          "gross_label_pnl_r": -0.25742574257425743,
+          "gross_executed_pnl_r": -0.31683168316831684,
+          "executed_pnl_r": -0.31683168316831684,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.051264634733994,
+          "drawdown_r": -1.4366255781918387,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-12-23-break_reentry_reclaim_short-2024-12-23T09:46:00-05:00",
+          "session_date": "2024-12-23",
+          "direction": "short",
+          "probability": 0.8881325492480744,
+          "entry_time": "2024-12-23T14:46:30+00:00",
+          "exit_time": "2024-12-23T14:56:00+00:00",
+          "entry_price": 21598.5,
+          "exit_price": 21602.0,
+          "filled_entry_price": 21597.75,
+          "filled_exit_price": 21602.75,
+          "gross_label_pnl_r": -0.07650273224043716,
+          "gross_executed_pnl_r": -0.1092896174863388,
+          "executed_pnl_r": -0.1092896174863388,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.941975017247655,
+          "drawdown_r": -1.5459151956781776,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2024-12-30-break_reentry_reclaim_short-2024-12-30T09:33:00-05:00",
+          "session_date": "2024-12-30",
+          "direction": "short",
+          "probability": 0.5589951188490386,
+          "entry_time": "2024-12-30T14:33:30+00:00",
+          "exit_time": "2024-12-30T14:42:30+00:00",
+          "entry_price": 21376.0,
+          "exit_price": 21325.75,
+          "filled_entry_price": 21375.25,
+          "filled_exit_price": 21326.5,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.455223880597015,
+          "executed_pnl_r": 1.455223880597015,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.39719889784467,
+          "drawdown_r": -0.09069131508116257,
+          "bars_held": 19
+        },
+        {
+          "candidate_id": "MNQ-2025-01-02-break_reentry_reclaim_short-2025-01-02T09:33:00-05:00",
+          "session_date": "2025-01-02",
+          "direction": "short",
+          "probability": 0.7018245011890333,
+          "entry_time": "2025-01-02T14:33:30+00:00",
+          "exit_time": "2025-01-02T14:35:00+00:00",
+          "entry_price": 21309.5,
+          "exit_price": 21263.75,
+          "filled_entry_price": 21308.75,
+          "filled_exit_price": 21264.5,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4508196721311475,
+          "executed_pnl_r": 1.4508196721311475,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.848018569975817,
+          "drawdown_r": 0.0,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2025-01-03-break_reentry_reclaim_long-2025-01-03T09:31:30-05:00",
+          "session_date": "2025-01-03",
+          "direction": "long",
+          "probability": 0.48889860407685115,
+          "entry_time": "2025-01-03T14:32:00+00:00",
+          "exit_time": "2025-01-03T14:39:00+00:00",
+          "entry_price": 21326.5,
+          "exit_price": 21385.75,
+          "filled_entry_price": 21327.25,
+          "filled_exit_price": 21385.0,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4620253164556962,
+          "executed_pnl_r": 1.4620253164556962,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.310043886431513,
+          "drawdown_r": 0.0,
+          "bars_held": 15
+        },
+        {
+          "candidate_id": "MNQ-2025-01-13-break_reentry_reclaim_short-2025-01-13T09:35:00-05:00",
+          "session_date": "2025-01-13",
+          "direction": "short",
+          "probability": 0.7779369602442088,
+          "entry_time": "2025-01-13T14:35:30+00:00",
+          "exit_time": "2025-01-13T14:37:30+00:00",
+          "entry_price": 20745.25,
+          "exit_price": 20710.375,
+          "filled_entry_price": 20744.5,
+          "filled_exit_price": 20711.125,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.435483870967742,
+          "executed_pnl_r": 1.435483870967742,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 11.745527757399255,
+          "drawdown_r": 0.0,
+          "bars_held": 5
+        },
+        {
+          "candidate_id": "MNQ-2025-01-15-break_reentry_reclaim_long-2025-01-15T09:32:00-05:00",
+          "session_date": "2025-01-15",
+          "direction": "long",
+          "probability": 0.503969326038938,
+          "entry_time": "2025-01-15T14:32:30+00:00",
+          "exit_time": "2025-01-15T14:35:30+00:00",
+          "entry_price": 21278.5,
+          "exit_price": 21240.75,
+          "filled_entry_price": 21279.25,
+          "filled_exit_price": 21240.0,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0397350993377483,
+          "executed_pnl_r": -1.0397350993377483,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.705792658061506,
+          "drawdown_r": -1.039735099337749,
+          "bars_held": 7
+        },
+        {
+          "candidate_id": "MNQ-2025-01-15-break_reentry_reclaim_short-2025-01-15T09:37:00-05:00",
+          "session_date": "2025-01-15",
+          "direction": "short",
+          "probability": 0.6247245554715694,
+          "entry_time": "2025-01-15T14:37:30+00:00",
+          "exit_time": "2025-01-15T14:39:30+00:00",
+          "entry_price": 21218.0,
+          "exit_price": 21255.75,
+          "filled_entry_price": 21217.25,
+          "filled_exit_price": 21256.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0397350993377483,
+          "executed_pnl_r": -1.0397350993377483,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 9.666057558723757,
+          "drawdown_r": -2.079470198675498,
+          "bars_held": 5
+        },
+        {
+          "candidate_id": "MNQ-2025-01-20-break_reentry_reclaim_long-2025-01-20T09:33:00-05:00",
+          "session_date": "2025-01-20",
+          "direction": "long",
+          "probability": 0.6278642117921437,
+          "entry_time": "2025-01-20T14:33:30+00:00",
+          "exit_time": "2025-01-20T14:40:30+00:00",
+          "entry_price": 21736.75,
+          "exit_price": 21758.5,
+          "filled_entry_price": 21737.5,
+          "filled_exit_price": 21757.75,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.396551724137931,
+          "executed_pnl_r": 1.396551724137931,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 11.062609282861688,
+          "drawdown_r": -0.6829184745375674,
+          "bars_held": 15
+        },
+        {
+          "candidate_id": "MNQ-2025-01-20-break_reentry_reclaim_short-2025-01-20T10:16:00-05:00",
+          "session_date": "2025-01-20",
+          "direction": "short",
+          "probability": 0.5644080064818644,
+          "entry_time": "2025-01-20T15:16:30+00:00",
+          "exit_time": "2025-01-20T15:22:00+00:00",
+          "entry_price": 21703.0,
+          "exit_price": 21681.25,
+          "filled_entry_price": 21702.25,
+          "filled_exit_price": 21682.0,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.396551724137931,
+          "executed_pnl_r": 1.396551724137931,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 12.459161006999619,
+          "drawdown_r": 0.0,
+          "bars_held": 12
+        },
+        {
+          "candidate_id": "MNQ-2025-01-22-break_reentry_reclaim_long-2025-01-22T09:31:30-05:00",
+          "session_date": "2025-01-22",
+          "direction": "long",
+          "probability": 0.8124454224358176,
+          "entry_time": "2025-01-22T14:32:00+00:00",
+          "exit_time": "2025-01-22T14:36:00+00:00",
+          "entry_price": 21953.0,
+          "exit_price": 21932.75,
+          "filled_entry_price": 21953.75,
+          "filled_exit_price": 21932.0,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0740740740740742,
+          "executed_pnl_r": -1.0740740740740742,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 11.385086932925544,
+          "drawdown_r": -1.0740740740740744,
+          "bars_held": 9
+        },
+        {
+          "candidate_id": "MNQ-2025-01-24-break_reentry_reclaim_long-2025-01-24T09:48:00-05:00",
+          "session_date": "2025-01-24",
+          "direction": "long",
+          "probability": 0.7538542496162315,
+          "entry_time": "2025-01-24T14:48:30+00:00",
+          "exit_time": "2025-01-24T14:58:00+00:00",
+          "entry_price": 22059.5,
+          "exit_price": 22057.25,
+          "filled_entry_price": 22060.25,
+          "filled_exit_price": 22056.5,
+          "gross_label_pnl_r": -0.13432835820895522,
+          "gross_executed_pnl_r": -0.22388059701492538,
+          "executed_pnl_r": -0.22388059701492538,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 11.161206335910618,
+          "drawdown_r": -1.2979546710890002,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2025-01-30-break_reentry_reclaim_short-2025-01-30T09:34:00-05:00",
+          "session_date": "2025-01-30",
+          "direction": "short",
+          "probability": 0.7943227945136377,
+          "entry_time": "2025-01-30T14:34:30+00:00",
+          "exit_time": "2025-01-30T14:39:00+00:00",
+          "entry_price": 21627.0,
+          "exit_price": 21650.5,
+          "filled_entry_price": 21626.25,
+          "filled_exit_price": 21651.25,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0638297872340425,
+          "executed_pnl_r": -1.0638297872340425,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.097376548676575,
+          "drawdown_r": -2.3617844583230436,
+          "bars_held": 10
+        },
+        {
+          "candidate_id": "MNQ-2025-01-31-break_reentry_reclaim_long-2025-01-31T09:31:30-05:00",
+          "session_date": "2025-01-31",
+          "direction": "long",
+          "probability": 0.5893505633717848,
+          "entry_time": "2025-01-31T14:32:00+00:00",
+          "exit_time": "2025-01-31T14:33:00+00:00",
+          "entry_price": 21834.75,
+          "exit_price": 21808.0,
+          "filled_entry_price": 21835.5,
+          "filled_exit_price": 21807.25,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0560747663551402,
+          "executed_pnl_r": -1.0560747663551402,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 9.041301782321435,
+          "drawdown_r": -3.4178592246781836,
+          "bars_held": 3
+        },
+        {
+          "candidate_id": "MNQ-2025-02-03-break_reentry_reclaim_short-2025-02-03T10:02:00-05:00",
+          "session_date": "2025-02-03",
+          "direction": "short",
+          "probability": 0.7052106297303666,
+          "entry_time": "2025-02-03T15:02:30+00:00",
+          "exit_time": "2025-02-03T15:05:00+00:00",
+          "entry_price": 21158.0,
+          "exit_price": 21199.0,
+          "filled_entry_price": 21157.25,
+          "filled_exit_price": 21199.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0365853658536586,
+          "executed_pnl_r": -1.0365853658536586,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.004716416467776,
+          "drawdown_r": -4.454444590531843,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2025-02-04-break_reentry_reclaim_long-2025-02-04T09:32:00-05:00",
+          "session_date": "2025-02-04",
+          "direction": "long",
+          "probability": 0.7476533266786877,
+          "entry_time": "2025-02-04T14:32:30+00:00",
+          "exit_time": "2025-02-04T14:36:00+00:00",
+          "entry_price": 21444.0,
+          "exit_price": 21477.375,
+          "filled_entry_price": 21444.75,
+          "filled_exit_price": 21476.625,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4325842696629214,
+          "executed_pnl_r": 1.4325842696629214,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 9.437300686130698,
+          "drawdown_r": -3.021860320868921,
+          "bars_held": 8
+        },
+        {
+          "candidate_id": "MNQ-2025-02-05-break_reentry_reclaim_short-2025-02-05T09:32:00-05:00",
+          "session_date": "2025-02-05",
+          "direction": "short",
+          "probability": 0.8756343185296758,
+          "entry_time": "2025-02-05T14:32:30+00:00",
+          "exit_time": "2025-02-05T14:34:00+00:00",
+          "entry_price": 21529.75,
+          "exit_price": 21552.75,
+          "filled_entry_price": 21529.0,
+          "filled_exit_price": 21553.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.065217391304348,
+          "executed_pnl_r": -1.065217391304348,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.37208329482635,
+          "drawdown_r": -4.087077712173269,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2025-02-05-break_reentry_reclaim_long-2025-02-05T09:38:00-05:00",
+          "session_date": "2025-02-05",
+          "direction": "long",
+          "probability": 0.6606602319975394,
+          "entry_time": "2025-02-05T14:38:30+00:00",
+          "exit_time": "2025-02-05T14:48:00+00:00",
+          "entry_price": 21565.25,
+          "exit_price": 21579.0,
+          "filled_entry_price": 21566.0,
+          "filled_exit_price": 21578.25,
+          "gross_label_pnl_r": 0.5978260869565217,
+          "gross_executed_pnl_r": 0.532608695652174,
+          "executed_pnl_r": 0.532608695652174,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.904691990478524,
+          "drawdown_r": -3.554469016521095,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2025-02-07-break_reentry_reclaim_short-2025-02-07T10:00:00-05:00",
+          "session_date": "2025-02-07",
+          "direction": "short",
+          "probability": 0.5025448577497192,
+          "entry_time": "2025-02-07T15:00:30+00:00",
+          "exit_time": "2025-02-07T15:02:00+00:00",
+          "entry_price": 21831.0,
+          "exit_price": 21782.625,
+          "filled_entry_price": 21830.25,
+          "filled_exit_price": 21783.375,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4534883720930232,
+          "executed_pnl_r": 1.4534883720930232,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.358180362571547,
+          "drawdown_r": -2.1009806444280716,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2025-02-10-break_reentry_reclaim_short-2025-02-10T09:32:00-05:00",
+          "session_date": "2025-02-10",
+          "direction": "short",
+          "probability": 0.7908142921930148,
+          "entry_time": "2025-02-10T14:32:30+00:00",
+          "exit_time": "2025-02-10T14:36:00+00:00",
+          "entry_price": 21752.25,
+          "exit_price": 21775.0,
+          "filled_entry_price": 21751.5,
+          "filled_exit_price": 21775.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.065934065934066,
+          "executed_pnl_r": -1.065934065934066,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 9.292246296637481,
+          "drawdown_r": -3.1669147103621373,
+          "bars_held": 8
+        },
+        {
+          "candidate_id": "MNQ-2025-02-10-break_reentry_reclaim_long-2025-02-10T09:42:00-05:00",
+          "session_date": "2025-02-10",
+          "direction": "long",
+          "probability": 0.5688403518310023,
+          "entry_time": "2025-02-10T14:42:30+00:00",
+          "exit_time": "2025-02-10T14:51:30+00:00",
+          "entry_price": 21780.0,
+          "exit_price": 21757.25,
+          "filled_entry_price": 21780.75,
+          "filled_exit_price": 21756.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.065934065934066,
+          "executed_pnl_r": -1.065934065934066,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.226312230703416,
+          "drawdown_r": -4.232848776296203,
+          "bars_held": 19
+        },
+        {
+          "candidate_id": "MNQ-2025-02-14-break_reentry_reclaim_short-2025-02-14T09:41:00-05:00",
+          "session_date": "2025-02-14",
+          "direction": "short",
+          "probability": 0.5307692987645587,
+          "entry_time": "2025-02-14T14:41:30+00:00",
+          "exit_time": "2025-02-14T14:47:30+00:00",
+          "entry_price": 22097.75,
+          "exit_price": 22123.0,
+          "filled_entry_price": 22097.0,
+          "filled_exit_price": 22123.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0594059405940595,
+          "executed_pnl_r": -1.0594059405940595,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.166906290109356,
+          "drawdown_r": -5.2922547168902625,
+          "bars_held": 13
+        },
+        {
+          "candidate_id": "MNQ-2025-02-17-break_reentry_reclaim_short-2025-02-17T09:32:00-05:00",
+          "session_date": "2025-02-17",
+          "direction": "short",
+          "probability": 0.7288133989376868,
+          "entry_time": "2025-02-17T14:32:30+00:00",
+          "exit_time": "2025-02-17T14:37:30+00:00",
+          "entry_price": 22223.5,
+          "exit_price": 22200.625,
+          "filled_entry_price": 22222.75,
+          "filled_exit_price": 22201.375,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.401639344262295,
+          "executed_pnl_r": 1.401639344262295,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.56854563437165,
+          "drawdown_r": -3.890615372627968,
+          "bars_held": 11
+        },
+        {
+          "candidate_id": "MNQ-2025-02-19-break_reentry_reclaim_short-2025-02-19T09:32:00-05:00",
+          "session_date": "2025-02-19",
+          "direction": "short",
+          "probability": 0.9121322521784709,
+          "entry_time": "2025-02-19T14:32:30+00:00",
+          "exit_time": "2025-02-19T14:35:00+00:00",
+          "entry_price": 22184.0,
+          "exit_price": 22202.0,
+          "filled_entry_price": 22183.25,
+          "filled_exit_price": 22202.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0833333333333333,
+          "executed_pnl_r": -1.0833333333333333,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.485212301038318,
+          "drawdown_r": -4.973948705961301,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2025-02-24-break_reentry_reclaim_short-2025-02-24T09:35:00-05:00",
+          "session_date": "2025-02-24",
+          "direction": "short",
+          "probability": 0.8157872703777976,
+          "entry_time": "2025-02-24T14:35:30+00:00",
+          "exit_time": "2025-02-24T14:43:00+00:00",
+          "entry_price": 21729.75,
+          "exit_price": 21690.75,
+          "filled_entry_price": 21729.0,
+          "filled_exit_price": 21691.5,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4423076923076923,
+          "executed_pnl_r": 1.4423076923076923,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.92751999334601,
+          "drawdown_r": -3.5316410136536085,
+          "bars_held": 16
+        },
+        {
+          "candidate_id": "MNQ-2025-02-27-break_reentry_reclaim_short-2025-02-27T09:39:00-05:00",
+          "session_date": "2025-02-27",
+          "direction": "short",
+          "probability": 0.6607048148753064,
+          "entry_time": "2025-02-27T14:39:30+00:00",
+          "exit_time": "2025-02-27T14:41:00+00:00",
+          "entry_price": 21317.5,
+          "exit_price": 21266.875,
+          "filled_entry_price": 21316.75,
+          "filled_exit_price": 21267.625,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4555555555555555,
+          "executed_pnl_r": 1.4555555555555555,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.383075548901566,
+          "drawdown_r": -2.076085458098053,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2025-02-28-break_reentry_reclaim_long-2025-02-28T09:43:00-05:00",
+          "session_date": "2025-02-28",
+          "direction": "long",
+          "probability": 0.8259006899483842,
+          "entry_time": "2025-02-28T14:43:30+00:00",
+          "exit_time": "2025-02-28T14:53:00+00:00",
+          "entry_price": 20604.0,
+          "exit_price": 20595.0,
+          "filled_entry_price": 20604.75,
+          "filled_exit_price": 20594.25,
+          "gross_label_pnl_r": -0.19047619047619047,
+          "gross_executed_pnl_r": -0.2222222222222222,
+          "executed_pnl_r": -0.2222222222222222,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.160853326679344,
+          "drawdown_r": -2.298307680320274,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2025-03-04-break_reentry_reclaim_long-2025-03-04T09:36:00-05:00",
+          "session_date": "2025-03-04",
+          "direction": "long",
+          "probability": 0.7342121428976035,
+          "entry_time": "2025-03-04T14:36:30+00:00",
+          "exit_time": "2025-03-04T14:40:00+00:00",
+          "entry_price": 20378.75,
+          "exit_price": 20339.5,
+          "filled_entry_price": 20379.5,
+          "filled_exit_price": 20338.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0382165605095541,
+          "executed_pnl_r": -1.0382165605095541,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 9.12263676616979,
+          "drawdown_r": -3.336524240829828,
+          "bars_held": 8
+        },
+        {
+          "candidate_id": "MNQ-2025-03-05-break_reentry_reclaim_long-2025-03-05T09:43:00-05:00",
+          "session_date": "2025-03-05",
+          "direction": "long",
+          "probability": 0.5737535098111115,
+          "entry_time": "2025-03-05T14:43:30+00:00",
+          "exit_time": "2025-03-05T14:45:00+00:00",
+          "entry_price": 20446.25,
+          "exit_price": 20404.75,
+          "filled_entry_price": 20447.0,
+          "filled_exit_price": 20404.0,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.036144578313253,
+          "executed_pnl_r": -1.036144578313253,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.086492187856537,
+          "drawdown_r": -4.372668819143081,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2025-03-10-break_reentry_reclaim_short-2025-03-10T09:32:00-04:00",
+          "session_date": "2025-03-10",
+          "direction": "short",
+          "probability": 0.731256495775048,
+          "entry_time": "2025-03-10T13:32:30+00:00",
+          "exit_time": "2025-03-10T13:35:00+00:00",
+          "entry_price": 19820.75,
+          "exit_price": 19851.0,
+          "filled_entry_price": 19820.0,
+          "filled_exit_price": 19851.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0495867768595042,
+          "executed_pnl_r": -1.0495867768595042,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.036905410997033,
+          "drawdown_r": -5.422255596002586,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2025-03-14-break_reentry_reclaim_long-2025-03-14T09:31:30-04:00",
+          "session_date": "2025-03-14",
+          "direction": "long",
+          "probability": 0.4912863406619831,
+          "entry_time": "2025-03-14T13:32:00+00:00",
+          "exit_time": "2025-03-14T13:35:30+00:00",
+          "entry_price": 19497.0,
+          "exit_price": 19555.875,
+          "filled_entry_price": 19497.75,
+          "filled_exit_price": 19555.125,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4617834394904459,
+          "executed_pnl_r": 1.4617834394904459,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.49868885048748,
+          "drawdown_r": -3.9604721565121395,
+          "bars_held": 8
+        },
+        {
+          "candidate_id": "MNQ-2025-03-19-break_reentry_reclaim_long-2025-03-19T09:54:00-04:00",
+          "session_date": "2025-03-19",
+          "direction": "long",
+          "probability": 0.6673707776781609,
+          "entry_time": "2025-03-19T13:54:30+00:00",
+          "exit_time": "2025-03-19T14:04:00+00:00",
+          "entry_price": 19621.25,
+          "exit_price": 19660.625,
+          "filled_entry_price": 19622.0,
+          "filled_exit_price": 19659.875,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4428571428571428,
+          "executed_pnl_r": 1.4428571428571428,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 9.941545993344622,
+          "drawdown_r": -2.5176150136549964,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2025-03-24-break_reentry_reclaim_long-2025-03-24T09:37:00-04:00",
+          "session_date": "2025-03-24",
+          "direction": "long",
+          "probability": 0.5220032326841082,
+          "entry_time": "2025-03-24T13:37:30+00:00",
+          "exit_time": "2025-03-24T13:38:00+00:00",
+          "entry_price": 20261.25,
+          "exit_price": 20288.25,
+          "filled_entry_price": 20262.0,
+          "filled_exit_price": 20287.5,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4166666666666667,
+          "executed_pnl_r": 1.4166666666666667,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 11.358212660011288,
+          "drawdown_r": -1.1009483469883303,
+          "bars_held": 2
+        },
+        {
+          "candidate_id": "MNQ-2025-03-25-break_reentry_reclaim_long-2025-03-25T09:32:00-04:00",
+          "session_date": "2025-03-25",
+          "direction": "long",
+          "probability": 0.6831530372460949,
+          "entry_time": "2025-03-25T13:32:30+00:00",
+          "exit_time": "2025-03-25T13:35:00+00:00",
+          "entry_price": 20415.0,
+          "exit_price": 20395.25,
+          "filled_entry_price": 20415.75,
+          "filled_exit_price": 20394.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0759493670886076,
+          "executed_pnl_r": -1.0759493670886076,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.28226329292268,
+          "drawdown_r": -2.1768977140769383,
+          "bars_held": 6
+        },
+        {
+          "candidate_id": "MNQ-2025-03-26-break_reentry_reclaim_short-2025-03-26T09:33:00-04:00",
+          "session_date": "2025-03-26",
+          "direction": "short",
+          "probability": 0.8388687429611448,
+          "entry_time": "2025-03-26T13:33:30+00:00",
+          "exit_time": "2025-03-26T13:35:00+00:00",
+          "entry_price": 20423.75,
+          "exit_price": 20442.5,
+          "filled_entry_price": 20423.0,
+          "filled_exit_price": 20443.25,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.08,
+          "executed_pnl_r": -1.08,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 9.20226329292268,
+          "drawdown_r": -3.2568977140769384,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2025-04-04-break_reentry_reclaim_short-2025-04-04T09:35:00-04:00",
+          "session_date": "2025-04-04",
+          "direction": "short",
+          "probability": 0.6844333285569252,
+          "entry_time": "2025-04-04T13:35:30+00:00",
+          "exit_time": "2025-04-04T13:45:00+00:00",
+          "entry_price": 18125.25,
+          "exit_price": 18037.25,
+          "filled_entry_price": 18124.5,
+          "filled_exit_price": 18038.0,
+          "gross_label_pnl_r": 1.0602409638554218,
+          "gross_executed_pnl_r": 1.0421686746987953,
+          "executed_pnl_r": 1.0421686746987953,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.244431967621475,
+          "drawdown_r": -2.2147290393781436,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2025-04-11-break_reentry_reclaim_long-2025-04-11T09:39:00-04:00",
+          "session_date": "2025-04-11",
+          "direction": "long",
+          "probability": 0.6031707697423437,
+          "entry_time": "2025-04-11T13:39:30+00:00",
+          "exit_time": "2025-04-11T13:41:00+00:00",
+          "entry_price": 18503.0,
+          "exit_price": 18437.0,
+          "filled_entry_price": 18503.75,
+          "filled_exit_price": 18436.25,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0227272727272727,
+          "executed_pnl_r": -1.0227272727272727,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 9.221704694894202,
+          "drawdown_r": -3.237456312105417,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2025-04-15-break_reentry_reclaim_long-2025-04-15T09:32:00-04:00",
+          "session_date": "2025-04-15",
+          "direction": "long",
+          "probability": 0.725264641545558,
+          "entry_time": "2025-04-15T13:32:30+00:00",
+          "exit_time": "2025-04-15T13:34:00+00:00",
+          "entry_price": 19023.25,
+          "exit_price": 18999.25,
+          "filled_entry_price": 19024.0,
+          "filled_exit_price": 18998.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0625,
+          "executed_pnl_r": -1.0625,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.159204694894202,
+          "drawdown_r": -4.299956312105417,
+          "bars_held": 4
+        },
+        {
+          "candidate_id": "MNQ-2025-04-16-break_reentry_reclaim_long-2025-04-16T09:32:00-04:00",
+          "session_date": "2025-04-16",
+          "direction": "long",
+          "probability": 0.5486698887495091,
+          "entry_time": "2025-04-16T13:32:30+00:00",
+          "exit_time": "2025-04-16T13:42:00+00:00",
+          "entry_price": 18645.0,
+          "exit_price": 18674.25,
+          "filled_entry_price": 18645.75,
+          "filled_exit_price": 18673.5,
+          "gross_label_pnl_r": 0.42700729927007297,
+          "gross_executed_pnl_r": 0.4051094890510949,
+          "executed_pnl_r": 0.4051094890510949,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.564314183945296,
+          "drawdown_r": -3.8948468230543227,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2025-04-17-break_reentry_reclaim_short-2025-04-17T09:31:30-04:00",
+          "session_date": "2025-04-17",
+          "direction": "short",
+          "probability": 0.5390536302318389,
+          "entry_time": "2025-04-17T13:32:00+00:00",
+          "exit_time": "2025-04-17T13:35:00+00:00",
+          "entry_price": 18452.5,
+          "exit_price": 18404.125,
+          "filled_entry_price": 18451.75,
+          "filled_exit_price": 18404.875,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4534883720930232,
+          "executed_pnl_r": 1.4534883720930232,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.017802556038319,
+          "drawdown_r": -2.4413584509612996,
+          "bars_held": 7
+        },
+        {
+          "candidate_id": "MNQ-2025-04-24-break_reentry_reclaim_long-2025-04-24T09:31:30-04:00",
+          "session_date": "2025-04-24",
+          "direction": "long",
+          "probability": 0.5188851484054263,
+          "entry_time": "2025-04-24T13:32:00+00:00",
+          "exit_time": "2025-04-24T13:32:30+00:00",
+          "entry_price": 18892.75,
+          "exit_price": 18863.5,
+          "filled_entry_price": 18893.5,
+          "filled_exit_price": 18862.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0512820512820513,
+          "executed_pnl_r": -1.0512820512820513,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.966520504756268,
+          "drawdown_r": -3.4926405022433507,
+          "bars_held": 2
+        },
+        {
+          "candidate_id": "MNQ-2025-04-25-break_reentry_reclaim_long-2025-04-25T09:35:00-04:00",
+          "session_date": "2025-04-25",
+          "direction": "long",
+          "probability": 0.5444487356511106,
+          "entry_time": "2025-04-25T13:35:30+00:00",
+          "exit_time": "2025-04-25T13:42:30+00:00",
+          "entry_price": 19339.75,
+          "exit_price": 19303.5,
+          "filled_entry_price": 19340.5,
+          "filled_exit_price": 19302.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0413793103448277,
+          "executed_pnl_r": -1.0413793103448277,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.92514119441144,
+          "drawdown_r": -4.534019812588179,
+          "bars_held": 15
+        },
+        {
+          "candidate_id": "MNQ-2025-05-05-break_reentry_reclaim_long-2025-05-05T09:35:00-04:00",
+          "session_date": "2025-05-05",
+          "direction": "long",
+          "probability": 0.4807758335193341,
+          "entry_time": "2025-05-05T13:35:30+00:00",
+          "exit_time": "2025-05-05T13:40:00+00:00",
+          "entry_price": 20040.75,
+          "exit_price": 20007.5,
+          "filled_entry_price": 20041.5,
+          "filled_exit_price": 20006.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0451127819548873,
+          "executed_pnl_r": -1.0451127819548873,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.880028412456553,
+          "drawdown_r": -5.579132594543066,
+          "bars_held": 10
+        },
+        {
+          "candidate_id": "MNQ-2025-05-06-break_reentry_reclaim_short-2025-05-06T09:51:00-04:00",
+          "session_date": "2025-05-06",
+          "direction": "short",
+          "probability": 0.7347116871205119,
+          "entry_time": "2025-05-06T13:51:30+00:00",
+          "exit_time": "2025-05-06T14:01:00+00:00",
+          "entry_price": 19765.0,
+          "exit_price": 19770.5,
+          "filled_entry_price": 19764.25,
+          "filled_exit_price": 19771.25,
+          "gross_label_pnl_r": -0.16296296296296298,
+          "gross_executed_pnl_r": -0.2074074074074074,
+          "executed_pnl_r": -0.2074074074074074,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 6.6726210050491455,
+          "drawdown_r": -5.786540001950473,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2025-05-09-break_reentry_reclaim_short-2025-05-09T09:52:00-04:00",
+          "session_date": "2025-05-09",
+          "direction": "short",
+          "probability": 0.5788606267011144,
+          "entry_time": "2025-05-09T13:52:30+00:00",
+          "exit_time": "2025-05-09T13:58:00+00:00",
+          "entry_price": 20214.5,
+          "exit_price": 20246.75,
+          "filled_entry_price": 20213.75,
+          "filled_exit_price": 20247.5,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.0465116279069768,
+          "executed_pnl_r": -1.0465116279069768,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.626109377142169,
+          "drawdown_r": -6.83305162985745,
+          "bars_held": 12
+        },
+        {
+          "candidate_id": "MNQ-2025-05-14-break_reentry_reclaim_long-2025-05-14T09:32:00-04:00",
+          "session_date": "2025-05-14",
+          "direction": "long",
+          "probability": 0.6085413605510084,
+          "entry_time": "2025-05-14T13:32:30+00:00",
+          "exit_time": "2025-05-14T13:42:00+00:00",
+          "entry_price": 21365.0,
+          "exit_price": 21370.25,
+          "filled_entry_price": 21365.75,
+          "filled_exit_price": 21369.5,
+          "gross_label_pnl_r": 0.1826086956521739,
+          "gross_executed_pnl_r": 0.13043478260869565,
+          "executed_pnl_r": 0.13043478260869565,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 5.756544159750864,
+          "drawdown_r": -6.702616847248755,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2025-05-28-break_reentry_reclaim_short-2025-05-28T09:48:00-04:00",
+          "session_date": "2025-05-28",
+          "direction": "short",
+          "probability": 0.6969253064048143,
+          "entry_time": "2025-05-28T13:48:30+00:00",
+          "exit_time": "2025-05-28T13:57:30+00:00",
+          "entry_price": 21493.25,
+          "exit_price": 21458.375,
+          "filled_entry_price": 21492.5,
+          "filled_exit_price": 21459.125,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.435483870967742,
+          "executed_pnl_r": 1.435483870967742,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 7.192028030718606,
+          "drawdown_r": -5.267132976281013,
+          "bars_held": 19
+        },
+        {
+          "candidate_id": "MNQ-2025-06-04-break_reentry_reclaim_short-2025-06-04T10:03:00-04:00",
+          "session_date": "2025-06-04",
+          "direction": "short",
+          "probability": 0.599983917018566,
+          "entry_time": "2025-06-04T14:03:30+00:00",
+          "exit_time": "2025-06-04T14:08:00+00:00",
+          "entry_price": 21704.75,
+          "exit_price": 21663.125,
+          "filled_entry_price": 21704.0,
+          "filled_exit_price": 21663.875,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.445945945945946,
+          "executed_pnl_r": 1.445945945945946,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.637973976664552,
+          "drawdown_r": -3.821187030335066,
+          "bars_held": 10
+        },
+        {
+          "candidate_id": "MNQ-2025-06-06-break_reentry_reclaim_long-2025-06-06T09:38:00-04:00",
+          "session_date": "2025-06-06",
+          "direction": "long",
+          "probability": 0.6935111802420046,
+          "entry_time": "2025-06-06T13:38:30+00:00",
+          "exit_time": "2025-06-06T13:46:00+00:00",
+          "entry_price": 21824.25,
+          "exit_price": 21856.875,
+          "filled_entry_price": 21825.0,
+          "filled_exit_price": 21856.125,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.4310344827586208,
+          "executed_pnl_r": 1.4310344827586208,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.069008459423173,
+          "drawdown_r": -2.390152547576445,
+          "bars_held": 16
+        },
+        {
+          "candidate_id": "MNQ-2025-06-10-break_reentry_reclaim_long-2025-06-10T09:39:00-04:00",
+          "session_date": "2025-06-10",
+          "direction": "long",
+          "probability": 0.6703166689479765,
+          "entry_time": "2025-06-10T13:39:30+00:00",
+          "exit_time": "2025-06-10T13:43:30+00:00",
+          "entry_price": 21881.25,
+          "exit_price": 21851.5,
+          "filled_entry_price": 21882.0,
+          "filled_exit_price": 21850.75,
+          "gross_label_pnl_r": -1.0,
+          "gross_executed_pnl_r": -1.050420168067227,
+          "executed_pnl_r": -1.050420168067227,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 9.018588291355947,
+          "drawdown_r": -3.440572715643672,
+          "bars_held": 9
+        },
+        {
+          "candidate_id": "MNQ-2025-06-18-break_reentry_reclaim_short-2025-06-18T09:32:00-04:00",
+          "session_date": "2025-06-18",
+          "direction": "short",
+          "probability": 0.6348466956480222,
+          "entry_time": "2025-06-18T13:32:30+00:00",
+          "exit_time": "2025-06-18T13:42:00+00:00",
+          "entry_price": 21735.25,
+          "exit_price": 21746.0,
+          "filled_entry_price": 21734.5,
+          "filled_exit_price": 21746.75,
+          "gross_label_pnl_r": -0.3233082706766917,
+          "gross_executed_pnl_r": -0.3684210526315789,
+          "executed_pnl_r": -0.3684210526315789,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 8.650167238724368,
+          "drawdown_r": -3.8089937682752506,
+          "bars_held": 20
+        },
+        {
+          "candidate_id": "MNQ-2025-06-23-break_reentry_reclaim_short-2025-06-23T09:31:30-04:00",
+          "session_date": "2025-06-23",
+          "direction": "short",
+          "probability": 0.5447517549719159,
+          "entry_time": "2025-06-23T13:32:00+00:00",
+          "exit_time": "2025-06-23T13:33:30+00:00",
+          "entry_price": 21821.0,
+          "exit_price": 21770.75,
+          "filled_entry_price": 21820.25,
+          "filled_exit_price": 21771.5,
+          "gross_label_pnl_r": 1.5,
+          "gross_executed_pnl_r": 1.455223880597015,
+          "executed_pnl_r": 1.455223880597015,
+          "base_size_multiplier": 1.0,
+          "regime_size_multiplier": 1.0,
+          "policy_size_multiplier": 1.0,
+          "size_multiplier": 1.0,
+          "cum_pnl_r": 10.105391119321382,
+          "drawdown_r": -2.3537698876782365,
+          "bars_held": 4
+        }
+      ]
+    },
+    "calibration_by_state_bucket": [
+      {
+        "market_state": "messy_transition",
+        "count": 103,
+        "probability_mean": 0.5462082402809745,
+        "hit_rate": 0.3883495145631068,
+        "avg_pnl_r": 0.2268058924556621
+      },
+      {
+        "market_state": "balanced_chop",
+        "count": 31,
+        "probability_mean": 0.5527217425712107,
+        "hit_rate": 0.2903225806451613,
+        "avg_pnl_r": 0.2568404839905121
+      },
+      {
+        "market_state": "auction_repair",
+        "count": 25,
+        "probability_mean": 0.4161271477666212,
+        "hit_rate": 0.36,
+        "avg_pnl_r": 0.2061375827549893
+      },
+      {
+        "market_state": "clean_strong_continuation",
+        "count": 24,
+        "probability_mean": 0.49808041563968497,
+        "hit_rate": 0.2916666666666667,
+        "avg_pnl_r": 0.1666845179495926
+      }
+    ],
+    "state_contribution": [
+      {
+        "market_state": "messy_transition",
+        "trade_count": 67,
+        "total_pnl_r": 2.125258771111705
+      },
+      {
+        "market_state": "balanced_chop",
+        "trade_count": 21,
+        "total_pnl_r": 5.244794612711718
+      },
+      {
+        "market_state": "auction_repair",
+        "trade_count": 11,
+        "total_pnl_r": 2.744171205402224
+      },
+      {
+        "market_state": "clean_strong_continuation",
+        "trade_count": 10,
+        "total_pnl_r": -0.008833469904258262
+      }
+    ],
+    "daily_session_pnl": [
+      {
+        "session_date": "2024-01-17",
+        "trade_count": 1,
+        "session_pnl_r": 1.4387755102040816,
+        "avg_trade_r": 1.4387755102040816
+      },
+      {
+        "session_date": "2024-01-19",
+        "trade_count": 1,
+        "session_pnl_r": -1.082191780821918,
+        "avg_trade_r": -1.082191780821918
+      },
+      {
+        "session_date": "2024-01-29",
+        "trade_count": 1,
+        "session_pnl_r": -1.08,
+        "avg_trade_r": -1.08
+      },
+      {
+        "session_date": "2024-01-30",
+        "trade_count": 1,
+        "session_pnl_r": -0.8095238095238095,
+        "avg_trade_r": -0.8095238095238095
+      },
+      {
+        "session_date": "2024-05-07",
+        "trade_count": 1,
+        "session_pnl_r": -0.3709677419354839,
+        "avg_trade_r": -0.3709677419354839
+      },
+      {
+        "session_date": "2024-05-09",
+        "trade_count": 1,
+        "session_pnl_r": 1.4240506329113924,
+        "avg_trade_r": 1.4240506329113924
+      },
+      {
+        "session_date": "2024-05-10",
+        "trade_count": 1,
+        "session_pnl_r": 0.6538461538461539,
+        "avg_trade_r": 0.6538461538461539
+      },
+      {
+        "session_date": "2024-05-15",
+        "trade_count": 1,
+        "session_pnl_r": -1.0588235294117647,
+        "avg_trade_r": -1.0588235294117647
+      },
+      {
+        "session_date": "2024-05-16",
+        "trade_count": 1,
+        "session_pnl_r": 0.3548387096774194,
+        "avg_trade_r": 0.3548387096774194
+      },
+      {
+        "session_date": "2024-05-21",
+        "trade_count": 1,
+        "session_pnl_r": 0.640625,
+        "avg_trade_r": 0.640625
+      },
+      {
+        "session_date": "2024-05-22",
+        "trade_count": 1,
+        "session_pnl_r": -1.1304347826086956,
+        "avg_trade_r": -1.1304347826086956
+      },
+      {
+        "session_date": "2024-05-23",
+        "trade_count": 1,
+        "session_pnl_r": 1.3888888888888888,
+        "avg_trade_r": 1.3888888888888888
+      },
+      {
+        "session_date": "2024-05-27",
+        "trade_count": 1,
+        "session_pnl_r": 1.35,
+        "avg_trade_r": 1.35
+      },
+      {
+        "session_date": "2024-05-28",
+        "trade_count": 1,
+        "session_pnl_r": 1.3604651162790697,
+        "avg_trade_r": 1.3604651162790697
+      },
+      {
+        "session_date": "2024-05-30",
+        "trade_count": 1,
+        "session_pnl_r": 1.4325842696629214,
+        "avg_trade_r": 1.4325842696629214
+      },
+      {
+        "session_date": "2024-05-31",
+        "trade_count": 2,
+        "session_pnl_r": -2.1666666666666665,
+        "avg_trade_r": -1.0833333333333333
+      },
+      {
+        "session_date": "2024-06-03",
+        "trade_count": 2,
+        "session_pnl_r": 2.85,
+        "avg_trade_r": 1.425
+      },
+      {
+        "session_date": "2024-06-06",
+        "trade_count": 1,
+        "session_pnl_r": 1.4166666666666667,
+        "avg_trade_r": 1.4166666666666667
+      },
+      {
+        "session_date": "2024-06-17",
+        "trade_count": 1,
+        "session_pnl_r": -0.5333333333333333,
+        "avg_trade_r": -0.5333333333333333
+      },
+      {
+        "session_date": "2024-06-24",
+        "trade_count": 1,
+        "session_pnl_r": 1.4090909090909092,
+        "avg_trade_r": 1.4090909090909092
+      },
+      {
+        "session_date": "2024-06-25",
+        "trade_count": 1,
+        "session_pnl_r": -1.0731707317073171,
+        "avg_trade_r": -1.0731707317073171
+      },
+      {
+        "session_date": "2024-07-01",
+        "trade_count": 2,
+        "session_pnl_r": -2.1132075471698113,
+        "avg_trade_r": -1.0566037735849056
+      },
+      {
+        "session_date": "2024-07-05",
+        "trade_count": 1,
+        "session_pnl_r": -1.0689655172413792,
+        "avg_trade_r": -1.0689655172413792
+      },
+      {
+        "session_date": "2024-07-08",
+        "trade_count": 1,
+        "session_pnl_r": -0.6,
+        "avg_trade_r": -0.6
+      },
+      {
+        "session_date": "2024-07-10",
+        "trade_count": 1,
+        "session_pnl_r": -0.12903225806451613,
+        "avg_trade_r": -0.12903225806451613
+      },
+      {
+        "session_date": "2024-07-30",
+        "trade_count": 1,
+        "session_pnl_r": 0.47096774193548385,
+        "avg_trade_r": 0.47096774193548385
+      },
+      {
+        "session_date": "2024-07-31",
+        "trade_count": 1,
+        "session_pnl_r": -1.0422535211267605,
+        "avg_trade_r": -1.0422535211267605
+      },
+      {
+        "session_date": "2024-08-01",
+        "trade_count": 1,
+        "session_pnl_r": 1.4433962264150944,
+        "avg_trade_r": 1.4433962264150944
+      },
+      {
+        "session_date": "2024-08-02",
+        "trade_count": 1,
+        "session_pnl_r": -1.0346820809248556,
+        "avg_trade_r": -1.0346820809248556
+      },
+      {
+        "session_date": "2024-08-09",
+        "trade_count": 1,
+        "session_pnl_r": -1.0458015267175573,
+        "avg_trade_r": -1.0458015267175573
+      },
+      {
+        "session_date": "2024-08-27",
+        "trade_count": 1,
+        "session_pnl_r": 1.4325842696629214,
+        "avg_trade_r": 1.4325842696629214
+      },
+      {
+        "session_date": "2024-09-02",
+        "trade_count": 1,
+        "session_pnl_r": -1.25,
+        "avg_trade_r": -1.25
+      },
+      {
+        "session_date": "2024-09-03",
+        "trade_count": 1,
+        "session_pnl_r": 1.4555555555555555,
+        "avg_trade_r": 1.4555555555555555
+      },
+      {
+        "session_date": "2024-09-06",
+        "trade_count": 1,
+        "session_pnl_r": 1.4661016949152543,
+        "avg_trade_r": 1.4661016949152543
+      },
+      {
+        "session_date": "2024-09-10",
+        "trade_count": 1,
+        "session_pnl_r": -1.05,
+        "avg_trade_r": -1.05
+      },
+      {
+        "session_date": "2024-09-16",
+        "trade_count": 1,
+        "session_pnl_r": 1.4597315436241611,
+        "avg_trade_r": 1.4597315436241611
+      },
+      {
+        "session_date": "2024-09-18",
+        "trade_count": 1,
+        "session_pnl_r": -0.5222222222222223,
+        "avg_trade_r": -0.5222222222222223
+      },
+      {
+        "session_date": "2024-09-23",
+        "trade_count": 2,
+        "session_pnl_r": 0.3309859154929575,
+        "avg_trade_r": 0.16549295774647876
+      },
+      {
+        "session_date": "2024-09-25",
+        "trade_count": 1,
+        "session_pnl_r": -0.2767857142857143,
+        "avg_trade_r": -0.2767857142857143
+      },
+      {
+        "session_date": "2024-09-30",
+        "trade_count": 1,
+        "session_pnl_r": 1.411764705882353,
+        "avg_trade_r": 1.411764705882353
+      },
+      {
+        "session_date": "2024-10-01",
+        "trade_count": 1,
+        "session_pnl_r": 1.417808219178082,
+        "avg_trade_r": 1.417808219178082
+      },
+      {
+        "session_date": "2024-10-02",
+        "trade_count": 1,
+        "session_pnl_r": -1.0612244897959184,
+        "avg_trade_r": -1.0612244897959184
+      },
+      {
+        "session_date": "2024-10-04",
+        "trade_count": 1,
+        "session_pnl_r": -1.058252427184466,
+        "avg_trade_r": -1.058252427184466
+      },
+      {
+        "session_date": "2024-10-25",
+        "trade_count": 1,
+        "session_pnl_r": 0.6666666666666666,
+        "avg_trade_r": 0.6666666666666666
+      },
+      {
+        "session_date": "2024-10-29",
+        "trade_count": 1,
+        "session_pnl_r": 0.09027777777777778,
+        "avg_trade_r": 0.09027777777777778
+      },
+      {
+        "session_date": "2024-11-06",
+        "trade_count": 1,
+        "session_pnl_r": -1.0444444444444445,
+        "avg_trade_r": -1.0444444444444445
+      },
+      {
+        "session_date": "2024-11-07",
+        "trade_count": 1,
+        "session_pnl_r": 1.4473684210526316,
+        "avg_trade_r": 1.4473684210526316
+      },
+      {
+        "session_date": "2024-11-12",
+        "trade_count": 1,
+        "session_pnl_r": -0.6,
+        "avg_trade_r": -0.6
+      },
+      {
+        "session_date": "2024-11-15",
+        "trade_count": 1,
+        "session_pnl_r": 1.427710843373494,
+        "avg_trade_r": 1.427710843373494
+      },
+      {
+        "session_date": "2024-11-21",
+        "trade_count": 1,
+        "session_pnl_r": -1.05,
+        "avg_trade_r": -1.05
+      },
+      {
+        "session_date": "2024-12-03",
+        "trade_count": 1,
+        "session_pnl_r": 0.017857142857142856,
+        "avg_trade_r": 0.017857142857142856
+      },
+      {
+        "session_date": "2024-12-11",
+        "trade_count": 1,
+        "session_pnl_r": 1.422077922077922,
+        "avg_trade_r": 1.422077922077922
+      },
+      {
+        "session_date": "2024-12-17",
+        "trade_count": 1,
+        "session_pnl_r": -1.0606060606060606,
+        "avg_trade_r": -1.0606060606060606
+      },
+      {
+        "session_date": "2024-12-18",
+        "trade_count": 1,
+        "session_pnl_r": -0.31683168316831684,
+        "avg_trade_r": -0.31683168316831684
+      },
+      {
+        "session_date": "2024-12-23",
+        "trade_count": 1,
+        "session_pnl_r": -0.1092896174863388,
+        "avg_trade_r": -0.1092896174863388
+      },
+      {
+        "session_date": "2024-12-30",
+        "trade_count": 1,
+        "session_pnl_r": 1.455223880597015,
+        "avg_trade_r": 1.455223880597015
+      },
+      {
+        "session_date": "2025-01-02",
+        "trade_count": 1,
+        "session_pnl_r": 1.4508196721311475,
+        "avg_trade_r": 1.4508196721311475
+      },
+      {
+        "session_date": "2025-01-03",
+        "trade_count": 1,
+        "session_pnl_r": 1.4620253164556962,
+        "avg_trade_r": 1.4620253164556962
+      },
+      {
+        "session_date": "2025-01-13",
+        "trade_count": 1,
+        "session_pnl_r": 1.435483870967742,
+        "avg_trade_r": 1.435483870967742
+      },
+      {
+        "session_date": "2025-01-15",
+        "trade_count": 2,
+        "session_pnl_r": -2.0794701986754967,
+        "avg_trade_r": -1.0397350993377483
+      },
+      {
+        "session_date": "2025-01-20",
+        "trade_count": 2,
+        "session_pnl_r": 2.793103448275862,
+        "avg_trade_r": 1.396551724137931
+      },
+      {
+        "session_date": "2025-01-22",
+        "trade_count": 1,
+        "session_pnl_r": -1.0740740740740742,
+        "avg_trade_r": -1.0740740740740742
+      },
+      {
+        "session_date": "2025-01-24",
+        "trade_count": 1,
+        "session_pnl_r": -0.22388059701492538,
+        "avg_trade_r": -0.22388059701492538
+      },
+      {
+        "session_date": "2025-01-30",
+        "trade_count": 1,
+        "session_pnl_r": -1.0638297872340425,
+        "avg_trade_r": -1.0638297872340425
+      },
+      {
+        "session_date": "2025-01-31",
+        "trade_count": 1,
+        "session_pnl_r": -1.0560747663551402,
+        "avg_trade_r": -1.0560747663551402
+      },
+      {
+        "session_date": "2025-02-03",
+        "trade_count": 1,
+        "session_pnl_r": -1.0365853658536586,
+        "avg_trade_r": -1.0365853658536586
+      },
+      {
+        "session_date": "2025-02-04",
+        "trade_count": 1,
+        "session_pnl_r": 1.4325842696629214,
+        "avg_trade_r": 1.4325842696629214
+      },
+      {
+        "session_date": "2025-02-05",
+        "trade_count": 2,
+        "session_pnl_r": -0.532608695652174,
+        "avg_trade_r": -0.266304347826087
+      },
+      {
+        "session_date": "2025-02-07",
+        "trade_count": 1,
+        "session_pnl_r": 1.4534883720930232,
+        "avg_trade_r": 1.4534883720930232
+      },
+      {
+        "session_date": "2025-02-10",
+        "trade_count": 2,
+        "session_pnl_r": -2.131868131868132,
+        "avg_trade_r": -1.065934065934066
+      },
+      {
+        "session_date": "2025-02-14",
+        "trade_count": 1,
+        "session_pnl_r": -1.0594059405940595,
+        "avg_trade_r": -1.0594059405940595
+      },
+      {
+        "session_date": "2025-02-17",
+        "trade_count": 1,
+        "session_pnl_r": 1.401639344262295,
+        "avg_trade_r": 1.401639344262295
+      },
+      {
+        "session_date": "2025-02-19",
+        "trade_count": 1,
+        "session_pnl_r": -1.0833333333333333,
+        "avg_trade_r": -1.0833333333333333
+      },
+      {
+        "session_date": "2025-02-24",
+        "trade_count": 1,
+        "session_pnl_r": 1.4423076923076923,
+        "avg_trade_r": 1.4423076923076923
+      },
+      {
+        "session_date": "2025-02-27",
+        "trade_count": 1,
+        "session_pnl_r": 1.4555555555555555,
+        "avg_trade_r": 1.4555555555555555
+      },
+      {
+        "session_date": "2025-02-28",
+        "trade_count": 1,
+        "session_pnl_r": -0.2222222222222222,
+        "avg_trade_r": -0.2222222222222222
+      },
+      {
+        "session_date": "2025-03-04",
+        "trade_count": 1,
+        "session_pnl_r": -1.0382165605095541,
+        "avg_trade_r": -1.0382165605095541
+      },
+      {
+        "session_date": "2025-03-05",
+        "trade_count": 1,
+        "session_pnl_r": -1.036144578313253,
+        "avg_trade_r": -1.036144578313253
+      },
+      {
+        "session_date": "2025-03-10",
+        "trade_count": 1,
+        "session_pnl_r": -1.0495867768595042,
+        "avg_trade_r": -1.0495867768595042
+      },
+      {
+        "session_date": "2025-03-14",
+        "trade_count": 1,
+        "session_pnl_r": 1.4617834394904459,
+        "avg_trade_r": 1.4617834394904459
+      },
+      {
+        "session_date": "2025-03-19",
+        "trade_count": 1,
+        "session_pnl_r": 1.4428571428571428,
+        "avg_trade_r": 1.4428571428571428
+      },
+      {
+        "session_date": "2025-03-24",
+        "trade_count": 1,
+        "session_pnl_r": 1.4166666666666667,
+        "avg_trade_r": 1.4166666666666667
+      },
+      {
+        "session_date": "2025-03-25",
+        "trade_count": 1,
+        "session_pnl_r": -1.0759493670886076,
+        "avg_trade_r": -1.0759493670886076
+      },
+      {
+        "session_date": "2025-03-26",
+        "trade_count": 1,
+        "session_pnl_r": -1.08,
+        "avg_trade_r": -1.08
+      },
+      {
+        "session_date": "2025-04-04",
+        "trade_count": 1,
+        "session_pnl_r": 1.0421686746987953,
+        "avg_trade_r": 1.0421686746987953
+      },
+      {
+        "session_date": "2025-04-11",
+        "trade_count": 1,
+        "session_pnl_r": -1.0227272727272727,
+        "avg_trade_r": -1.0227272727272727
+      },
+      {
+        "session_date": "2025-04-15",
+        "trade_count": 1,
+        "session_pnl_r": -1.0625,
+        "avg_trade_r": -1.0625
+      },
+      {
+        "session_date": "2025-04-16",
+        "trade_count": 1,
+        "session_pnl_r": 0.4051094890510949,
+        "avg_trade_r": 0.4051094890510949
+      },
+      {
+        "session_date": "2025-04-17",
+        "trade_count": 1,
+        "session_pnl_r": 1.4534883720930232,
+        "avg_trade_r": 1.4534883720930232
+      },
+      {
+        "session_date": "2025-04-24",
+        "trade_count": 1,
+        "session_pnl_r": -1.0512820512820513,
+        "avg_trade_r": -1.0512820512820513
+      },
+      {
+        "session_date": "2025-04-25",
+        "trade_count": 1,
+        "session_pnl_r": -1.0413793103448277,
+        "avg_trade_r": -1.0413793103448277
+      },
+      {
+        "session_date": "2025-05-05",
+        "trade_count": 1,
+        "session_pnl_r": -1.0451127819548873,
+        "avg_trade_r": -1.0451127819548873
+      },
+      {
+        "session_date": "2025-05-06",
+        "trade_count": 1,
+        "session_pnl_r": -0.2074074074074074,
+        "avg_trade_r": -0.2074074074074074
+      },
+      {
+        "session_date": "2025-05-09",
+        "trade_count": 1,
+        "session_pnl_r": -1.0465116279069768,
+        "avg_trade_r": -1.0465116279069768
+      },
+      {
+        "session_date": "2025-05-14",
+        "trade_count": 1,
+        "session_pnl_r": 0.13043478260869565,
+        "avg_trade_r": 0.13043478260869565
+      },
+      {
+        "session_date": "2025-05-28",
+        "trade_count": 1,
+        "session_pnl_r": 1.435483870967742,
+        "avg_trade_r": 1.435483870967742
+      },
+      {
+        "session_date": "2025-06-04",
+        "trade_count": 1,
+        "session_pnl_r": 1.445945945945946,
+        "avg_trade_r": 1.445945945945946
+      },
+      {
+        "session_date": "2025-06-06",
+        "trade_count": 1,
+        "session_pnl_r": 1.4310344827586208,
+        "avg_trade_r": 1.4310344827586208
+      },
+      {
+        "session_date": "2025-06-10",
+        "trade_count": 1,
+        "session_pnl_r": -1.050420168067227,
+        "avg_trade_r": -1.050420168067227
+      },
+      {
+        "session_date": "2025-06-18",
+        "trade_count": 1,
+        "session_pnl_r": -0.3684210526315789,
+        "avg_trade_r": -0.3684210526315789
+      },
+      {
+        "session_date": "2025-06-23",
+        "trade_count": 1,
+        "session_pnl_r": 1.455223880597015,
+        "avg_trade_r": 1.455223880597015
+      }
+    ],
+    "slippage_commission_assumptions": {
+      "model": "ticks",
+      "profile": "base",
+      "tick_size": 0.25,
+      "ticks_per_side": 3.0,
+      "order_type": "market_on_signal_close_proxy",
+      "single_position": true,
+      "sizing_policy": "binary_threshold_v1",
+      "regime_throttle_policy": "none",
+      "regime_size_policy": "none"
+    },
+    "leakage_audit": {
+      "status": "pass",
+      "diagnostic_leakage": {
+        "status": "pass",
+        "issues": [],
+        "point_in_time_basis": "stage2 feature_cutoff_time per candidate; labels and PnL used only after feature/state assignment for diagnostics",
+        "holdout_locked": true
+      },
+      "policy_gate_leakage": {
+        "status": "pass",
+        "issues": [],
+        "point_in_time_basis": "pre-entry gates use feature_cutoff_time features; delayed follow-through variant is evaluated as a delayed-entry policy with fill impact",
+        "holdout_locked": true
+      }
+    }
+  },
+  "pass_fail": {
+    "walk_forward_pass": true,
+    "cpcv_pass": false,
+    "worst_path_gt_minus_5r": true,
+    "dsr_psr_pass": false,
+    "trade_count_acceptable": true,
+    "translation_pass": true,
+    "drawdown_tolerable": true,
+    "no_leakage": true
+  },
+  "promotion_decision": "blocked"
+}

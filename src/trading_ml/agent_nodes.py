@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from datetime import timedelta
+import time
 from typing import Any
 
 from trading_ml.agent_state import DecisionName, FailureCategory, LoopLimits, ReviewCheckpoint
@@ -9,13 +10,21 @@ from trading_ml.artifact_store import persist_node_artifact
 from trading_ml.price_action_feature_catalog import build_strategy_intake
 from trading_ml.config import load_bnr_config
 from trading_ml.feature_diagnostics import build_feature_diagnostics
+from trading_ml.market_state_quality import build_market_state_setup_quality_diagnostic
 from trading_ml.research_program import evaluate_program_state
 from trading_ml.research_controller import (
+    build_candidate_universe_expansion_search_space,
+    build_exit_behavior_research_search_space,
     build_feature_search_space,
     build_feature_threshold_search_space,
     build_label_search_space,
     build_model_search_space,
+    build_market_state_setup_quality_search_space,
+    build_policy_gate_search_space,
+    build_policy_meta_search_space,
+    build_sample_expansion_search_space,
     build_subtype_search_space,
+    build_tail_path_cleanup_search_space,
     build_threshold_search_space,
     build_translation_policy_search_space,
     load_controller_config,
@@ -23,6 +32,7 @@ from trading_ml.research_controller import (
 from trading_ml.schemas import BlockingIssue
 from trading_ml.schemas import utc_now_iso
 from trading_ml.search import build_search_space, run_governed_search
+from trading_ml.setup_redesign import build_setup_redesign_plan
 from trading_ml.stage2_pipeline import Stage2Config, run_stage2_research_engine
 from trading_ml.translation_analysis import build_translation_analysis
 from trading_ml.validation_audit import build_validation_audit
@@ -51,6 +61,76 @@ def _ensure_counts(state: dict[str, Any]) -> dict[str, int]:
         "trials": state.get("experiment_counts", {}).get("trials", 0),
         "feature_changes": state.get("experiment_counts", {}).get("feature_changes", 0),
         "threshold_changes": state.get("experiment_counts", {}).get("threshold_changes", 0),
+    }
+
+
+def _ensure_budget_usage(state: dict[str, Any]) -> dict[str, Any]:
+    usage = dict(state.get("budget_usage", {}) or {})
+    usage.setdefault("runtime_seconds", 0)
+    usage.setdefault("trials", state.get("experiment_counts", {}).get("trials", 0))
+    usage.setdefault("full_validations", 0)
+    usage.setdefault("cpcv_runs", 0)
+    usage.setdefault("model_trains", 0)
+    return usage
+
+
+def _budget_exhausted(state: dict[str, Any], usage: dict[str, Any]) -> list[str]:
+    budgets = dict(state.get("compute_budgets", {}) or {})
+    exhausted: list[str] = []
+    for key in ["trials", "full_validations", "cpcv_runs", "model_trains"]:
+        limit = budgets.get(f"max_{key}")
+        if limit is not None and int(usage.get(key, 0) or 0) >= int(limit):
+            exhausted.append(key)
+    runtime_limit = budgets.get("max_runtime_seconds")
+    if runtime_limit is not None and float(usage.get("runtime_seconds", 0) or 0) >= float(runtime_limit):
+        exhausted.append("runtime_seconds")
+    return exhausted
+
+
+def _route_decision(state: dict[str, Any], *, node: str, decision: str, reason: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    return {
+        "node": node,
+        "decision": decision,
+        "reason": reason,
+        "research_cycle": int(state.get("research_cycle", 1) or 1),
+        "created_at": utc_now_iso(),
+        "payload": payload or {},
+    }
+
+
+def _append_route_decision(state: dict[str, Any], decision: dict[str, Any]) -> list[dict[str, Any]]:
+    return [*list(state.get("route_decisions", []) or []), decision]
+
+
+def _stage2_safe_overrides(overrides: dict[str, Any]) -> dict[str, Any]:
+    allowed = set(getattr(Stage2Config, "__dataclass_fields__", {}).keys())
+    return {key: value for key, value in overrides.items() if key in allowed}
+
+
+def _cheap_screen_subtype_candidates(state: dict[str, Any], search_space: dict[str, Any]) -> dict[str, Any]:
+    configured = list(search_space.get("space", {}).get("setup_subtype", []) or [])
+    attribution = dict((state.get("next_step_plan", {}) or {}).get("evidence_used", {}) or {})
+    dominant = dict(attribution.get("subtype", {}) or {})
+    dominant_key = dominant.get("key")
+    subtype_counts = dict((state.get("stage2_result", {}) or {}).get("subtype_counts", {}) or {})
+    ordered = ["all_subtypes"]
+    if dominant_key:
+        ordered.append(str(dominant_key))
+    ordered.extend([name for name, _ in sorted(subtype_counts.items(), key=lambda item: item[1], reverse=True)])
+    shortlist: list[str] = []
+    for name in ordered:
+        if name in configured and name not in shortlist:
+            shortlist.append(name)
+    if not shortlist:
+        shortlist = configured[:2]
+    return {
+        "mode": "cheap_search",
+        "source": "existing_stage2_and_cpcv_attribution",
+        "configured_candidates": configured,
+        "shortlisted_candidates": shortlist[:2],
+        "dominant_failure_subtype": dominant,
+        "subtype_counts": subtype_counts,
+        "reuse_artifacts": bool(dict(state.get("compute_budgets", {}) or {}).get("reuse_artifacts", True)),
     }
 
 
@@ -118,6 +198,7 @@ def program_director_node(state: dict[str, Any]) -> dict[str, Any]:
         "current_node": "program_director",
         "program_state": program_state,
         "next_step_plan": next_step_plan,
+        "benchmark_status": next_step_plan.get("benchmark_status", "active"),
         "run_log": _append_log(
             state,
             "program_director",
@@ -128,6 +209,25 @@ def program_director_node(state: dict[str, Any]) -> dict[str, Any]:
                 "program_gaps": program_state["program_gaps"][:6],
                 "next_step_plan": next_step_plan,
             },
+        ),
+    }
+
+
+def setup_redesign_agent_node(state: dict[str, Any]) -> dict[str, Any]:
+    plan = build_setup_redesign_plan(state)
+    diagnostic = build_market_state_setup_quality_diagnostic(state)
+    plan["market_state_setup_quality_diagnostic"] = diagnostic
+    return {
+        "current_node": "setup_redesign_agent",
+        "setup_redesign_plan": plan,
+        "market_state_setup_quality_diagnostic": diagnostic,
+        "benchmark_status": plan["benchmark_status"],
+        "execution_mode": "diagnostic_only",
+        "run_log": _append_log(
+            state,
+            "setup_redesign_agent",
+            "Prepared market-structure/setup redesign mandate for the parked benchmark.",
+            plan,
         ),
     }
 
@@ -199,7 +299,7 @@ def cto_agent_node(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def data_steward_agent_node(state: dict[str, Any]) -> dict[str, Any]:
-    stage2_config = dict(state.get("stage2_config", {}))
+    stage2_config = _stage2_safe_overrides(dict(state.get("stage2_config", {})))
     if stage2_config.get("source_path"):
         boundary_role = _source_boundary_role(state, stage2_config.get("source_path"))
         result = run_stage2_research_engine(Stage2Config(**stage2_config))
@@ -347,14 +447,16 @@ def backtest_agent_node(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> dict[str, Any]:
+    started_at = time.monotonic()
     counts = _ensure_counts(state)
+    budget_usage = _ensure_budget_usage(state)
     controller = dict(state.get("controller_state", {})) or load_controller_config()
     next_step_plan = dict(state.get("next_step_plan", {}))
     if next_step_plan.get("controller_override"):
         controller.update(dict(next_step_plan["controller_override"]))
     stage2_config = dict(state.get("stage2_config", {}))
     if next_step_plan.get("stage2_overrides"):
-        stage2_config.update(dict(next_step_plan["stage2_overrides"]))
+        stage2_config.update(_stage2_safe_overrides(dict(next_step_plan["stage2_overrides"])))
     active_family = controller.get("active_family")
     search_space = dict(state.get("search_space", {})) or (
         build_model_search_space()
@@ -365,31 +467,140 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         if active_family == "feature_threshold"
         else build_label_search_space()
         if active_family == "label"
+        else build_sample_expansion_search_space()
+        if active_family == "sample_expansion"
         else build_subtype_search_space()
         if active_family == "subtype"
+        else build_policy_gate_search_space()
+        if active_family == "policy_gate"
+        else build_policy_meta_search_space()
+        if active_family == "policy_meta"
+        else build_tail_path_cleanup_search_space()
+        if active_family == "tail_path_cleanup"
+        else build_market_state_setup_quality_search_space()
+        if active_family == "market_state_setup_quality"
+        else build_exit_behavior_research_search_space()
+        if active_family == "exit_behavior_research"
+        else build_candidate_universe_expansion_search_space()
+        if active_family == "candidate_universe_expansion"
         else build_threshold_search_space()
         if active_family == "threshold"
         else build_translation_policy_search_space()
         if active_family == "translation_policy"
         else build_search_space()
     )
+    family_budget = dict(next_step_plan.get("search_budget", {}) or {})
+    remaining_trial_budget = max(
+        0,
+        int(dict(state.get("compute_budgets", {}) or {}).get("max_trials", limits.max_trials) or limits.max_trials)
+        - int(budget_usage.get("trials", 0) or 0),
+    )
+    candidate_trial_limits = [
+        int(value)
+        for value in [
+            search_space.get("max_batch_trials"),
+            family_budget.get("max_trials"),
+            remaining_trial_budget,
+        ]
+        if value is not None
+    ]
+    if candidate_trial_limits:
+        controller["max_batch_trials"] = min(candidate_trial_limits)
+    selected_family = str(next_step_plan.get("selected_family", active_family))
+    cycle = int(state.get("research_cycle", 1) or 1)
     approvals = dict(state.get("approvals", {}))
     pending = list(state.get("checkpoints_pending", []))
     issues = list(state.get("blocking_issues", []))
     search_results: dict[str, Any] = {}
+    execution_mode = "cheap_search" if active_family in {"subtype", "market_state_setup_quality", "exit_behavior_research", "candidate_universe_expansion"} else "full_validation"
+    route_payload = {"selected_family": selected_family, "active_family": active_family}
+
+    if (
+        state.get("search_batch_status") == "complete"
+        and state.get("executed_research_family") == selected_family
+        and int(state.get("executed_family_cycle", 0) or 0) == cycle
+    ):
+        decision = _route_decision(
+            state,
+            node="search_controller_agent",
+            decision="skip_search_route_to_audit",
+            reason="Selected family already executed in the current cycle.",
+            payload=route_payload,
+        )
+        budget_usage["runtime_seconds"] = float(budget_usage.get("runtime_seconds", 0) or 0) + round(time.monotonic() - started_at, 3)
+        return {
+            "current_node": "search_controller_agent",
+            "search_space": search_space,
+            "search_results": dict(state.get("search_results", {})),
+            "controller_state": controller,
+            "execution_mode": "diagnostic_only",
+            "budget_usage": budget_usage,
+            "route_decisions": _append_route_decision(state, decision),
+            "run_log": _append_log(
+                state,
+                "search_controller_agent",
+                "Skipped governed search because the selected family already ran this cycle.",
+                {"route_decision": decision, "budget_usage": budget_usage},
+            ),
+        }
+
+    exhausted = _budget_exhausted(state, budget_usage)
+    if exhausted and dict(state.get("compute_budgets", {}) or {}).get("stop_on_budget_exhaustion", True):
+        decision = _route_decision(
+            state,
+            node="search_controller_agent",
+            decision="stop_on_budget_exhaustion",
+            reason="Compute budget exhausted before search execution.",
+            payload={"exhausted": exhausted, **route_payload},
+        )
+        issues.append(f"Compute budget exhausted: {', '.join(exhausted)}")
+        return {
+            "current_node": "search_controller_agent",
+            "search_space": search_space,
+            "search_results": dict(state.get("search_results", {})),
+            "controller_state": controller,
+            "execution_mode": "diagnostic_only",
+            "budget_usage": budget_usage,
+            "blocking_issues": issues,
+            "route_decisions": _append_route_decision(state, decision),
+            "run_log": _append_log(
+                state,
+                "search_controller_agent",
+                "Stopped before search because compute budget was exhausted.",
+                {"route_decision": decision, "budget_usage": budget_usage},
+            ),
+        }
 
     if not approvals.get("search_space_approval", False):
         if "search_space_approval" not in pending:
             pending.append("search_space_approval")
+        decision = _route_decision(
+            state,
+            node="search_controller_agent",
+            decision="queue_search_space_approval",
+            reason="Search execution requires approval.",
+            payload=route_payload,
+        )
         return {
             "current_node": "search_controller_agent",
             "search_space": search_space,
             "checkpoints_pending": pending,
+            "execution_mode": "diagnostic_only",
+            "budget_usage": budget_usage,
+            "route_decisions": _append_route_decision(state, decision),
             "run_log": _append_log(
                 state,
                 "search_controller_agent",
                 "Prepared governed search space and queued approval.",
-                {"search_space": search_space},
+                {
+                    "search_space": search_space,
+                    "selected_family": selected_family,
+                    "diagnostic_evidence_used": next_step_plan.get("diagnostic_evidence_used"),
+                    "rejected_alternatives": next_step_plan.get("rejected_alternatives"),
+                    "rationale": next_step_plan.get("rationale"),
+                    "route_decision": decision,
+                    "budget_usage": budget_usage,
+                },
             ),
         }
 
@@ -397,8 +608,16 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         trial_config = dict(stage2_config)
         if controller.get("active_model_family"):
             trial_config["model_family"] = controller["active_model_family"]
+        cheap_screen: dict[str, Any] | None = None
+        if active_family == "subtype":
+            cheap_screen = _cheap_screen_subtype_candidates(state, search_space)
+            controller["allowed_setup_subtypes"] = cheap_screen["shortlisted_candidates"]
         search_results = run_governed_search(trial_config, controller_override=controller)
         counts["trials"] += int(search_results.get("trial_count", 0))
+        budget_usage["trials"] = int(budget_usage.get("trials", 0) or 0) + int(search_results.get("trial_count", 0))
+        budget_usage["model_trains"] = int(budget_usage.get("model_trains", 0) or 0) + int(search_results.get("models_trained", search_results.get("trial_count", 0)) or 0)
+        if cheap_screen:
+            search_results["cheap_screen"] = cheap_screen
         family = search_results.get("family")
         if family in {"feature", "feature_threshold"}:
             counts["feature_changes"] += int(search_results.get("trial_count", 0))
@@ -407,6 +626,19 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     blocked = counts["trials"] > limits.max_trials
     if blocked and "Max trials exceeded." not in issues:
         issues.append("Max trials exceeded.")
+    budget_usage["runtime_seconds"] = float(budget_usage.get("runtime_seconds", 0) or 0) + round(time.monotonic() - started_at, 3)
+    decision = _route_decision(
+        state,
+        node="search_controller_agent",
+        decision="search_complete_route_to_audit",
+        reason="Governed search batch completed; validation gates run next.",
+        payload={
+            **route_payload,
+            "trial_count": search_results.get("trial_count", 0),
+            "batch_decision": search_results.get("batch_decision"),
+            "execution_mode": execution_mode,
+        },
+    )
     return {
         "current_node": "search_controller_agent",
         "search_space": search_space,
@@ -414,24 +646,52 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         "controller_state": controller,
         "stage2_config": stage2_config,
         "experiment_counts": counts,
+        "executed_research_family": selected_family,
+        "executed_family_cycle": cycle,
+        "search_batch_status": "complete" if search_results else "skipped",
+        "execution_mode": execution_mode,
+        "budget_usage": budget_usage,
         "blocking_issues": issues,
         "checkpoints_pending": [name for name in pending if name != "search_space_approval"],
+        "route_decisions": _append_route_decision(state, decision),
         "run_log": _append_log(
             state,
             "search_controller_agent",
             "Ran governed research-controller batch." if search_results else "Evaluated constrained parameter search limits.",
-            {"limits": asdict(limits), "counts": counts, "controller": controller, "next_step_plan": next_step_plan, "search_results": search_results},
+            {
+                "limits": asdict(limits),
+                "counts": counts,
+                "budget_usage": budget_usage,
+                "controller": controller,
+                "next_step_plan": next_step_plan,
+                "selected_family": selected_family,
+                "executed_research_family": selected_family,
+                "executed_family_cycle": cycle,
+                "search_batch_status": "complete" if search_results else "skipped",
+                "execution_mode": execution_mode,
+                "diagnostic_evidence_used": next_step_plan.get("diagnostic_evidence_used"),
+                "rejected_alternatives": next_step_plan.get("rejected_alternatives"),
+                "rationale": next_step_plan.get("rationale"),
+                "route_decision": decision,
+                "search_results": search_results,
+            },
         ),
     }
 
 
 def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     stage2 = dict(state.get("stage2_result", {}))
+    budget_usage = _ensure_budget_usage(state)
     if stage2:
         feature_audit = stage2.get("feature_audit", {})
         data_flags = stage2.get("data_quality", {}).get("quality_flags", [])
         robustness = _robustness_status(stage2)
-        validation_audit = build_validation_audit(stage2, dict(state.get("search_results", {})), dict(state.get("controller_state", {})))
+        validation_audit = build_validation_audit(
+            stage2,
+            dict(state.get("search_results", {})),
+            dict(state.get("controller_state", {})),
+            artifact_context={"run_id": state.get("run_id")},
+        )
         audit_summary = {
             "leakage": "pass" if feature_audit.get("failed", 1) == 0 else "fail",
             "overfitting": validation_audit["overfitting"],
@@ -447,10 +707,31 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             "market_structure_lab": stage2.get("market_structure_lab", {}),
             "model_diagnostics": stage2.get("model_diagnostics", {}),
         }
+        if dict(audit_summary.get("cpcv", {}) or {}).get("status") not in {None, "pending"}:
+            budget_usage["cpcv_runs"] = int(budget_usage.get("cpcv_runs", 0) or 0) + 1
+        budget_usage["full_validations"] = int(budget_usage.get("full_validations", 0) or 0) + 1
+        decision = _route_decision(
+            state,
+            node="audit_agent",
+            decision="audit_complete_route_to_translation",
+            reason="Validation audit completed after governed search.",
+            payload={
+                "cpcv_status": dict(audit_summary.get("cpcv", {}) or {}).get("status"),
+                "deflated_sharpe_status": dict(audit_summary.get("deflated_sharpe", {}) or {}).get("status"),
+                "budget_usage": budget_usage,
+            },
+        )
         return {
             "current_node": "audit_agent",
             "audit_summary": audit_summary,
-            "run_log": _append_log(state, "audit_agent", "Audited Stage 2 feature timestamps and data quality flags.", audit_summary),
+            "budget_usage": budget_usage,
+            "route_decisions": _append_route_decision(state, decision),
+            "run_log": _append_log(
+                state,
+                "audit_agent",
+                "Audited Stage 2 feature timestamps and data quality flags.",
+                {**audit_summary, "budget_usage": budget_usage, "route_decision": decision},
+            ),
         }
     audit_summary = {
         "leakage": "pending",
@@ -462,7 +743,8 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "current_node": "audit_agent",
         "audit_summary": audit_summary,
-        "run_log": _append_log(state, "audit_agent", "Prepared audit checklist for leakage and robustness.", audit_summary),
+        "budget_usage": budget_usage,
+        "run_log": _append_log(state, "audit_agent", "Prepared audit checklist for leakage and robustness.", {**audit_summary, "budget_usage": budget_usage}),
     }
 
 
@@ -587,9 +869,19 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
     summary["suggested_sizing_policy"] = accepted_trial.get("overrides", {}).get("sizing_policy", controller_state.get("benchmark_sizing_policy"))
     summary["suggested_regime_throttle_policy"] = accepted_trial.get("overrides", {}).get("regime_throttle_policy", controller_state.get("benchmark_regime_throttle_policy"))
     summary["suggested_regime_size_policy"] = accepted_trial.get("overrides", {}).get("regime_size_policy", controller_state.get("benchmark_regime_size_policy"))
+    route_target = "review_frozen_spec" if state.get("search_batch_status") == "complete" else "program_director"
+    decision = _route_decision(
+        state,
+        node="translation_checkpoint",
+        decision=f"route_to_{route_target}",
+        reason="Search-complete cycles proceed to validation and promotion gates before new research planning.",
+        payload={"search_batch_status": state.get("search_batch_status"), "translation_status": status},
+    )
+    summary["route_decision"] = decision
     return {
         "current_node": "translation_checkpoint",
         "translation_summary": summary,
+        "route_decisions": _append_route_decision(state, decision),
         "run_log": _append_log(state, "translation_checkpoint", "Checked prediction-to-strategy translation quality.", summary),
     }
 
@@ -672,16 +964,25 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
     stage2_config = dict(state.get("stage2_config", {}))
     family = str(controller_state.get("active_family", "setup"))
     translation_summary = dict(state.get("translation_summary", {}))
+    audit_summary = dict(state.get("audit_summary", {}) or {})
+    cpcv_status = dict(audit_summary.get("cpcv", {}) or {}).get("status")
+    dsr_status = dict(audit_summary.get("deflated_sharpe", {}) or {}).get("status")
+    hard_gates_pass = cpcv_status == "pass" and dsr_status == "pass"
     continue_iteration = (
         state.get("promotion_decision") == "freeze"
         and bool(accepted_trial)
         and cycle < max_cycles
-        and dict(state.get("audit_summary", {})).get("walk_forward", {}).get("status") in {"pending", "pass"}
-        and dict(state.get("audit_summary", {})).get("purging", {}).get("status") != "fail"
+        and hard_gates_pass
+        and dict(audit_summary.get("walk_forward", {}) or {}).get("status") in {"pending", "pass"}
+        and dict(audit_summary.get("purging", {}) or {}).get("status") != "fail"
     )
     if family == "setup" and state.get("promotion_decision") == "advance_to_validation" and bool(accepted_trial) and cycle < max_cycles:
         continue_iteration = True
     payload = {"continue_iteration": continue_iteration, "research_cycle": cycle, "max_research_cycles": max_cycles}
+    if bool(accepted_trial) and not hard_gates_pass:
+        payload["stop_reasons"] = ["accepted trial vetoed by hard validation gates"]
+        payload["cpcv_status"] = cpcv_status
+        payload["deflated_sharpe_status"] = dsr_status
     if continue_iteration:
         if family == "setup" and state.get("promotion_decision") == "advance_to_validation":
             stage2_config.update(accepted_trial.get("overrides", {}))
@@ -704,6 +1005,7 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
                 for key, value in overrides.items()
                 if key not in {"decision_threshold", "sizing_policy", "regime_throttle_policy", "regime_size_policy"}
             }
+            stage2_overrides = _stage2_safe_overrides(stage2_overrides)
             if family != "threshold" and stage2_overrides:
                 stage2_config.update(stage2_overrides)
             controller_state["spec_version"] = f"{controller_state.get('spec_version', 'bnr_spec_vA')}.c{cycle + 1}"

@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import json
 
-from trading_ml.agent_workflow import pending_human_checkpoints, run_linear_stage3_pass
+from trading_ml.agent_workflow import pending_human_checkpoints
+from trading_ml.langgraph_integration import build_langgraph_initial_input, compile_bnr_langgraph
 
 
 def main() -> None:
-    state = run_linear_stage3_pass()
+    graph = compile_bnr_langgraph()
+    state = graph.invoke(
+        build_langgraph_initial_input(),
+        config={"configurable": {"thread_id": "stage3-demo"}},
+    )
     summary = {
         "current_node": state["current_node"],
         "promotion_decision": state["promotion_decision"],
