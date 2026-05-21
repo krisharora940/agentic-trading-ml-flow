@@ -95,6 +95,40 @@ def _llm_note(llm: Any, system_prompt: str, user_prompt: str) -> str:
     return _content_to_text(response)
 
 
+def route_after_program_director_state(state: AgentLoopState) -> str:
+    plan = dict(state.get("next_step_plan", {}) or {})
+    desk_handoff = dict(plan.get("desk_handoff", {}) or {})
+    planned_family = dict(plan.get("controller_override", {}) or {}).get("active_family")
+    executed_family = state.get("executed_research_family") or dict(state.get("search_results", {}) or {}).get("family")
+    executed_cycle = int(state.get("executed_family_cycle", 0) or 0)
+    current_cycle = int(state.get("research_cycle", 1) or 1)
+    already_executed = (
+        state.get("search_batch_status") == "complete"
+        and executed_family == planned_family
+        and executed_cycle == current_cycle
+    )
+    if desk_handoff.get("first_governed_batch") and planned_family and not already_executed:
+        return "governor_agent"
+    if plan.get("benchmark_status") == "exhausted_or_structurally_fragile":
+        return "setup_redesign_agent"
+    if already_executed:
+        return "audit_agent"
+    if plan.get("approval_required") == "search_space_approval" and planned_family and not state.get("translation_summary"):
+        return "governor_agent"
+    if state.get("translation_summary"):
+        return "review_frozen_spec"
+    return "governor_agent"
+
+
+def route_after_data_steward_state(state: AgentLoopState) -> str:
+    plan = dict(state.get("next_step_plan", {}) or {})
+    desk_handoff = dict(plan.get("desk_handoff", {}) or {})
+    action_id = str(plan.get("assigned_research_action", "") or "")
+    if desk_handoff.get("first_governed_batch") and action_id in {"candidate_universe_expansion", "exit_behavior_research"}:
+        return "search_controller_agent"
+    return "bnr_research_agent"
+
+
 def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = None, *, use_llm: bool = True) -> Any:
     StateGraph, START, END, (InMemorySaver, Command, _) = require_langgraph()
     limits = build_loop_limits()
@@ -247,25 +281,7 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
         return "cto_agent"
 
     def route_after_program_director(state: AgentLoopState) -> str:
-        plan = dict(state.get("next_step_plan", {}) or {})
-        if plan.get("benchmark_status") == "exhausted_or_structurally_fragile":
-            return "setup_redesign_agent"
-        planned_family = dict(plan.get("controller_override", {}) or {}).get("active_family")
-        executed_family = state.get("executed_research_family") or dict(state.get("search_results", {}) or {}).get("family")
-        executed_cycle = int(state.get("executed_family_cycle", 0) or 0)
-        current_cycle = int(state.get("research_cycle", 1) or 1)
-        already_executed = (
-            state.get("search_batch_status") == "complete"
-            and executed_family == planned_family
-            and executed_cycle == current_cycle
-        )
-        if already_executed:
-            return "audit_agent"
-        if plan.get("approval_required") == "search_space_approval" and planned_family and not already_executed and not state.get("translation_summary"):
-            return "governor_agent"
-        if state.get("translation_summary"):
-            return "review_frozen_spec"
-        return "governor_agent"
+        return route_after_program_director_state(state)
 
     def route_after_translation(state: AgentLoopState) -> str:
         if state.get("search_batch_status") == "complete":
@@ -305,7 +321,7 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     graph.add_edge("setup_redesign_agent", END)
     graph.add_conditional_edges("governor_agent", route_after_governor)
     graph.add_edge("cto_agent", "data_steward_agent")
-    graph.add_edge("data_steward_agent", "bnr_research_agent")
+    graph.add_conditional_edges("data_steward_agent", route_after_data_steward_state)
     graph.add_edge("review_bnr_spec", "bnr_research_agent")
     graph.add_edge("bnr_research_agent", "labeling_agent")
     graph.add_edge("labeling_agent", "review_label")
@@ -399,7 +415,17 @@ def build_bnr_research_desk_initial_input() -> AgentLoopState:
 
 
 def build_governor_state_from_desk_handoff(desk_state: dict[str, Any]) -> AgentLoopState:
-    state = build_agent_loop_state()
+    state = build_agent_loop_state(
+        preapproved_checkpoints=["bnr_spec_approval", "label_approval", "search_space_approval", "frozen_spec_approval"],
+        max_research_cycles=1,
+        compute_budget_overrides={
+            "max_trials": 1,
+            "max_full_validations": 1,
+            "max_cpcv_runs": 1,
+            "max_model_trains": 1,
+        },
+        runtime_profile="bounded_autonomous",
+    )
     state["stage2_result"] = dict(desk_state.get("stage2_result", {}) or {})
     state["bnr_attempts"] = list(desk_state.get("bnr_attempts", []) or [])
     state["failure_clusters"] = list(desk_state.get("failure_clusters", []) or [])

@@ -108,6 +108,20 @@ class BNRResearchDeskTests(unittest.TestCase):
         update = desk_director_node(state)
         self.assertEqual(update["desk_summary"]["desk_director"]["selected_node"], "exit_research_agent")
 
+    def test_desk_director_avoids_repeating_family_already_executed_by_governor(self) -> None:
+        state = {
+            "run_id": "bnr-desk-test",
+            "research_cycle": 1,
+            "phase": "exploration",
+            "failure_clusters": [{"family": "no_reclaim_edge", "recommended_family": "candidate_universe_expansion", "cluster_id": "fc-1"}],
+            "desk_memory": [{"proposal_family": "eligibility"}, {"proposal_family": "setup"}],
+            "research_action_history": [{"family": "candidate_universe_expansion", "action_id": "candidate_universe_expansion"}],
+            "desk_summary": {},
+            "run_log": [],
+        }
+        update = desk_director_node(state)
+        self.assertEqual(update["desk_summary"]["desk_director"]["selected_node"], "feature_engineer")
+
     def test_bnr_research_desk_graph_runs_to_handoff(self) -> None:
         graph = compile_bnr_research_desk_graph()
         initial_state = build_bnr_research_desk_initial_input()
@@ -132,6 +146,8 @@ class BNRResearchDeskTests(unittest.TestCase):
         self.assertEqual(state["desk_proposals"][-1]["proposal_id"], "DPROP-1")
         self.assertEqual(state["failure_clusters"][0]["cluster_id"], "FC-1")
         self.assertEqual(state["bnr_attempts"][0]["attempt_id"], "ATT-c1")
+        self.assertEqual(state["runtime_profile"], "bounded_autonomous")
+        self.assertTrue(state["approvals"]["search_space_approval"])
 
     def test_desk_memory_update_persists_cross_run_memory(self) -> None:
         state = {
@@ -150,6 +166,7 @@ class BNRResearchDeskTests(unittest.TestCase):
             result = desk_memory_update_node(state)
         append_memory.assert_called_once()
         self.assertEqual(result["desk_memory"][-1]["proposal"]["proposal_id"], "DPROP-1")
+        self.assertEqual(result["desk_memory"][-1]["proposal_family"], "path_modeling")
 
 
 if __name__ == "__main__":

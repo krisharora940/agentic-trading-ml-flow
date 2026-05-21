@@ -202,6 +202,8 @@ def desk_memory_update_node(state: dict[str, Any]) -> dict[str, Any]:
         *list(state.get("desk_memory", []) or []),
         {
             "created_at": utc_now_iso(),
+            "proposal_id": latest.get("proposal_id"),
+            "proposal_family": latest.get("family"),
             "top_cluster": dict(clusters[0]) if clusters else {},
             "proposal": latest,
         },
@@ -259,11 +261,23 @@ def _select_desk_node(top_cluster: dict[str, Any], state: dict[str, Any]) -> str
         for row in list(state.get("desk_memory", []) or [])
         if row.get("proposal_family")
     }
+    governed_history = {
+        str(row.get("family"))
+        for row in list(state.get("research_action_history", []) or [])
+        if row.get("family")
+    }
     candidates = _candidate_proposal_families(family, recommended_family)
     for proposal_family in candidates:
-        if proposal_family not in proposal_history:
+        if proposal_family not in proposal_history and not _proposal_family_already_executed(proposal_family, governed_history):
             return _node_for_proposal_family(proposal_family)
-    return _node_for_proposal_family(candidates[0] if candidates else "feature")
+    ranked_fallbacks = sorted(
+        candidates or ["feature"],
+        key=lambda proposal_family: (
+            _proposal_family_already_executed(proposal_family, governed_history),
+            _proposal_family_last_seen_index(proposal_family, list(state.get("desk_memory", []) or [])),
+        ),
+    )
+    return _node_for_proposal_family(ranked_fallbacks[0])
 
 
 def _selection_reason(top_cluster: dict[str, Any], selected_node: str) -> str:
@@ -299,6 +313,25 @@ def _node_for_proposal_family(proposal_family: str) -> str:
         "exit_behavior_research": "exit_research_agent",
     }
     return mapping.get(proposal_family, "feature_engineer")
+
+
+def _proposal_family_already_executed(proposal_family: str, governed_history: set[str]) -> bool:
+    mapping = {
+        "eligibility": "candidate_universe_expansion",
+        "setup": "setup",
+        "feature": "feature",
+        "path_modeling": "exit_behavior_research",
+        "exit_behavior_research": "exit_behavior_research",
+    }
+    governed_family = mapping.get(proposal_family)
+    return bool(governed_family and governed_family in governed_history)
+
+
+def _proposal_family_last_seen_index(proposal_family: str, desk_memory: list[dict[str, Any]]) -> int:
+    for idx in range(len(desk_memory) - 1, -1, -1):
+        if str(desk_memory[idx].get("proposal_family")) == proposal_family:
+            return len(desk_memory) - idx
+    return 10_000
 
 
 def _count_values(rows: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:

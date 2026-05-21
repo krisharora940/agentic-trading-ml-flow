@@ -4,6 +4,7 @@ from unittest import mock
 from trading_ml.agent_nodes import audit_agent_node, diagnosis_agent_node, iteration_controller_node, search_controller_agent_node, setup_redesign_agent_node, translation_checkpoint_node
 from trading_ml.agent_state import LoopLimits
 from trading_ml.agent_workflow import build_agent_loop_state, pending_human_checkpoints, run_linear_stage3_pass
+from trading_ml.langgraph_integration import route_after_data_steward_state, route_after_program_director_state
 
 
 class AgentWorkflowTests(unittest.TestCase):
@@ -183,6 +184,28 @@ class AgentWorkflowTests(unittest.TestCase):
             search_controller_agent_node(state, limits)
         controller = run_action.call_args.kwargs["controller_state"]
         self.assertEqual(controller["max_batch_trials"], 1)
+        self.assertEqual(controller["fast_variant_names"][:2], ["first_reclaim_only_baseline", "allow_delayed_reclaim"])
+        self.assertEqual(controller["max_sessions"], 96)
+
+    def test_desk_handoff_routes_to_governor_before_setup_redesign(self) -> None:
+        state = build_agent_loop_state()
+        state["next_step_plan"] = {
+            "selected_family": "candidate_universe_expansion",
+            "assigned_research_action": "candidate_universe_expansion",
+            "benchmark_status": "exhausted_or_structurally_fragile",
+            "approval_required": "search_space_approval",
+            "controller_override": {"active_family": "candidate_universe_expansion"},
+            "desk_handoff": {"proposal_id": "DPROP-1", "first_governed_batch": True},
+        }
+        self.assertEqual(route_after_program_director_state(state), "governor_agent")
+
+    def test_desk_handoff_structural_family_skips_to_search_after_data_steward(self) -> None:
+        state = build_agent_loop_state()
+        state["next_step_plan"] = {
+            "assigned_research_action": "candidate_universe_expansion",
+            "desk_handoff": {"proposal_id": "DPROP-1", "first_governed_batch": True},
+        }
+        self.assertEqual(route_after_data_steward_state(state), "search_controller_agent")
 
     def test_diagnostic_action_skips_full_audit_budget_consumption(self) -> None:
         state = build_agent_loop_state()
@@ -195,6 +218,19 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertEqual(result["budget_usage"]["cpcv_runs"], 2)
         self.assertEqual(result["audit_summary"]["research_diagnostics"]["action_id"], "cpcv_attribution")
 
+    def test_structural_governed_action_skips_full_audit_budget_consumption(self) -> None:
+        state = build_agent_loop_state()
+        state["budget_usage"] = {"runtime_seconds": 0, "trials": 6, "full_validations": 2, "cpcv_runs": 2, "model_trains": 6}
+        state["search_results"] = {
+            "family": "candidate_universe_expansion",
+            "governance": {"promotion_blocked": True, "models_trained": 0},
+            "action": {"action_id": "candidate_universe_expansion", "callable_kind": "governed_research_cycle"},
+        }
+        result = audit_agent_node(state)
+        self.assertEqual(result["budget_usage"]["full_validations"], 2)
+        self.assertEqual(result["budget_usage"]["cpcv_runs"], 2)
+        self.assertEqual(result["audit_summary"]["structural_research"]["family"], "candidate_universe_expansion")
+
     def test_diagnostic_action_skips_translation_analysis(self) -> None:
         state = build_agent_loop_state()
         state["search_results"] = {
@@ -203,6 +239,17 @@ class AgentWorkflowTests(unittest.TestCase):
         result = translation_checkpoint_node(state)
         self.assertEqual(result["translation_summary"]["status"], "inform")
         self.assertEqual(result["translation_summary"]["diagnostic_action"], "validation_failure_analysis")
+
+    def test_structural_governed_action_skips_translation_analysis(self) -> None:
+        state = build_agent_loop_state()
+        state["search_results"] = {
+            "family": "candidate_universe_expansion",
+            "governance": {"promotion_blocked": True, "models_trained": 0},
+            "action": {"action_id": "candidate_universe_expansion", "callable_kind": "governed_research_cycle"},
+        }
+        result = translation_checkpoint_node(state)
+        self.assertEqual(result["translation_summary"]["status"], "inform")
+        self.assertEqual(result["translation_summary"]["structural_action"], "candidate_universe_expansion")
 
     def test_diagnosis_agent_builds_attempts_and_failure_clusters(self) -> None:
         state = build_agent_loop_state()

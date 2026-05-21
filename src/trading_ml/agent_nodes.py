@@ -619,6 +619,18 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     desk_handoff = dict(next_step_plan.get("desk_handoff", {}) or {})
     if desk_handoff.get("first_governed_batch"):
         controller["max_batch_trials"] = min(int(controller.get("max_batch_trials", 1) or 1), 1)
+        if active_family == "candidate_universe_expansion":
+            top_cluster = dict(next_step_plan.get("evidence_used", {}) or {}).get("top_failure_cluster", {}) or {}
+            shortlist = ["first_reclaim_only_baseline", "allow_delayed_reclaim"]
+            recommended_focus = set(top_cluster.get("recommended_focus", []) or [])
+            if "attempt_definition" in recommended_focus or "candidate_deduplication" in recommended_focus:
+                shortlist.append("multiple_reclaim_attempts")
+            elif "reclaim_timing" in recommended_focus:
+                shortlist.append("allow_post_failed_break_repair")
+            else:
+                shortlist.append("allow_wick_through_breaks")
+            controller["fast_variant_names"] = shortlist
+            controller["max_sessions"] = min(int(controller.get("max_sessions", 96) or 96), 96)
     selected_family = str(next_step_plan.get("selected_family", active_family))
     action_registry = available_research_actions()
     preferred_action = next_step_plan.get("assigned_research_action")
@@ -844,9 +856,10 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
 def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     stage2 = dict(state.get("stage2_result", {}))
     budget_usage = _ensure_budget_usage(state)
+    search_results = dict(state.get("search_results", {}) or {})
+    structural_governance = dict(search_results.get("governance", {}) or {})
     action_kind = _current_action_kind(state)
     if action_kind and action_kind != "governed_research_cycle":
-        search_results = dict(state.get("search_results", {}) or {})
         action = dict(search_results.get("action", {}) or {})
         audit_summary = {
             **dict(state.get("audit_summary", {}) or {}),
@@ -872,6 +885,37 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
                 state,
                 "audit_agent",
                 "Recorded diagnostic research action without rerunning full validation.",
+                {"audit_summary": audit_summary, "budget_usage": budget_usage, "route_decision": decision},
+            ),
+        }
+    if structural_governance.get("promotion_blocked"):
+        action = dict(search_results.get("action", {}) or {})
+        audit_summary = {
+            **dict(state.get("audit_summary", {}) or {}),
+            "structural_research": {
+                "status": "inform",
+                "action_id": action.get("action_id"),
+                "family": search_results.get("family"),
+                "promotion_blocked": True,
+                "models_trained": structural_governance.get("models_trained", 0),
+            },
+        }
+        decision = _route_decision(
+            state,
+            node="audit_agent",
+            decision="structural_research_route_to_translation",
+            reason="Structural governed research updates memory and artifacts without running promotion-grade validation.",
+            payload={"action_id": action.get("action_id"), "family": search_results.get("family"), "budget_usage": budget_usage},
+        )
+        return {
+            "current_node": "audit_agent",
+            "audit_summary": audit_summary,
+            "budget_usage": budget_usage,
+            "route_decisions": _append_route_decision(state, decision),
+            "run_log": _append_log(
+                state,
+                "audit_agent",
+                "Recorded structural governed research action without rerunning full validation.",
                 {"audit_summary": audit_summary, "budget_usage": budget_usage, "route_decision": decision},
             ),
         }
@@ -1035,8 +1079,8 @@ def diagnosis_agent_node(state: dict[str, Any]) -> dict[str, Any]:
 
 def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
     action_kind = _current_action_kind(state)
+    search_results = dict(state.get("search_results", {}) or {})
     if action_kind and action_kind != "governed_research_cycle":
-        search_results = dict(state.get("search_results", {}) or {})
         action = dict(search_results.get("action", {}) or {})
         summary = {
             "status": "inform",
@@ -1063,11 +1107,37 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
                 summary,
             ),
         }
+    if dict(search_results.get("governance", {}) or {}).get("promotion_blocked"):
+        action = dict(search_results.get("action", {}) or {})
+        summary = {
+            "status": "inform",
+            "structural_action": action.get("action_id"),
+            "family": search_results.get("family"),
+            "note": "Structural governed research completed; returned to diagnosis and memory update without translation gating.",
+        }
+        decision = _route_decision(
+            state,
+            node="translation_checkpoint",
+            decision="route_to_review_frozen_spec",
+            reason="Structural governed research is not promotion-eligible and skips translation analysis.",
+            payload={"structural_action": action.get("action_id"), "translation_status": "inform"},
+        )
+        summary["route_decision"] = decision
+        return {
+            "current_node": "translation_checkpoint",
+            "translation_summary": summary,
+            "route_decisions": _append_route_decision(state, decision),
+            "run_log": _append_log(
+                state,
+                "translation_checkpoint",
+                "Skipped translation analysis for structural governed research.",
+                summary,
+            ),
+        }
     bnr_config = load_bnr_config()
     stage2 = dict(state.get("stage2_result", {}))
     data_quality = dict(stage2.get("data_quality", {}))
     label_summary = dict(stage2.get("label_summary", {}))
-    search_results = dict(state.get("search_results", {}))
     controller_state = dict(state.get("controller_state", {}))
     audit_summary = dict(state.get("audit_summary", {}))
     accepted_trial = dict(search_results.get("accepted_trial", {}) or {})

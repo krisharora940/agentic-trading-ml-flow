@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import unittest
 
-from trading_ml.candidate_universe_expansion import build_candidate_universe_expansion_space
+import pandas as pd
+
+from trading_ml.candidate_universe_expansion import build_candidate_universe_expansion_space, _resolve_variant_subset, _slice_bars_for_runtime
 from trading_ml.research_controller import build_candidate_universe_expansion_search_space
 
 
@@ -24,6 +26,24 @@ class CandidateUniverseExpansionTests(unittest.TestCase):
         self.assertIn("first_reclaim_only_baseline", names)
         self.assertIn("allow_multiple_same_direction_candidates", names)
         self.assertIn("extended_structure_zone", names)
+
+    def test_resolve_variant_subset_includes_baseline(self) -> None:
+        variants = _resolve_variant_subset({"fast_variant_names": ["allow_delayed_reclaim"]})
+        names = [row["name"] for row in variants]
+        self.assertEqual(names[0], "first_reclaim_only_baseline")
+        self.assertIn("allow_delayed_reclaim", names)
+
+    def test_slice_bars_for_runtime_limits_sessions(self) -> None:
+        index = pd.to_datetime(
+            [
+                "2026-01-02 09:30:00-05:00",
+                "2026-01-03 09:30:00-05:00",
+                "2026-01-04 09:30:00-05:00",
+            ]
+        )
+        bars = pd.DataFrame({"close": [1.0, 2.0, 3.0]}, index=index)
+        sliced = _slice_bars_for_runtime(bars, {"max_sessions": 2})
+        self.assertEqual(len({ts.date() for ts in sliced.index}), 2)
 
 
 if __name__ == "__main__":

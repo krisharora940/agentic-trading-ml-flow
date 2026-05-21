@@ -18,42 +18,48 @@
     "timeframe": "30s",
     "timezone": "America/New_York"
   },
-  "trial_count": 8,
+  "trial_count": 3,
   "trial_accounting": {
-    "n_trials": 8,
+    "n_trials": 3,
     "search_counts_for_dsr": true,
     "unit": "candidate_universe_definition",
     "downstream_models_allowed": false
   },
+  "session_subset_count": 96,
+  "variant_subset": [
+    "first_reclaim_only_baseline",
+    "multiple_reclaim_attempts",
+    "allow_delayed_reclaim"
+  ],
   "variant_summaries": [
     {
       "trial_id": "candidate-universe-001",
       "variant": "first_reclaim_only_baseline",
       "description": "Current canonical universe: first valid break-reentry-reclaim per direction.",
-      "candidate_count": 501,
-      "raw_candidate_count": 501,
+      "candidate_count": 155,
+      "raw_candidate_count": 155,
       "candidate_count_delta_vs_baseline": 0,
       "new_deduped_candidates_vs_baseline": 0,
-      "overlap_with_baseline": 501,
-      "session_count": 315,
-      "avg_candidates_per_session": 1.5904761904761904,
+      "overlap_with_baseline": 155,
+      "session_count": 96,
+      "avg_candidates_per_session": 1.6145833333333333,
       "max_candidates_per_session": 2,
       "direction_counts": {
-        "short": 250,
-        "long": 251
+        "long": 77,
+        "short": 78
       },
       "deduplication": {
-        "raw_count": 501,
-        "deduped_count": 501,
+        "raw_count": 155,
+        "deduped_count": 155,
         "duplicate_count": 0,
         "duplicate_cluster_count": 0,
         "duplicate_ratio": 0.0
       },
       "effective_sample_size": {
-        "raw_n": 501,
-        "session_cluster_ess": 315.0,
-        "session_direction_cluster_ess": 501.0,
-        "avg_cluster_size_session": 1.5904761904761904,
+        "raw_n": 155,
+        "session_cluster_ess": 96.0,
+        "session_direction_cluster_ess": 155.0,
+        "avg_cluster_size_session": 1.6145833333333333,
         "avg_cluster_size_session_direction": 1.0
       },
       "lineage_fields": [
@@ -76,31 +82,31 @@
       "trial_id": "candidate-universe-002",
       "variant": "multiple_reclaim_attempts",
       "description": "Allow more than one deterministic break-reentry-reclaim sequence per direction.",
-      "candidate_count": 1293,
-      "raw_candidate_count": 1293,
-      "candidate_count_delta_vs_baseline": 792,
-      "new_deduped_candidates_vs_baseline": 792,
-      "overlap_with_baseline": 501,
-      "session_count": 315,
-      "avg_candidates_per_session": 4.104761904761904,
+      "candidate_count": 407,
+      "raw_candidate_count": 407,
+      "candidate_count_delta_vs_baseline": 252,
+      "new_deduped_candidates_vs_baseline": 252,
+      "overlap_with_baseline": 155,
+      "session_count": 96,
+      "avg_candidates_per_session": 4.239583333333333,
       "max_candidates_per_session": 6,
       "direction_counts": {
-        "short": 634,
-        "long": 659
+        "long": 204,
+        "short": 203
       },
       "deduplication": {
-        "raw_count": 1293,
-        "deduped_count": 1293,
+        "raw_count": 407,
+        "deduped_count": 407,
         "duplicate_count": 0,
         "duplicate_cluster_count": 0,
         "duplicate_ratio": 0.0
       },
       "effective_sample_size": {
-        "raw_n": 1293,
-        "session_cluster_ess": 315.0,
-        "session_direction_cluster_ess": 501.0,
-        "avg_cluster_size_session": 4.104761904761904,
-        "avg_cluster_size_session_direction": 2.5808383233532934
+        "raw_n": 407,
+        "session_cluster_ess": 96.0,
+        "session_direction_cluster_ess": 155.0,
+        "avg_cluster_size_session": 4.239583333333333,
+        "avg_cluster_size_session_direction": 2.6258064516129034
       },
       "lineage_fields": [
         "candidate_id",
@@ -120,78 +126,32 @@
     },
     {
       "trial_id": "candidate-universe-003",
-      "variant": "allow_wick_through_breaks",
-      "description": "Allow wick-through break states to seed later reentry/reclaim candidates.",
-      "candidate_count": 512,
-      "raw_candidate_count": 512,
-      "candidate_count_delta_vs_baseline": 11,
-      "new_deduped_candidates_vs_baseline": 97,
-      "overlap_with_baseline": 415,
-      "session_count": 316,
-      "avg_candidates_per_session": 1.620253164556962,
-      "max_candidates_per_session": 2,
-      "direction_counts": {
-        "short": 258,
-        "long": 254
-      },
-      "deduplication": {
-        "raw_count": 512,
-        "deduped_count": 512,
-        "duplicate_count": 0,
-        "duplicate_cluster_count": 0,
-        "duplicate_ratio": 0.0
-      },
-      "effective_sample_size": {
-        "raw_n": 512,
-        "session_cluster_ess": 316.0,
-        "session_direction_cluster_ess": 512.0,
-        "avg_cluster_size_session": 1.620253164556962,
-        "avg_cluster_size_session_direction": 1.0
-      },
-      "lineage_fields": [
-        "candidate_id",
-        "lineage_key",
-        "dedup_key",
-        "candidate_family",
-        "universe_variant",
-        "family_attribution"
-      ],
-      "point_in_time_audit": {
-        "status": "pass",
-        "decision_time_after_zone_available": true,
-        "uses_future_labels": false,
-        "uses_holdout": false
-      },
-      "governance_decision": "eligible_for_labeling_diagnostic"
-    },
-    {
-      "trial_id": "candidate-universe-004",
       "variant": "allow_delayed_reclaim",
       "description": "Keep first canonical break but allow reclaim through the full regular session.",
-      "candidate_count": 510,
-      "raw_candidate_count": 510,
-      "candidate_count_delta_vs_baseline": 9,
-      "new_deduped_candidates_vs_baseline": 9,
-      "overlap_with_baseline": 501,
-      "session_count": 315,
-      "avg_candidates_per_session": 1.619047619047619,
+      "candidate_count": 158,
+      "raw_candidate_count": 158,
+      "candidate_count_delta_vs_baseline": 3,
+      "new_deduped_candidates_vs_baseline": 3,
+      "overlap_with_baseline": 155,
+      "session_count": 96,
+      "avg_candidates_per_session": 1.6458333333333333,
       "max_candidates_per_session": 2,
       "direction_counts": {
-        "short": 254,
-        "long": 256
+        "long": 80,
+        "short": 78
       },
       "deduplication": {
-        "raw_count": 510,
-        "deduped_count": 510,
+        "raw_count": 158,
+        "deduped_count": 158,
         "duplicate_count": 0,
         "duplicate_cluster_count": 0,
         "duplicate_ratio": 0.0
       },
       "effective_sample_size": {
-        "raw_n": 510,
-        "session_cluster_ess": 315.0,
-        "session_direction_cluster_ess": 510.0,
-        "avg_cluster_size_session": 1.619047619047619,
+        "raw_n": 158,
+        "session_cluster_ess": 96.0,
+        "session_direction_cluster_ess": 158.0,
+        "avg_cluster_size_session": 1.6458333333333333,
         "avg_cluster_size_session_direction": 1.0
       },
       "lineage_fields": [
@@ -209,209 +169,19 @@
         "uses_holdout": false
       },
       "governance_decision": "eligible_for_labeling_diagnostic"
-    },
-    {
-      "trial_id": "candidate-universe-005",
-      "variant": "allow_post_failed_break_repair",
-      "description": "Allow wick-failed break states to repair into later valid reclaim candidates.",
-      "candidate_count": 805,
-      "raw_candidate_count": 805,
-      "candidate_count_delta_vs_baseline": 304,
-      "new_deduped_candidates_vs_baseline": 674,
-      "overlap_with_baseline": 131,
-      "session_count": 277,
-      "avg_candidates_per_session": 2.9061371841155235,
-      "max_candidates_per_session": 4,
-      "direction_counts": {
-        "short": 391,
-        "long": 414
-      },
-      "deduplication": {
-        "raw_count": 805,
-        "deduped_count": 805,
-        "duplicate_count": 0,
-        "duplicate_cluster_count": 0,
-        "duplicate_ratio": 0.0
-      },
-      "effective_sample_size": {
-        "raw_n": 805,
-        "session_cluster_ess": 277.0,
-        "session_direction_cluster_ess": 445.0,
-        "avg_cluster_size_session": 2.9061371841155235,
-        "avg_cluster_size_session_direction": 1.8089887640449438
-      },
-      "lineage_fields": [
-        "candidate_id",
-        "lineage_key",
-        "dedup_key",
-        "candidate_family",
-        "universe_variant",
-        "family_attribution"
-      ],
-      "point_in_time_audit": {
-        "status": "pass",
-        "decision_time_after_zone_available": true,
-        "uses_future_labels": false,
-        "uses_holdout": false
-      },
-      "governance_decision": "diagnostic_only_correlated_candidates"
-    },
-    {
-      "trial_id": "candidate-universe-006",
-      "variant": "allow_multiple_same_direction_candidates",
-      "description": "Allow multiple same-direction canonical candidates with deterministic de-duplication.",
-      "candidate_count": 1919,
-      "raw_candidate_count": 1919,
-      "candidate_count_delta_vs_baseline": 1418,
-      "new_deduped_candidates_vs_baseline": 1418,
-      "overlap_with_baseline": 501,
-      "session_count": 315,
-      "avg_candidates_per_session": 6.092063492063492,
-      "max_candidates_per_session": 10,
-      "direction_counts": {
-        "short": 930,
-        "long": 989
-      },
-      "deduplication": {
-        "raw_count": 1919,
-        "deduped_count": 1919,
-        "duplicate_count": 0,
-        "duplicate_cluster_count": 0,
-        "duplicate_ratio": 0.0
-      },
-      "effective_sample_size": {
-        "raw_n": 1919,
-        "session_cluster_ess": 315.0,
-        "session_direction_cluster_ess": 510.0,
-        "avg_cluster_size_session": 6.092063492063492,
-        "avg_cluster_size_session_direction": 3.7627450980392156
-      },
-      "lineage_fields": [
-        "candidate_id",
-        "lineage_key",
-        "dedup_key",
-        "candidate_family",
-        "universe_variant",
-        "family_attribution"
-      ],
-      "point_in_time_audit": {
-        "status": "pass",
-        "decision_time_after_zone_available": true,
-        "uses_future_labels": false,
-        "uses_holdout": false
-      },
-      "governance_decision": "diagnostic_only_correlated_candidates"
-    },
-    {
-      "trial_id": "candidate-universe-007",
-      "variant": "allow_midday_continuation_structure",
-      "description": "Allow opening-zone continuation candidates through the full session.",
-      "candidate_count": 1320,
-      "raw_candidate_count": 1320,
-      "candidate_count_delta_vs_baseline": 819,
-      "new_deduped_candidates_vs_baseline": 819,
-      "overlap_with_baseline": 501,
-      "session_count": 315,
-      "avg_candidates_per_session": 4.190476190476191,
-      "max_candidates_per_session": 6,
-      "direction_counts": {
-        "short": 649,
-        "long": 671
-      },
-      "deduplication": {
-        "raw_count": 1320,
-        "deduped_count": 1320,
-        "duplicate_count": 0,
-        "duplicate_cluster_count": 0,
-        "duplicate_ratio": 0.0
-      },
-      "effective_sample_size": {
-        "raw_n": 1320,
-        "session_cluster_ess": 315.0,
-        "session_direction_cluster_ess": 510.0,
-        "avg_cluster_size_session": 4.190476190476191,
-        "avg_cluster_size_session_direction": 2.588235294117647
-      },
-      "lineage_fields": [
-        "candidate_id",
-        "lineage_key",
-        "dedup_key",
-        "candidate_family",
-        "universe_variant",
-        "family_attribution"
-      ],
-      "point_in_time_audit": {
-        "status": "pass",
-        "decision_time_after_zone_available": true,
-        "uses_future_labels": false,
-        "uses_holdout": false
-      },
-      "governance_decision": "diagnostic_only_correlated_candidates"
-    },
-    {
-      "trial_id": "candidate-universe-008",
-      "variant": "extended_structure_zone",
-      "description": "Use a deterministic extended 09:30-10:00 structure zone instead of only the first minute.",
-      "candidate_count": 589,
-      "raw_candidate_count": 589,
-      "candidate_count_delta_vs_baseline": 88,
-      "new_deduped_candidates_vs_baseline": 555,
-      "overlap_with_baseline": 34,
-      "session_count": 293,
-      "avg_candidates_per_session": 2.0102389078498293,
-      "max_candidates_per_session": 4,
-      "direction_counts": {
-        "short": 275,
-        "long": 314
-      },
-      "deduplication": {
-        "raw_count": 589,
-        "deduped_count": 589,
-        "duplicate_count": 0,
-        "duplicate_cluster_count": 0,
-        "duplicate_ratio": 0.0
-      },
-      "effective_sample_size": {
-        "raw_n": 589,
-        "session_cluster_ess": 293.0,
-        "session_direction_cluster_ess": 327.0,
-        "avg_cluster_size_session": 2.0102389078498293,
-        "avg_cluster_size_session_direction": 1.801223241590214
-      },
-      "lineage_fields": [
-        "candidate_id",
-        "lineage_key",
-        "dedup_key",
-        "candidate_family",
-        "universe_variant",
-        "family_attribution"
-      ],
-      "point_in_time_audit": {
-        "status": "pass",
-        "decision_time_after_zone_available": true,
-        "uses_future_labels": false,
-        "uses_holdout": false
-      },
-      "governance_decision": "diagnostic_only_correlated_candidates"
     }
   ],
   "selected_for_next_stage": [
     {
-      "variant": "allow_wick_through_breaks",
-      "candidate_count": 512,
-      "session_direction_cluster_ess": 512.0,
-      "reason": "Candidate universe is deterministic, deduped, point-in-time, and has acceptable cluster-adjusted support."
-    },
-    {
       "variant": "allow_delayed_reclaim",
-      "candidate_count": 510,
-      "session_direction_cluster_ess": 510.0,
+      "candidate_count": 158,
+      "session_direction_cluster_ess": 158.0,
       "reason": "Candidate universe is deterministic, deduped, point-in-time, and has acceptable cluster-adjusted support."
     },
     {
       "variant": "first_reclaim_only_baseline",
-      "candidate_count": 501,
-      "session_direction_cluster_ess": 501.0,
+      "candidate_count": 155,
+      "session_direction_cluster_ess": 155.0,
       "reason": "Candidate universe is deterministic, deduped, point-in-time, and has acceptable cluster-adjusted support."
     }
   ],

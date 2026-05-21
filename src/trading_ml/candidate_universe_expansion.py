@@ -103,6 +103,33 @@ VARIANTS = [
 ]
 
 
+def _resolve_variant_subset(controller_state: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    controller = dict(controller_state or {})
+    requested_names = list(controller.get("variant_names", []) or controller.get("fast_variant_names", []) or [])
+    if not requested_names:
+        return list(VARIANTS)
+    requested = set(requested_names)
+    selected = [variant for variant in VARIANTS if variant["name"] in requested]
+    if not selected:
+        return list(VARIANTS)
+    baseline = next((variant for variant in VARIANTS if variant["name"] == "first_reclaim_only_baseline"), None)
+    if baseline and baseline["name"] not in {variant["name"] for variant in selected}:
+        selected.insert(0, baseline)
+    return selected
+
+
+def _slice_bars_for_runtime(bars: Any, controller_state: dict[str, Any] | None = None) -> Any:
+    controller = dict(controller_state or {})
+    max_sessions = controller.get("max_sessions")
+    if not max_sessions:
+        return bars
+    session_dates = sorted({idx.date() for idx in bars.index})
+    keep_count = max(1, int(max_sessions))
+    keep_dates = set(session_dates[-keep_count:])
+    mask = [ts.date() in keep_dates for ts in bars.index]
+    return bars.loc[mask]
+
+
 def build_candidate_universe_expansion_space() -> dict[str, Any]:
     return {
         "family": "candidate_universe_expansion",
@@ -122,10 +149,13 @@ def build_candidate_universe_expansion_space() -> dict[str, Any]:
 
 def run_candidate_universe_expansion_cycle(state: dict[str, Any]) -> dict[str, Any]:
     cfg = Stage2Config(**dict(state.get("stage2_config", {})))
+    controller_state = dict(state.get("controller_state", {}) or {})
     bars = regular_session(load_ohlcv_file(cfg.source_path, symbol=cfg.symbol, timeframe=cfg.timeframe, timezone=cfg.timezone))
+    bars = _slice_bars_for_runtime(bars, controller_state)
     baseline_rows: list[dict[str, Any]] = []
     rows = []
-    for idx, variant in enumerate(VARIANTS, start=1):
+    variants = _resolve_variant_subset(controller_state)
+    for idx, variant in enumerate(variants, start=1):
         candidates = _generate_variant_candidates(bars, cfg, variant)
         records = [_lineage_record(candidate, variant) for candidate in candidates]
         records, dedup = _deduplicate(records)
@@ -160,6 +190,8 @@ def run_candidate_universe_expansion_cycle(state: dict[str, Any]) -> dict[str, A
             "unit": "candidate_universe_definition",
             "downstream_models_allowed": False,
         },
+        "session_subset_count": len(sorted({idx.date() for idx in bars.index})),
+        "variant_subset": [variant["name"] for variant in variants],
         "variant_summaries": rows,
         "selected_for_next_stage": _select_next_stage(rows),
         "approval_required_before_downstream_search": "search_space_approval",
