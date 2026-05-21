@@ -102,10 +102,12 @@ def build_research_backlog(
     failure_memory: list[dict[str, Any]],
     *,
     stage2_result: dict[str, Any] | None = None,
+    research_action_history: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     stage2 = dict(stage2_result or {})
     sessions = int(stage2.get("data_quality", {}).get("sessions", 0) or 0)
     backlog: list[dict[str, Any]] = []
+    action_history = list(research_action_history or [])
     failed_families = {str(item.get("family")) for item in failure_memory if item.get("status") in {"freeze", "reject", "failed_validation"}}
     failed_hypotheses = {
         str(item.get("hypothesis_id"))
@@ -113,6 +115,7 @@ def build_research_backlog(
         if item.get("status") in {"freeze", "reject", "failed_validation"} and item.get("hypothesis_id")
     }
     recent_failure_types = {str(item.get("failure_type")) for item in failure_memory if item.get("failure_type")}
+    attempted_families = {str(item.get("family")) for item in action_history if item.get("family")}
 
     for row in hypotheses:
         item = dict(row)
@@ -141,9 +144,14 @@ def build_research_backlog(
         if "walk_forward_failure" in recent_failure_types and family in {"feature", "setup", "label"}:
             score += 0.15
             reason_bits.append("boosted by walk-forward failure memory")
-        if family in failed_families and family not in {"setup", "feature"}:
-            score -= 0.1
-            reason_bits.append("family has prior failed branch")
+        if family in failed_families:
+            blocked_by.append("prior_failed_family")
+            score -= 0.35
+            reason_bits.append("family already failed in prior governed branch")
+        elif family in attempted_families and family in {"translation_policy", "threshold", "model"}:
+            blocked_by.append("prior_attempted_family")
+            score -= 0.15
+            reason_bits.append("family already tested; wait for stronger evidence before retry")
         if sessions and sessions < 160 and family in {"model", "translation_policy"}:
             score -= 0.1
             reason_bits.append("sample floor not yet convincing for micro-tuning")
@@ -161,6 +169,7 @@ def build_research_director_summary(state: dict[str, Any]) -> dict[str, Any]:
     priors = list(state.get("domain_priors", []) or [])
     backlog = list(state.get("research_backlog", []) or [])
     failure_memory = list(state.get("failure_memory", []) or [])
+    failure_clusters = list(state.get("failure_clusters", []) or [])
     summary = {
         "status": "ready" if priors and backlog else "needs_domain_research",
         "domain_priors_loaded": bool(priors),
@@ -168,6 +177,7 @@ def build_research_director_summary(state: dict[str, Any]) -> dict[str, Any]:
         "recent_failure_count": len(failure_memory),
         "recommended_action": "research_domain_priors" if not priors else "rank_hypotheses",
         "top_hypothesis": dict(backlog[0]) if backlog else {},
+        "top_failure_cluster": dict(failure_clusters[0]) if failure_clusters else {},
     }
     if backlog:
         top = dict(backlog[0])
@@ -177,9 +187,15 @@ def build_research_director_summary(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_research_director_plan(state: dict[str, Any], fallback_plan: dict[str, Any]) -> dict[str, Any]:
-    backlog = list(state.get("research_backlog", []) or [])
+    backlog = build_research_backlog(
+        list(state.get("research_backlog", []) or []),
+        list(state.get("failure_memory", []) or []),
+        stage2_result=dict(state.get("stage2_result", {}) or {}),
+        research_action_history=list(state.get("research_action_history", []) or []),
+    )
     summary = dict(state.get("research_director_summary", {}) or {})
     plan = dict(fallback_plan)
+    desk_handoff = _latest_desk_handoff(state)
     if not backlog:
         plan.setdefault("status", "ready")
         plan["next_action"] = "research_domain_priors"
@@ -230,6 +246,10 @@ def build_research_director_plan(state: dict[str, Any], fallback_plan: dict[str,
         "blocked_actions": blocked_actions,
         "assigned_research_action": assigned_action if assigned_action in available_research_actions() else None,
     }
+    if summary.get("top_failure_cluster"):
+        plan["evidence_used"] = {"top_failure_cluster": summary["top_failure_cluster"]}
+    if desk_handoff:
+        plan = _apply_desk_handoff_to_plan(plan, desk_handoff, hypothesis)
     return plan
 
 
@@ -324,10 +344,12 @@ def _choose_research_action(state: dict[str, Any], hypothesis: dict[str, Any], s
 
     history = list(state.get("research_action_history", []) or [])
     failure_memory = list(state.get("failure_memory", []) or [])
+    failure_clusters = list(state.get("failure_clusters", []) or [])
     latest_failure = dict(failure_memory[-1]) if failure_memory else {}
     latest_failure_type = str(latest_failure.get("failure_type", "") or "")
     setup_failures = sum(1 for row in failure_memory if str(row.get("family")) == "setup")
     hypothesis_id = str(hypothesis.get("hypothesis_id", "") or "")
+    top_cluster = dict(failure_clusters[0]) if failure_clusters else {}
 
     def action_used(action_id: str) -> bool:
         for row in history:
@@ -343,6 +365,9 @@ def _choose_research_action(state: dict[str, Any], hypothesis: dict[str, Any], s
         return "cpcv_attribution"
     if latest_failure_type and not action_used("validation_failure_analysis"):
         return "validation_failure_analysis"
+    cluster_family = str(top_cluster.get("recommended_family", "") or "")
+    if selected_family == "setup" and cluster_family in available_research_actions() and not action_used(cluster_family):
+        return cluster_family
     if selected_family == "setup" and setup_failures >= 2 and not action_used("setup_redesign"):
         return "setup_redesign"
     if selected_family == "setup" and setup_failures >= 1 and not action_used("candidate_universe_expansion"):
@@ -354,6 +379,81 @@ def _choose_research_action(state: dict[str, Any], hypothesis: dict[str, Any], s
     if selected_family in available_research_actions():
         return selected_family
     return None
+
+
+def _latest_desk_handoff(state: dict[str, Any]) -> dict[str, Any]:
+    proposals = list(state.get("desk_proposals", []) or [])
+    if not proposals:
+        return {}
+    latest = dict(proposals[-1])
+    summary = dict(dict(state.get("desk_summary", {}) or {}).get("desk_memory_update", {}) or {})
+    if summary.get("status") not in {None, "ready_for_governor_graph"}:
+        return {}
+    consumed_ids = {
+        str(row.get("proposal_id"))
+        for row in list(state.get("research_action_history", []) or [])
+        if row.get("proposal_id")
+    }
+    if str(latest.get("proposal_id", "")) in consumed_ids:
+        return {}
+    mapped = _map_desk_proposal(latest)
+    if not mapped:
+        return {}
+    return {
+        "proposal": latest,
+        **mapped,
+    }
+
+
+def _map_desk_proposal(proposal: dict[str, Any]) -> dict[str, Any]:
+    family = str(proposal.get("family", "") or "")
+    mapping = {
+        "feature": ("feature", "feature"),
+        "setup": ("setup", "setup"),
+        "eligibility": ("candidate_universe_expansion", "candidate_universe_expansion"),
+        "path_modeling": ("exit_behavior_research", "exit_behavior_research"),
+        "exit_behavior_research": ("exit_behavior_research", "exit_behavior_research"),
+    }
+    selected = mapping.get(family)
+    if not selected:
+        return {}
+    return {
+        "selected_family": selected[0],
+        "assigned_research_action": selected[1],
+    }
+
+
+def _apply_desk_handoff_to_plan(plan: dict[str, Any], desk_handoff: dict[str, Any], hypothesis: dict[str, Any]) -> dict[str, Any]:
+    proposal = dict(desk_handoff.get("proposal", {}) or {})
+    plan["next_action"] = "run_family_experiment"
+    plan["selected_family"] = desk_handoff["selected_family"]
+    plan["assigned_research_action"] = desk_handoff["assigned_research_action"]
+    plan.setdefault("controller_override", {})
+    plan["controller_override"]["active_family"] = desk_handoff["selected_family"]
+    plan["reason"] = f"BNR desk handoff: {proposal.get('claim', 'proposal-driven governed branch.')}"
+    plan["hypothesis_id"] = proposal.get("proposal_id", hypothesis.get("hypothesis_id"))
+    plan["hypothesis_claim"] = proposal.get("claim", hypothesis.get("claim"))
+    plan["desk_handoff"] = {
+        "proposal_id": proposal.get("proposal_id"),
+        "proposal_family": proposal.get("family"),
+        "selected_family": desk_handoff["selected_family"],
+        "assigned_research_action": desk_handoff["assigned_research_action"],
+        "first_governed_batch": True,
+    }
+    plan["search_budget"] = {
+        "max_trials": 1,
+        "max_cycles": 1,
+        "allowed_knobs": ["desk-proposed family only"],
+        "disallowed_knobs": ["multi-family search", "model escalation", "threshold churn", "holdout data"],
+    }
+    evidence_used = dict(plan.get("evidence_used", {}) or {})
+    evidence_used["desk_handoff"] = plan["desk_handoff"]
+    plan["evidence_used"] = evidence_used
+    research_director = dict(plan.get("research_director", {}) or {})
+    research_director["desk_handoff"] = plan["desk_handoff"]
+    research_director["assigned_research_action"] = desk_handoff["assigned_research_action"]
+    plan["research_director"] = research_director
+    return plan
 
 
 def _blocked_actions(state: dict[str, Any], hypothesis: dict[str, Any]) -> list[str]:

@@ -29,6 +29,20 @@ from trading_ml.agent_nodes import (
 )
 from trading_ml.agent_workflow import build_agent_loop_state, build_loop_limits
 from trading_ml.agent_state import AgentLoopState
+from trading_ml.bnr_research_desk import (
+    desk_data_steward_node,
+    desk_director_node,
+    desk_governor_node,
+    desk_memory_update_node,
+    eligibility_modeler_node,
+    event_librarian_node,
+    exit_research_agent_node,
+    failure_analyst_node,
+    feature_engineer_node,
+    path_modeler_node,
+    route_after_desk_director,
+    setup_spec_agent_node,
+)
 
 
 def require_langgraph() -> tuple[Any, Any, Any, Any]:
@@ -321,14 +335,76 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     return graph.compile(checkpointer=saver)
 
 
+def compile_bnr_research_desk_graph(checkpointer: Any | None = None) -> Any:
+    StateGraph, START, END, (InMemorySaver, _, _) = require_langgraph()
+    load_runtime_env()
+
+    graph = StateGraph(AgentLoopState)
+    graph.add_node("desk_data_steward", desk_data_steward_node)
+    graph.add_node("event_librarian", event_librarian_node)
+    graph.add_node("failure_analyst", failure_analyst_node)
+    graph.add_node("desk_director", desk_director_node)
+    graph.add_node("feature_engineer", feature_engineer_node)
+    graph.add_node("setup_spec_agent", setup_spec_agent_node)
+    graph.add_node("eligibility_modeler", eligibility_modeler_node)
+    graph.add_node("path_modeler", path_modeler_node)
+    graph.add_node("exit_research_agent", exit_research_agent_node)
+    graph.add_node("desk_governor", desk_governor_node)
+    graph.add_node("desk_memory_update", desk_memory_update_node)
+
+    graph.add_edge(START, "desk_data_steward")
+    graph.add_edge("desk_data_steward", "event_librarian")
+    graph.add_edge("event_librarian", "failure_analyst")
+    graph.add_edge("failure_analyst", "desk_director")
+    graph.add_conditional_edges("desk_director", route_after_desk_director)
+    graph.add_edge("feature_engineer", "desk_governor")
+    graph.add_edge("setup_spec_agent", "desk_governor")
+    graph.add_edge("eligibility_modeler", "desk_governor")
+    graph.add_edge("path_modeler", "desk_governor")
+    graph.add_edge("exit_research_agent", "desk_governor")
+    graph.add_edge("desk_governor", "desk_memory_update")
+    graph.add_edge("desk_memory_update", END)
+
+    saver = checkpointer or InMemorySaver()
+    return graph.compile(checkpointer=saver)
+
+
 def build_langgraph_initial_input(
     *,
     preapproved_checkpoints: list[str] | None = None,
     max_research_cycles: int | None = None,
     compute_budget_overrides: dict[str, Any] | None = None,
+    runtime_profile: str = "standard",
 ) -> AgentLoopState:
     return build_agent_loop_state(
         preapproved_checkpoints=preapproved_checkpoints,
         max_research_cycles=max_research_cycles,
         compute_budget_overrides=compute_budget_overrides,
+        runtime_profile=runtime_profile,
     )
+
+
+def build_bnr_research_desk_initial_input() -> AgentLoopState:
+    return build_agent_loop_state(
+        preapproved_checkpoints=["bnr_spec_approval", "label_approval", "search_space_approval", "frozen_spec_approval"],
+        max_research_cycles=1,
+        compute_budget_overrides={
+            "max_trials": 1,
+            "max_full_validations": 0,
+            "max_cpcv_runs": 0,
+            "max_model_trains": 1,
+        },
+        runtime_profile="bounded_autonomous",
+    )
+
+
+def build_governor_state_from_desk_handoff(desk_state: dict[str, Any]) -> AgentLoopState:
+    state = build_agent_loop_state()
+    state["stage2_result"] = dict(desk_state.get("stage2_result", {}) or {})
+    state["bnr_attempts"] = list(desk_state.get("bnr_attempts", []) or [])
+    state["failure_clusters"] = list(desk_state.get("failure_clusters", []) or [])
+    state["desk_summary"] = dict(desk_state.get("desk_summary", {}) or {})
+    state["desk_proposals"] = list(desk_state.get("desk_proposals", []) or [])
+    state["desk_memory"] = list(desk_state.get("desk_memory", []) or [])
+    state["run_log"] = list(desk_state.get("run_log", []) or [])
+    return state

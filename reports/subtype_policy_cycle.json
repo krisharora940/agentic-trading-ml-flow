@@ -5,90 +5,90 @@
   "ranked_rows": [
     {
       "policy_name": "baseline_all",
-      "selected_signal_count": 112,
+      "selected_signal_count": 89,
       "selected_subtype_counts": {
-        "balanced_reclaim_continuation": 40,
-        "deep_retrace_repair": 28,
-        "weak_follow_through": 25,
-        "clean_break_continuation": 19
+        "balanced_reclaim_continuation": 27,
+        "deep_retrace_repair": 25,
+        "weak_follow_through": 20,
+        "clean_break_continuation": 17
       },
-      "trade_count": 112,
-      "total_pnl_r": 5.622473297569805,
-      "avg_trade_r": 0.05020065444258754,
-      "win_rate": 0.4642857142857143,
-      "max_drawdown_r": -10.126643119086268,
-      "utility_score": -1.7474087145236024,
-      "walk_forward_status": "fail",
-      "walk_forward_mean_roc_auc": 0.4953373015873016
+      "trade_count": 89,
+      "total_pnl_r": 2.4044090382217203,
+      "avg_trade_r": 0.027015831890131688,
+      "win_rate": 0.449438202247191,
+      "max_drawdown_r": -8.566690640770236,
+      "utility_score": -3.8071010264108915,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5820793650793651
     },
     {
       "policy_name": "prefer_clean_strict_weak",
-      "selected_signal_count": 88,
+      "selected_signal_count": 82,
       "selected_subtype_counts": {
-        "balanced_reclaim_continuation": 40,
-        "deep_retrace_repair": 17,
-        "weak_follow_through": 12,
-        "clean_break_continuation": 19
+        "balanced_reclaim_continuation": 27,
+        "deep_retrace_repair": 22,
+        "weak_follow_through": 16,
+        "clean_break_continuation": 17
       },
-      "trade_count": 88,
-      "total_pnl_r": 4.277902796687735,
-      "avg_trade_r": 0.04861253178054245,
-      "win_rate": 0.4431818181818182,
-      "max_drawdown_r": -11.767926124151721,
-      "utility_score": -4.323735530535784,
-      "walk_forward_status": "fail",
-      "walk_forward_mean_roc_auc": 0.4953373015873016
-    },
-    {
-      "policy_name": "exclude_deep_and_weak",
-      "selected_signal_count": 59,
-      "selected_subtype_counts": {
-        "balanced_reclaim_continuation": 40,
-        "clean_break_continuation": 19
-      },
-      "trade_count": 59,
-      "total_pnl_r": 0.7056730639979802,
-      "avg_trade_r": 0.011960560406745428,
-      "win_rate": 0.4406779661016949,
-      "max_drawdown_r": -11.90806724433639,
-      "utility_score": -8.019397089050939,
-      "walk_forward_status": "fail",
-      "walk_forward_mean_roc_auc": 0.4953373015873016
+      "trade_count": 82,
+      "total_pnl_r": 0.4693382193527602,
+      "avg_trade_r": 0.005723636821375125,
+      "win_rate": 0.43902439024390244,
+      "max_drawdown_r": -10.014966502839204,
+      "utility_score": -6.839024839365956,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5820793650793651
     },
     {
       "policy_name": "exclude_weak_follow_through",
-      "selected_signal_count": 87,
+      "selected_signal_count": 69,
       "selected_subtype_counts": {
-        "balanced_reclaim_continuation": 40,
-        "deep_retrace_repair": 28,
-        "clean_break_continuation": 19
+        "balanced_reclaim_continuation": 27,
+        "deep_retrace_repair": 25,
+        "clean_break_continuation": 17
       },
-      "trade_count": 87,
-      "total_pnl_r": -1.209525745176056,
-      "avg_trade_r": -0.013902594772138574,
-      "win_rate": 0.42528735632183906,
-      "max_drawdown_r": -14.122047473142285,
-      "utility_score": -11.608012647418839,
-      "walk_forward_status": "fail",
-      "walk_forward_mean_roc_auc": 0.4953373015873016
+      "trade_count": 69,
+      "total_pnl_r": -5.247301042576084,
+      "avg_trade_r": -0.07604784119675484,
+      "win_rate": 0.391304347826087,
+      "max_drawdown_r": -9.504159806539189,
+      "utility_score": -12.213444818078854,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5820793650793651
+    },
+    {
+      "policy_name": "exclude_deep_and_weak",
+      "selected_signal_count": 44,
+      "selected_subtype_counts": {
+        "balanced_reclaim_continuation": 27,
+        "clean_break_continuation": 17
+      },
+      "trade_count": 44,
+      "total_pnl_r": -7.075818832157517,
+      "avg_trade_r": -0.1608140643672163,
+      "win_rate": 0.3409090909090909,
+      "max_drawdown_r": -13.895646012953794,
+      "utility_score": -17.37796037405647,
+      "walk_forward_status": "pass",
+      "walk_forward_mean_roc_auc": 0.5820793650793651
     }
   ],
   "best_row": {
     "policy_name": "baseline_all",
-    "selected_signal_count": 112,
+    "selected_signal_count": 89,
     "selected_subtype_counts": {
-      "balanced_reclaim_continuation": 40,
-      "deep_retrace_repair": 28,
-      "weak_follow_through": 25,
-      "clean_break_continuation": 19
+      "balanced_reclaim_continuation": 27,
+      "deep_retrace_repair": 25,
+      "weak_follow_through": 20,
+      "clean_break_continuation": 17
     },
-    "trade_count": 112,
-    "total_pnl_r": 5.622473297569805,
-    "avg_trade_r": 0.05020065444258754,
-    "win_rate": 0.4642857142857143,
-    "max_drawdown_r": -10.126643119086268,
-    "utility_score": -1.7474087145236024,
-    "walk_forward_status": "fail",
-    "walk_forward_mean_roc_auc": 0.4953373015873016
+    "trade_count": 89,
+    "total_pnl_r": 2.4044090382217203,
+    "avg_trade_r": 0.027015831890131688,
+    "win_rate": 0.449438202247191,
+    "max_drawdown_r": -8.566690640770236,
+    "utility_score": -3.8071010264108915,
+    "walk_forward_status": "pass",
+    "walk_forward_mean_roc_auc": 0.5820793650793651
   }
 }

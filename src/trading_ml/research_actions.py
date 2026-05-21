@@ -99,6 +99,7 @@ def _execute_stateful_action(
             hypotheses,
             list(state.get("failure_memory", []) or []),
             stage2_result=dict(state.get("stage2_result", {}) or {}),
+            research_action_history=list(state.get("research_action_history", []) or []),
         )
         return {
             "family": "research_foundation",

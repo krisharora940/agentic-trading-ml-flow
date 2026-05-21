@@ -28,6 +28,7 @@ from trading_ml.agent_nodes import (
 from trading_ml.agent_state import AgentLoopState, LoopLimits
 from trading_ml.bootstrap import build_initial_project_state
 from trading_ml.evidence_sources import select_manifest_source_path
+from trading_ml.research_memory_store import load_persisted_research_memory
 from trading_ml.research_program import build_program_state
 from trading_ml.research_controller import load_controller_config
 
@@ -57,11 +58,13 @@ def build_agent_loop_state(
     preapproved_checkpoints: list[str] | None = None,
     max_research_cycles: int | None = None,
     compute_budget_overrides: dict[str, Any] | None = None,
+    runtime_profile: str = "standard",
 ) -> AgentLoopState:
     project_state = build_initial_project_state()
     config = load_agent_loop_config()
     manifest = load_databento_manifest()
     bnr_config = load_bnr_config()
+    persisted_memory = load_persisted_research_memory()
     stage2_source_path = select_manifest_source_path(manifest, timeframe="30s", boundary_role="exploration")
     if stage2_source_path is None:
         stage2_source_path = select_manifest_source_path(manifest, timeframe="30s")
@@ -80,6 +83,7 @@ def build_agent_loop_state(
     budget_overrides = dict(compute_budget_overrides or {})
     return AgentLoopState(
         run_id=f"bnr-{uuid4().hex[:12]}",
+        runtime_profile="bounded_autonomous" if runtime_profile == "bounded_autonomous" else "standard",
         program_state=build_program_state(),
         next_step_plan={},
         research_director_summary={},
@@ -155,8 +159,13 @@ def build_agent_loop_state(
         domain_priors=[],
         research_backlog=[],
         active_hypothesis={},
-        failure_memory=[],
-        research_action_history=[],
+        bnr_attempts=[],
+        failure_clusters=[],
+        desk_summary={},
+        desk_proposals=[],
+        desk_memory=list(persisted_memory.get("desk_memory", [])),
+        failure_memory=list(persisted_memory.get("failure_memory", [])),
+        research_action_history=list(persisted_memory.get("research_action_history", [])),
         candidate_setups_defined=False,
         promotion_decision="revise",
         holdout_consumed=False,

@@ -6,6 +6,11 @@ from statistics import mean
 from typing import Any
 from uuid import uuid4
 
+from trading_ml.bnr_subtypes import classify_candidate_subtype
+from trading_ml.feature_families import apply_feature_family
+from trading_ml.feature_validation import build_feature_validation
+from trading_ml.market_structure_lab import build_market_structure_lab
+from trading_ml.model_diagnostics_lab import build_model_diagnostics_lab
 from trading_ml.paths import REPORTS_DIR
 from trading_ml.stage2_bnr import (
     BNRZone,
@@ -16,6 +21,9 @@ from trading_ml.stage2_bnr import (
     generate_breakout_candidates,
 )
 from trading_ml.stage2_data import load_ohlcv_file, regular_session
+from trading_ml.stage2_features import build_feature_matrix
+from trading_ml.stage2_labeling import label_candidates
+from trading_ml.stage2_modeling import train_baseline_classifier
 from trading_ml.stage2_pipeline import Stage2Config
 
 
@@ -167,6 +175,101 @@ def run_candidate_universe_expansion_cycle(state: dict[str, Any]) -> dict[str, A
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "summary.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     artifact = REPORTS_DIR / "candidate_universe_expansion.json"
+    artifact.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    payload["artifact_path"] = str(artifact)
+    payload["run_artifact_path"] = str(output_dir / "summary.json")
+    return payload
+
+
+def run_candidate_universe_labeling_diagnostic(
+    state: dict[str, Any],
+    *,
+    variant_names: list[str] | None = None,
+) -> dict[str, Any]:
+    cfg = Stage2Config(**dict(state.get("stage2_config", {})))
+    bars = regular_session(load_ohlcv_file(cfg.source_path, symbol=cfg.symbol, timeframe=cfg.timeframe, timezone=cfg.timezone))
+    selected = list(variant_names or ["first_reclaim_only_baseline", "allow_wick_through_breaks", "allow_delayed_reclaim"])
+    variant_specs = [variant for variant in VARIANTS if variant["name"] in selected]
+    rows: list[dict[str, Any]] = []
+    for variant in variant_specs:
+        candidates = _generate_variant_candidates(bars, cfg, variant)
+        labels = label_candidates(
+            bars,
+            candidates,
+            horizon_bars=cfg.horizon_bars,
+            stop_multiple=cfg.stop_multiple,
+            target_multiple=cfg.target_multiple,
+        )
+        features, feature_audits = build_feature_matrix(bars, candidates)
+        if not features.empty:
+            subtype_map = {candidate.candidate_id: classify_candidate_subtype(candidate) for candidate in candidates}
+            features["setup_subtype"] = features["candidate_id"].map(subtype_map)
+        features = apply_feature_family(features, cfg.feature_family)
+        pd = _require_pandas()
+        labels_df = pd.DataFrame([label.to_dict() for label in labels])
+        model_summary = train_baseline_classifier(features, labels_df, model_family=cfg.model_family) if not labels_df.empty else None
+        prediction_records = model_summary.prediction_records if model_summary else []
+        rows.append(
+            {
+                "variant": variant["name"],
+                "description": variant["description"],
+                "candidate_count": len(candidates),
+                "label_summary": {
+                    "rows": int(len(labels_df)),
+                    "positive_rate": float(labels_df["label"].mean()) if not labels_df.empty else 0.0,
+                    "avg_pnl_r": float(labels_df["pnl_r"].mean()) if not labels_df.empty else 0.0,
+                },
+                "model_metrics": (model_summary.to_dict() if model_summary else {"status": "no_labels"}).get("metrics", {}),
+                "feature_audit": {
+                    "rows": len(feature_audits),
+                    "failed": len([audit for audit in feature_audits if audit.status != "pass"]),
+                },
+                "feature_validation": build_feature_validation(features.to_dict(orient="records"), labels_df.to_dict(orient="records")),
+                "market_structure_lab": build_market_structure_lab(
+                    [candidate.to_dict() for candidate in candidates],
+                    labels_df.to_dict(orient="records"),
+                ),
+                "model_diagnostics": build_model_diagnostics_lab(
+                    prediction_records,
+                    features.to_dict(orient="records"),
+                    labels_df.to_dict(orient="records"),
+                    model_family=cfg.model_family,
+                ),
+            }
+        )
+    ranked = sorted(
+        rows,
+        key=lambda row: (
+            float(dict(row.get("model_metrics", {})).get("roc_auc", 0.0) or 0.0),
+            float(dict(row.get("label_summary", {})).get("avg_pnl_r", 0.0) or 0.0),
+            int(row.get("candidate_count", 0) or 0),
+        ),
+        reverse=True,
+    )
+    payload = {
+        "status": "complete",
+        "family": "candidate_universe_expansion",
+        "diagnostic_type": "downstream_labeling_model_diagnostic",
+        "variants_tested": selected,
+        "variant_diagnostics": rows,
+        "ranked_variants": [
+            {
+                "variant": row["variant"],
+                "candidate_count": row["candidate_count"],
+                "positive_rate": row["label_summary"]["positive_rate"],
+                "avg_pnl_r": row["label_summary"]["avg_pnl_r"],
+                "roc_auc": dict(row.get("model_metrics", {})).get("roc_auc"),
+                "precision": dict(row.get("model_metrics", {})).get("precision"),
+                "recall": dict(row.get("model_metrics", {})).get("recall"),
+            }
+            for row in ranked
+        ],
+    }
+    run_id = f"candidate-universe-labeling-{uuid4().hex[:12]}"
+    output_dir = REPORTS_DIR / "runs" / run_id / "candidate_universe_labeling_diagnostic"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "summary.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    artifact = REPORTS_DIR / "candidate_universe_labeling_diagnostic.json"
     artifact.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     payload["artifact_path"] = str(artifact)
     payload["run_artifact_path"] = str(output_dir / "summary.json")

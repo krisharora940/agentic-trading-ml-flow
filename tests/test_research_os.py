@@ -33,6 +33,17 @@ class ResearchOSTests(unittest.TestCase):
         model_row = next(row for row in backlog if row["family"] == "model") if any(row["family"] == "model" for row in backlog) else None
         self.assertTrue(model_row is None or "cpcv_tail_path_fragility" in model_row["blocked_by"])
 
+    def test_backlog_blocks_prior_failed_family_on_fresh_run(self) -> None:
+        hypotheses = build_hypotheses_from_priors(build_curated_domain_priors())
+        backlog = build_research_backlog(
+            hypotheses,
+            [{"family": "candidate_universe_expansion", "failure_type": "cpcv_tail_path_fragility", "status": "freeze"}],
+            stage2_result={"data_quality": {"sessions": 200}},
+            research_action_history=[{"action_id": "candidate_universe_expansion", "family": "candidate_universe_expansion"}],
+        )
+        row = next(item for item in backlog if item["family"] == "candidate_universe_expansion")
+        self.assertIn("prior_failed_family", row["blocked_by"])
+
     def test_research_director_plan_attaches_hypothesis_to_existing_family_choice(self) -> None:
         priors = build_curated_domain_priors()
         hypotheses = build_hypotheses_from_priors(priors)
@@ -83,7 +94,7 @@ class ResearchOSTests(unittest.TestCase):
         self.assertGreater(count_viable_hypotheses(backlog), 0)
         self.assertNotEqual(backlog[0]["hypothesis_id"], "H-00001")
 
-    def test_research_director_assigns_cpcv_attribution_after_cpcv_failure(self) -> None:
+    def test_research_director_pivots_structurally_after_cpcv_failure(self) -> None:
         priors = build_curated_domain_priors()
         hypotheses = build_hypotheses_from_priors(priors)
         backlog = build_research_backlog(hypotheses, [], stage2_result={"data_quality": {"sessions": 200}})
@@ -102,7 +113,7 @@ class ResearchOSTests(unittest.TestCase):
                 "controller_override": {"active_family": "setup"},
             },
         )
-        self.assertEqual(plan["assigned_research_action"], "cpcv_attribution")
+        self.assertEqual(plan["assigned_research_action"], "candidate_universe_expansion")
 
     def test_research_director_runs_structural_family_directly_after_pivot(self) -> None:
         priors = build_curated_domain_priors()
@@ -134,6 +145,70 @@ class ResearchOSTests(unittest.TestCase):
             },
         )
         self.assertEqual(plan["assigned_research_action"], "candidate_universe_expansion")
+
+    def test_research_director_uses_failure_cluster_recommendation(self) -> None:
+        priors = build_curated_domain_priors()
+        hypotheses = build_hypotheses_from_priors(priors)
+        backlog = build_research_backlog(hypotheses, [], stage2_result={"data_quality": {"sessions": 200}})
+        summary = build_research_director_summary(
+            {
+                "domain_priors": priors,
+                "research_backlog": backlog,
+                "failure_memory": [{"family": "setup", "hypothesis_id": "H-00001", "failure_type": "blocking_issue", "status": "freeze"}],
+                "failure_clusters": [{"recommended_family": "exit_behavior_research", "family": "no_follow_through", "rows": 8}],
+            }
+        )
+        plan = build_research_director_plan(
+            {
+                "domain_priors": priors,
+                "research_backlog": backlog,
+                "research_director_summary": summary,
+                "failure_memory": [{"family": "setup", "hypothesis_id": "H-00001", "failure_type": "blocking_issue", "status": "freeze"}],
+                "failure_clusters": [{"recommended_family": "exit_behavior_research", "family": "no_follow_through", "rows": 8}],
+                "research_action_history": [{"action_id": "validation_failure_analysis", "family": "setup", "hypothesis_id": "H-00001"}],
+                "blocking_issues": [],
+            },
+            {
+                "selected_family": "setup",
+                "controller_override": {"active_family": "setup"},
+            },
+        )
+        self.assertEqual(plan["assigned_research_action"], "candidate_universe_expansion")
+        self.assertEqual(plan["evidence_used"]["top_failure_cluster"]["family"], "no_follow_through")
+
+    def test_research_director_prefers_bnr_desk_handoff_when_present(self) -> None:
+        priors = build_curated_domain_priors()
+        hypotheses = build_hypotheses_from_priors(priors)
+        backlog = build_research_backlog(hypotheses, [], stage2_result={"data_quality": {"sessions": 200}})
+        summary = build_research_director_summary({"domain_priors": priors, "research_backlog": backlog, "failure_memory": []})
+        plan = build_research_director_plan(
+            {
+                "domain_priors": priors,
+                "research_backlog": backlog,
+                "research_director_summary": summary,
+                "failure_memory": [],
+                "failure_clusters": [],
+                "desk_proposals": [
+                    {
+                        "proposal_id": "DPROP-1",
+                        "family": "path_modeling",
+                        "claim": "Model continuation vs chop before exit design.",
+                    }
+                ],
+                "desk_summary": {"desk_memory_update": {"status": "ready_for_governor_graph"}},
+                "research_action_history": [],
+                "blocking_issues": [],
+            },
+            {
+                "selected_family": "setup",
+                "controller_override": {"active_family": "setup"},
+            },
+        )
+        self.assertEqual(plan["selected_family"], "exit_behavior_research")
+        self.assertEqual(plan["assigned_research_action"], "exit_behavior_research")
+        self.assertEqual(plan["desk_handoff"]["proposal_id"], "DPROP-1")
+        self.assertTrue(plan["desk_handoff"]["first_governed_batch"])
+        self.assertEqual(plan["search_budget"]["max_trials"], 1)
 
 
 if __name__ == "__main__":

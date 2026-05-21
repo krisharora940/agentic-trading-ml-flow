@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
 
-from trading_ml.agent_nodes import audit_agent_node, iteration_controller_node, search_controller_agent_node, setup_redesign_agent_node, translation_checkpoint_node
+from trading_ml.agent_nodes import audit_agent_node, diagnosis_agent_node, iteration_controller_node, search_controller_agent_node, setup_redesign_agent_node, translation_checkpoint_node
 from trading_ml.agent_state import LoopLimits
 from trading_ml.agent_workflow import build_agent_loop_state, pending_human_checkpoints, run_linear_stage3_pass
 
@@ -11,6 +11,7 @@ class AgentWorkflowTests(unittest.TestCase):
         state = build_agent_loop_state()
         self.assertIn("bnr_spec_approval", state["approvals"])
         self.assertEqual(state["phase"], "exploration")
+        self.assertEqual(state["runtime_profile"], "standard")
         self.assertTrue(state["data_manifest_loaded"])
         self.assertEqual(state["stage2_config"]["symbol"], "MNQ")
         self.assertIn("program_state", state)
@@ -22,10 +23,25 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertEqual(state["search_batch_status"], "pending")
 
     def test_initial_agent_loop_state_can_preapprove_bounded_cycle_checkpoints(self) -> None:
-        state = build_agent_loop_state(preapproved_checkpoints=["label_approval", "search_space_approval"])
+        state = build_agent_loop_state(preapproved_checkpoints=["label_approval", "search_space_approval"], runtime_profile="bounded_autonomous")
         self.assertFalse(state["approvals"]["bnr_spec_approval"])
         self.assertTrue(state["approvals"]["label_approval"])
         self.assertTrue(state["approvals"]["search_space_approval"])
+        self.assertEqual(state["runtime_profile"], "bounded_autonomous")
+
+    def test_initial_agent_loop_state_loads_persisted_cross_run_memory(self) -> None:
+        with mock.patch(
+            "trading_ml.agent_workflow.load_persisted_research_memory",
+            return_value={
+                "failure_memory": [{"memory_id": "FM-1"}],
+                "research_action_history": [{"action_id": "feature"}],
+                "desk_memory": [{"proposal_id": "DPROP-1"}],
+            },
+        ):
+            state = build_agent_loop_state()
+        self.assertEqual(state["failure_memory"][0]["memory_id"], "FM-1")
+        self.assertEqual(state["research_action_history"][0]["action_id"], "feature")
+        self.assertEqual(state["desk_memory"][0]["proposal_id"], "DPROP-1")
 
     def test_linear_stage3_pass_is_disabled(self) -> None:
         with self.assertRaises(RuntimeError):
@@ -128,9 +144,45 @@ class AgentWorkflowTests(unittest.TestCase):
         state["stage2_config"]["source_path"] = "dummy"
         limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
         with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "research_diagnostics", "trial_count": 0, "batch_decision": "inform", "status": "complete"}) as run_action:
-            result = search_controller_agent_node(state, limits)
+            with mock.patch("trading_ml.agent_nodes.append_action_history_entry") as append_action:
+                result = search_controller_agent_node(state, limits)
         run_action.assert_called_once()
+        append_action.assert_called_once()
         self.assertEqual(result["research_action_history"][-1]["action_id"], "validation_failure_analysis")
+
+    def test_bounded_autonomous_profile_caps_governed_search_trials(self) -> None:
+        state = build_agent_loop_state(runtime_profile="bounded_autonomous")
+        state["approvals"]["search_space_approval"] = True
+        state["next_step_plan"] = {
+            "selected_family": "setup",
+            "assigned_research_action": "setup",
+            "hypothesis_id": "H-00001",
+            "controller_override": {"active_family": "setup"},
+        }
+        state["stage2_config"]["source_path"] = "dummy"
+        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
+        with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "setup", "trial_count": 2, "batch_decision": "revise", "status": "complete"}) as run_action:
+            search_controller_agent_node(state, limits)
+        controller = run_action.call_args.kwargs["controller_state"]
+        self.assertEqual(controller["max_batch_trials"], 2)
+
+    def test_desk_handoff_forces_tiny_first_governed_batch(self) -> None:
+        state = build_agent_loop_state()
+        state["approvals"]["search_space_approval"] = True
+        state["next_step_plan"] = {
+            "selected_family": "candidate_universe_expansion",
+            "assigned_research_action": "candidate_universe_expansion",
+            "hypothesis_id": "DPROP-1",
+            "controller_override": {"active_family": "candidate_universe_expansion"},
+            "search_budget": {"max_trials": 1},
+            "desk_handoff": {"proposal_id": "DPROP-1", "first_governed_batch": True},
+        }
+        state["stage2_config"]["source_path"] = "dummy"
+        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
+        with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "candidate_universe_expansion", "trial_count": 1, "batch_decision": "revise", "status": "complete"}) as run_action:
+            search_controller_agent_node(state, limits)
+        controller = run_action.call_args.kwargs["controller_state"]
+        self.assertEqual(controller["max_batch_trials"], 1)
 
     def test_diagnostic_action_skips_full_audit_budget_consumption(self) -> None:
         state = build_agent_loop_state()
@@ -151,6 +203,69 @@ class AgentWorkflowTests(unittest.TestCase):
         result = translation_checkpoint_node(state)
         self.assertEqual(result["translation_summary"]["status"], "inform")
         self.assertEqual(result["translation_summary"]["diagnostic_action"], "validation_failure_analysis")
+
+    def test_diagnosis_agent_builds_attempts_and_failure_clusters(self) -> None:
+        state = build_agent_loop_state()
+        state["stage2_result"] = {
+            "features_records": [
+                {
+                    "candidate_id": "c1",
+                    "direction": "long",
+                    "setup_subtype": "weak_reclaim",
+                    "trigger_seconds_after_open": 180,
+                    "break_efficiency_ratio": 0.2,
+                    "reclaim_close_location": 0.3,
+                    "reclaim_failure_count": 0,
+                    "deepest_zone_retrace_fraction": 0.85,
+                    "post_reclaim_close_strength": 0.1,
+                },
+                {
+                    "candidate_id": "c2",
+                    "direction": "long",
+                    "setup_subtype": "weak_reclaim",
+                    "trigger_seconds_after_open": 240,
+                    "break_efficiency_ratio": 0.22,
+                    "reclaim_close_location": 0.28,
+                    "reclaim_failure_count": 0,
+                    "deepest_zone_retrace_fraction": 0.82,
+                    "post_reclaim_close_strength": 0.12,
+                },
+                {
+                    "candidate_id": "c3",
+                    "direction": "short",
+                    "setup_subtype": "weak_reclaim",
+                    "trigger_seconds_after_open": 260,
+                    "break_efficiency_ratio": 0.25,
+                    "reclaim_close_location": 0.26,
+                    "reclaim_failure_count": 0,
+                    "deepest_zone_retrace_fraction": 0.81,
+                    "post_reclaim_close_strength": 0.11,
+                },
+            ],
+            "labels_records": [
+                {"candidate_id": "c1", "label": 0, "outcome": "stop", "pnl_r": -1.0, "bars_held": 3},
+                {"candidate_id": "c2", "label": 0, "outcome": "stop", "pnl_r": -0.8, "bars_held": 2},
+                {"candidate_id": "c3", "label": 0, "outcome": "stop", "pnl_r": -0.7, "bars_held": 2},
+            ],
+        }
+        state["audit_summary"] = {
+            "cpcv": {"status": "fail"},
+            "walk_forward": {
+                "status": "pass",
+                "stitched_prediction_records": [
+                    {"candidate_id": "c1", "session_date": "2026-01-02", "probability": 0.61, "prediction": 1},
+                    {"candidate_id": "c2", "session_date": "2026-01-02", "probability": 0.59, "prediction": 1},
+                    {"candidate_id": "c3", "session_date": "2026-01-03", "probability": 0.58, "prediction": 1},
+                ],
+            },
+        }
+        state["translation_summary"] = {"status": "pass"}
+        with mock.patch("trading_ml.agent_nodes.append_failure_memory_entry") as append_failure:
+            result = diagnosis_agent_node(state)
+        append_failure.assert_called_once()
+        self.assertEqual(len(result["bnr_attempts"]), 3)
+        self.assertTrue(result["failure_clusters"])
+        self.assertEqual(result["failure_clusters"][0]["recommended_family"], "setup")
 
 
 if __name__ == "__main__":

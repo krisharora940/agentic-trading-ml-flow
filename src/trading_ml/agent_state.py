@@ -27,6 +27,7 @@ FailureCategory = Literal[
 
 class AgentLoopState(TypedDict, total=False):
     run_id: str
+    runtime_profile: Literal["standard", "bounded_autonomous"]
     program_state: dict[str, Any]
     next_step_plan: dict[str, Any]
     research_director_summary: dict[str, Any]
@@ -68,6 +69,11 @@ class AgentLoopState(TypedDict, total=False):
     domain_priors: list[dict[str, Any]]
     research_backlog: list[dict[str, Any]]
     active_hypothesis: dict[str, Any]
+    bnr_attempts: list[dict[str, Any]]
+    failure_clusters: list[dict[str, Any]]
+    desk_summary: dict[str, Any]
+    desk_proposals: list[dict[str, Any]]
+    desk_memory: list[dict[str, Any]]
     failure_memory: list[dict[str, Any]]
     research_action_history: list[dict[str, Any]]
     candidate_setups_defined: bool

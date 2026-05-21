@@ -119,6 +119,11 @@ def main() -> None:
         }.items()
         if value is not None
     }
+    if args.autonomous_cycle:
+        budget_overrides.setdefault("max_trials", 2)
+        budget_overrides.setdefault("max_full_validations", 1)
+        budget_overrides.setdefault("max_cpcv_runs", 1)
+        budget_overrides.setdefault("max_model_trains", 4)
 
     suppress_runtime = bool(args.quiet_runtime or args.local_only)
     with _suppress_runtime_stderr(suppress_runtime) as stderr_path:
@@ -127,6 +132,7 @@ def main() -> None:
                 preapproved_checkpoints=preapproved_checkpoints,
                 max_research_cycles=args.max_cycles,
                 compute_budget_overrides=budget_overrides or None,
+                runtime_profile="bounded_autonomous" if args.autonomous_cycle else "standard",
             ),
             config=config,
         )

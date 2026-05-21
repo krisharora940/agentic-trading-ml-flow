@@ -7,10 +7,13 @@ from typing import Any
 
 from trading_ml.agent_state import DecisionName, FailureCategory, LoopLimits, ReviewCheckpoint
 from trading_ml.artifact_store import persist_node_artifact
+from trading_ml.bnr_attempts import build_bnr_attempts
 from trading_ml.price_action_feature_catalog import build_strategy_intake
 from trading_ml.config import load_bnr_config
+from trading_ml.failure_clusters import build_failure_clusters
 from trading_ml.feature_diagnostics import build_feature_diagnostics
 from trading_ml.market_state_quality import build_market_state_setup_quality_diagnostic
+from trading_ml.research_memory_store import append_action_history_entry, append_failure_memory_entry
 from trading_ml.research_actions import available_research_actions, execute_research_action
 from trading_ml.research_os import (
     append_failure_memory,
@@ -121,6 +124,28 @@ def _current_action_kind(state: dict[str, Any]) -> str:
     return str(action.get("callable_kind", ""))
 
 
+def _runtime_profile_trial_cap(state: dict[str, Any], selected_family: str, action_kind: str) -> int | None:
+    if str(state.get("runtime_profile", "standard")) != "bounded_autonomous":
+        return None
+    if action_kind != "governed_research_cycle":
+        return None
+    caps = {
+        "setup": 2,
+        "model": 1,
+        "feature": 2,
+        "feature_threshold": 1,
+        "threshold": 1,
+        "translation_policy": 1,
+        "label": 2,
+        "sample_expansion": 1,
+        "subtype": 2,
+        "candidate_universe_expansion": 1,
+        "exit_behavior_research": 1,
+        "market_state_setup_quality": 1,
+    }
+    return caps.get(selected_family, 1)
+
+
 def _cheap_screen_subtype_candidates(state: dict[str, Any], search_space: dict[str, Any]) -> dict[str, Any]:
     configured = list(search_space.get("space", {}).get("setup_subtype", []) or [])
     attribution = dict((state.get("next_step_plan", {}) or {}).get("evidence_used", {}) or {})
@@ -211,6 +236,7 @@ def research_director_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         list(state.get("research_backlog", []) or []),
         list(state.get("failure_memory", []) or []),
         stage2_result=dict(state.get("stage2_result", {}) or {}),
+        research_action_history=list(state.get("research_action_history", []) or []),
     )
     active_hypothesis = dict(backlog[0]) if backlog else {}
     summary_state = {
@@ -245,6 +271,7 @@ def domain_research_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         hypotheses,
         list(state.get("failure_memory", []) or []),
         stage2_result=dict(state.get("stage2_result", {}) or {}),
+        research_action_history=list(state.get("research_action_history", []) or []),
     )
     active_hypothesis = dict(backlog[0]) if backlog else {}
     summary = build_research_director_summary(
@@ -589,6 +616,9 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     ]
     if candidate_trial_limits:
         controller["max_batch_trials"] = min(candidate_trial_limits)
+    desk_handoff = dict(next_step_plan.get("desk_handoff", {}) or {})
+    if desk_handoff.get("first_governed_batch"):
+        controller["max_batch_trials"] = min(int(controller.get("max_batch_trials", 1) or 1), 1)
     selected_family = str(next_step_plan.get("selected_family", active_family))
     action_registry = available_research_actions()
     preferred_action = next_step_plan.get("assigned_research_action")
@@ -601,6 +631,10 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     if action_id not in action_registry and selected_family in action_registry:
         action_id = selected_family
     action_spec = action_registry.get(action_id)
+    profile_trial_cap = _runtime_profile_trial_cap(state, selected_family, action_spec.callable_kind if action_spec else "")
+    if profile_trial_cap is not None:
+        current_limit = int(controller.get("max_batch_trials", profile_trial_cap) or profile_trial_cap)
+        controller["max_batch_trials"] = min(current_limit, profile_trial_cap)
     cycle = int(state.get("research_cycle", 1) or 1)
     approvals = dict(state.get("approvals", {}))
     pending = list(state.get("checkpoints_pending", []))
@@ -754,11 +788,13 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
             "family": selected_family,
             "cycle": cycle,
             "hypothesis_id": next_step_plan.get("hypothesis_id"),
+            "proposal_id": dict(next_step_plan.get("desk_handoff", {}) or {}).get("proposal_id"),
             "callable_kind": action_spec.callable_kind if action_spec else "implicit",
             "status": search_results.get("status", search_results.get("batch_decision", "complete")),
             "batch_decision": search_results.get("batch_decision"),
         },
     ]
+    append_action_history_entry(action_history[-1])
     return {
         "current_node": "search_controller_agent",
         "search_space": search_space,
@@ -967,16 +1003,32 @@ def _has_opening_hours_coverage(stage2: dict[str, Any]) -> bool:
 def diagnosis_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     category = diagnose_failure(state)
     diagnostics = [*state.get("diagnostics", []), {"category": category, "created_at": utc_now_iso()}]
+    walk_forward = dict(dict(state.get("audit_summary", {}) or {}).get("walk_forward", {}) or {})
+    attempts = build_bnr_attempts(
+        dict(state.get("stage2_result", {}) or {}),
+        list(walk_forward.get("stitched_prediction_records", []) or []),
+    )
+    failure_clusters = build_failure_clusters(attempts)
     failure_memory = append_failure_memory(state)
+    if len(failure_memory) > len(list(state.get("failure_memory", []) or [])):
+        append_failure_memory_entry(failure_memory[-1])
     return {
         "current_node": "diagnosis_agent",
         "diagnostics": diagnostics,
+        "bnr_attempts": attempts,
+        "failure_clusters": failure_clusters,
         "failure_memory": failure_memory,
         "run_log": _append_log(
             state,
             "diagnosis_agent",
-            "Categorized current workflow failure and stored it in research memory.",
-            {"diagnostic": diagnostics[-1], "failure_memory_count": len(failure_memory)},
+            "Categorized current workflow failure and refreshed BNR attempt clusters.",
+            {
+                "diagnostic": diagnostics[-1],
+                "failure_memory_count": len(failure_memory),
+                "attempt_count": len(attempts),
+                "failure_cluster_count": len(failure_clusters),
+                "top_failure_cluster": failure_clusters[0] if failure_clusters else {},
+            },
         ),
     }
 
@@ -1186,6 +1238,7 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
         list(state.get("research_backlog", []) or []),
         list(state.get("failure_memory", []) or []),
         stage2_result=dict(state.get("stage2_result", {}) or {}),
+        research_action_history=list(state.get("research_action_history", []) or []),
     )
     viable_hypotheses = count_viable_hypotheses(refreshed_backlog)
     continue_iteration = (

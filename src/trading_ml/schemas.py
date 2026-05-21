@@ -100,6 +100,40 @@ class BlockingIssue:
 
 
 @dataclass(slots=True)
+class BNRAttempt:
+    attempt_id: str
+    candidate_id: str
+    session_date: str
+    direction: str
+    setup_subtype: str
+    time_bucket: str
+    probability_bucket: str
+    executed: bool
+    label: int | None = None
+    prediction: int | None = None
+    probability: float | None = None
+    pnl_r: float | None = None
+    outcome: str = "unknown"
+    failure_reason: str = "unknown"
+    path_class: str = "unknown"
+    features: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class FailureCluster:
+    cluster_id: str
+    family: str
+    rows: int
+    avg_pnl_r: float
+    avg_probability: float
+    dominant_subtype: str
+    dominant_time_bucket: str
+    recommended_family: str
+    recommended_focus: list[str] = field(default_factory=list)
+    evidence: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
 class ExperimentRecord:
     experiment_id: str
     hypothesis: str
