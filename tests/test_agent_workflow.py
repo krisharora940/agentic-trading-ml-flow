@@ -30,6 +30,11 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertTrue(state["approvals"]["search_space_approval"])
         self.assertEqual(state["runtime_profile"], "bounded_autonomous")
 
+    def test_initial_agent_loop_state_can_run_unattended(self) -> None:
+        state = build_agent_loop_state(runtime_profile="unattended", auto_accept_robust=True)
+        self.assertEqual(state["runtime_profile"], "unattended")
+        self.assertTrue(state["auto_accept_robust"])
+
     def test_initial_agent_loop_state_loads_persisted_cross_run_memory(self) -> None:
         with mock.patch(
             "trading_ml.agent_workflow.load_persisted_research_memory",
@@ -132,6 +137,20 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertEqual(result["search_results"], {})
         self.assertEqual(result["executed_research_family"], "")
         self.assertEqual(result["translation_summary"], {})
+
+    def test_iteration_controller_stops_after_auto_accept(self) -> None:
+        state = build_agent_loop_state(runtime_profile="unattended", auto_accept_robust=True)
+        state["promotion_decision"] = "accept"
+        state["search_results"] = {"family": "feature", "trial_count": 2, "accepted_trial": {"trial_id": "T-1"}}
+        state["audit_summary"] = {
+            "cpcv": {"status": "pass"},
+            "deflated_sharpe": {"status": "pass"},
+            "walk_forward": {"status": "pass"},
+            "purging": {"status": "pass"},
+        }
+        result = iteration_controller_node(state)
+        self.assertEqual(result["current_node"], "iteration_controller")
+        self.assertNotIn("research_cycle", result)
 
     def test_search_controller_records_director_assigned_action_history(self) -> None:
         state = build_agent_loop_state()

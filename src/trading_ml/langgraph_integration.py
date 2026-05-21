@@ -401,7 +401,7 @@ def build_langgraph_initial_input(
 
 
 def build_bnr_research_desk_initial_input() -> AgentLoopState:
-    return build_agent_loop_state(
+    return build_bnr_research_desk_initial_input_with_profile(
         preapproved_checkpoints=["bnr_spec_approval", "label_approval", "search_space_approval", "frozen_spec_approval"],
         max_research_cycles=1,
         compute_budget_overrides={
@@ -414,17 +414,44 @@ def build_bnr_research_desk_initial_input() -> AgentLoopState:
     )
 
 
-def build_governor_state_from_desk_handoff(desk_state: dict[str, Any]) -> AgentLoopState:
+def build_bnr_research_desk_initial_input_with_profile(
+    *,
+    preapproved_checkpoints: list[str] | None = None,
+    max_research_cycles: int | None = None,
+    compute_budget_overrides: dict[str, Any] | None = None,
+    runtime_profile: str = "bounded_autonomous",
+    auto_accept_robust: bool = False,
+) -> AgentLoopState:
+    return build_agent_loop_state(
+        preapproved_checkpoints=preapproved_checkpoints,
+        max_research_cycles=max_research_cycles,
+        compute_budget_overrides=compute_budget_overrides,
+        runtime_profile=runtime_profile,
+        auto_accept_robust=auto_accept_robust,
+    )
+
+
+def build_governor_state_from_desk_handoff(
+    desk_state: dict[str, Any],
+    *,
+    max_research_cycles: int | None = None,
+    compute_budget_overrides: dict[str, Any] | None = None,
+    runtime_profile: str = "bounded_autonomous",
+    auto_accept_robust: bool = False,
+) -> AgentLoopState:
+    budget_overrides = {
+        "max_trials": 1,
+        "max_full_validations": 1,
+        "max_cpcv_runs": 1,
+        "max_model_trains": 1,
+    }
+    budget_overrides.update(dict(compute_budget_overrides or {}))
     state = build_agent_loop_state(
         preapproved_checkpoints=["bnr_spec_approval", "label_approval", "search_space_approval", "frozen_spec_approval"],
-        max_research_cycles=1,
-        compute_budget_overrides={
-            "max_trials": 1,
-            "max_full_validations": 1,
-            "max_cpcv_runs": 1,
-            "max_model_trains": 1,
-        },
-        runtime_profile="bounded_autonomous",
+        max_research_cycles=max_research_cycles or 1,
+        compute_budget_overrides=budget_overrides,
+        runtime_profile=runtime_profile,
+        auto_accept_robust=auto_accept_robust,
     )
     state["stage2_result"] = dict(desk_state.get("stage2_result", {}) or {})
     state["bnr_attempts"] = list(desk_state.get("bnr_attempts", []) or [])

@@ -9,7 +9,7 @@ import tempfile
 from typing import Any
 
 from trading_ml.langgraph_integration import (
-    build_bnr_research_desk_initial_input,
+    build_bnr_research_desk_initial_input_with_profile,
     build_governor_state_from_desk_handoff,
     compile_bnr_langgraph,
     compile_bnr_research_desk_graph,
@@ -80,7 +80,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the BNR research desk graph, then hand off to the governor graph.")
     parser.add_argument("--thread-id", default="bnr-desk-governor")
     parser.add_argument("--use-llm", action="store_true")
+    parser.add_argument("--unattended", action="store_true", help="Run multiple bounded cycles and auto-accept only if all hard gates pass.")
     parser.add_argument("--local-only", action="store_true")
+    parser.add_argument("--max-cycles", type=int, default=None)
     parser.add_argument("--summary-only", action="store_true")
     parser.add_argument("--quiet-runtime", action="store_true")
     args = parser.parse_args()
@@ -101,11 +103,41 @@ def main() -> None:
     governor_graph = compile_bnr_langgraph(use_llm=args.use_llm)
     desk_config = {"configurable": {"thread_id": f"{args.thread_id}-desk"}}
     governor_config = {"configurable": {"thread_id": f"{args.thread_id}-governor"}}
+    unattended = bool(args.unattended)
+    max_cycles = int(args.max_cycles or (25 if unattended else 1))
+    auto_accept_robust = unattended
+    desk_budget_overrides = {
+        "max_trials": 1,
+        "max_full_validations": 0 if not unattended else 4,
+        "max_cpcv_runs": 0 if not unattended else 4,
+        "max_model_trains": 1 if not unattended else 12,
+    }
+    governor_budget_overrides = {
+        "max_trials": 1 if not unattended else 3,
+        "max_full_validations": 1 if not unattended else 6,
+        "max_cpcv_runs": 1 if not unattended else 6,
+        "max_model_trains": 1 if not unattended else 20,
+    }
 
     suppress_runtime = bool(args.quiet_runtime or args.local_only)
     with _suppress_runtime_stderr(suppress_runtime) as stderr_path:
-        desk_result = desk_graph.invoke(build_bnr_research_desk_initial_input(), config=desk_config)
-        governor_state = build_governor_state_from_desk_handoff(desk_result)
+        desk_result = desk_graph.invoke(
+            build_bnr_research_desk_initial_input_with_profile(
+                preapproved_checkpoints=["bnr_spec_approval", "label_approval", "search_space_approval", "frozen_spec_approval"],
+                max_research_cycles=max_cycles,
+                compute_budget_overrides=desk_budget_overrides,
+                runtime_profile="unattended" if unattended else "bounded_autonomous",
+                auto_accept_robust=auto_accept_robust,
+            ),
+            config=desk_config,
+        )
+        governor_state = build_governor_state_from_desk_handoff(
+            desk_result,
+            max_research_cycles=max_cycles,
+            compute_budget_overrides=governor_budget_overrides,
+            runtime_profile="unattended" if unattended else "bounded_autonomous",
+            auto_accept_robust=auto_accept_robust,
+        )
         governor_result = governor_graph.invoke(governor_state, config=governor_config)
         payload = (
             _build_combined_summary(desk_result, governor_result, stderr_path)

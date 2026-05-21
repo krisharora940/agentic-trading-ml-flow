@@ -13,7 +13,7 @@ CheckpointName = Literal[
     "frozen_spec_approval",
 ]
 
-DecisionName = Literal["reject", "revise", "freeze", "advance_to_validation"]
+DecisionName = Literal["reject", "revise", "freeze", "advance_to_validation", "accept"]
 
 FailureCategory = Literal[
     "data_issue",
@@ -27,7 +27,8 @@ FailureCategory = Literal[
 
 class AgentLoopState(TypedDict, total=False):
     run_id: str
-    runtime_profile: Literal["standard", "bounded_autonomous"]
+    runtime_profile: Literal["standard", "bounded_autonomous", "unattended"]
+    auto_accept_robust: bool
     program_state: dict[str, Any]
     next_step_plan: dict[str, Any]
     research_director_summary: dict[str, Any]

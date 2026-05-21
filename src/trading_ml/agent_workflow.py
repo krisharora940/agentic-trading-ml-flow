@@ -59,6 +59,7 @@ def build_agent_loop_state(
     max_research_cycles: int | None = None,
     compute_budget_overrides: dict[str, Any] | None = None,
     runtime_profile: str = "standard",
+    auto_accept_robust: bool = False,
 ) -> AgentLoopState:
     project_state = build_initial_project_state()
     config = load_agent_loop_config()
@@ -83,7 +84,8 @@ def build_agent_loop_state(
     budget_overrides = dict(compute_budget_overrides or {})
     return AgentLoopState(
         run_id=f"bnr-{uuid4().hex[:12]}",
-        runtime_profile="bounded_autonomous" if runtime_profile == "bounded_autonomous" else "standard",
+        runtime_profile=runtime_profile if runtime_profile in {"bounded_autonomous", "unattended"} else "standard",
+        auto_accept_robust=auto_accept_robust,
         program_state=build_program_state(),
         next_step_plan={},
         research_director_summary={},

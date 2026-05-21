@@ -1226,6 +1226,24 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
         "translation_status": translation_summary.get("status"),
         "calibration_status": calibration.get("status"),
     }
+    auto_accept_robust = bool(state.get("auto_accept_robust", False))
+    robust_enough = (
+        not state.get("blocking_issues")
+        and state.get("approvals", {}).get("frozen_spec_approval", False)
+        and audit_summary.get("leakage") == "pass"
+        and purging.get("status") == "pass"
+        and str(audit_summary.get("robustness", "")).startswith("pending")
+        and walk_forward.get("status") == "pass"
+        and cpcv.get("status") == "pass"
+        and deflated_sharpe.get("status") == "pass"
+        and multiple_testing.get("status") == "pass"
+        and bool(multiple_testing.get("promotable_method", False))
+        and random_signal_plumbing.get("status") == "pass"
+        and calibration.get("status") == "pass"
+        and translation_summary.get("status") == "pass"
+        and net_avg_pnl_r is not None
+        and float(net_avg_pnl_r) > 0
+    )
 
     if state.get("blocking_issues"):
         decision = "revise"
@@ -1259,6 +1277,8 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
         decision = "freeze"
     elif net_avg_pnl_r is not None and float(net_avg_pnl_r) <= 0:
         decision = "reject"
+    elif auto_accept_robust and robust_enough:
+        decision = "accept"
     else:
         decision = "advance_to_validation"
     return {
@@ -1268,7 +1288,7 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
             state,
             "promotion_decision",
             "Computed promotion decision from the canonical validation gate.",
-            {"decision": decision, "promotion_gate": promotion_gate},
+            {"decision": decision, "promotion_gate": promotion_gate, "auto_accept_robust": auto_accept_robust, "robust_enough": robust_enough},
         ),
     }
 
@@ -1321,6 +1341,8 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
     )
     if state.get("promotion_decision") == "freeze" and cycle < max_cycles and viable_hypotheses > 0 and not state.get("blocking_issues"):
         continue_iteration = True
+    if state.get("promotion_decision") == "accept":
+        continue_iteration = False
     if family == "setup" and state.get("promotion_decision") == "advance_to_validation" and bool(accepted_trial) and cycle < max_cycles:
         continue_iteration = True
     payload = {
@@ -1333,6 +1355,8 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
         payload["stop_reasons"] = ["accepted trial vetoed by hard validation gates"]
         payload["cpcv_status"] = cpcv_status
         payload["deflated_sharpe_status"] = dsr_status
+    if state.get("promotion_decision") == "accept":
+        payload["stop_reasons"] = ["auto-accepted robust candidate"]
     if continue_iteration:
         if family == "setup" and state.get("promotion_decision") == "advance_to_validation":
             stage2_config.update(accepted_trial.get("overrides", {}))

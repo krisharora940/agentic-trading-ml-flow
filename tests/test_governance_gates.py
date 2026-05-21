@@ -116,6 +116,29 @@ class GovernanceGateTests(unittest.TestCase):
         result = promotion_decision_node(state)
         self.assertEqual(result["promotion_decision"], "freeze")
 
+    def test_promotion_auto_accepts_when_unattended_and_robust(self) -> None:
+        state = {
+            "auto_accept_robust": True,
+            "approvals": {"frozen_spec_approval": True},
+            "audit_summary": {
+                "leakage": "pass",
+                "robustness": "pending",
+                "walk_forward": {"status": "pass"},
+                "cpcv": {"status": "pass"},
+                "deflated_sharpe": {"status": "pass"},
+                "purging": {"status": "pass"},
+                "overfitting": "pass",
+                "multiple_testing": {"status": "pass", "promotable_method": True},
+                "random_signal_plumbing": {"status": "pass"},
+                "model_diagnostics": {"calibration_review": {"status": "pass"}},
+            },
+            "search_results": {"best_trial": {"net_avg_pnl_r": 0.1}},
+            "translation_summary": {"status": "pass"},
+            "blocking_issues": [],
+        }
+        result = promotion_decision_node(state)
+        self.assertEqual(result["promotion_decision"], "accept")
+
 
 if __name__ == "__main__":
     unittest.main()
