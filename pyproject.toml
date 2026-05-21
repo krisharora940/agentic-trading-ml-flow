@@ -5,6 +5,7 @@ description = "BNR 1m trading ML substrate and research pipeline."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "ml4t-backtest>=0.1.0b20",
     "ml4t-diagnostic>=0.1.0b21",
     "ml4t-engineer>=0.1.0b8",
     "numpy>=2.0.0",

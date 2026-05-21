@@ -53,3 +53,10 @@ min_exploration_sessions = 160
 reset_policy = "baseline_all"
 reset_feature_family = "context_plus_reclaim"
 reset_threshold = 0.45
+
+[program.domain_research]
+priority_sources = [
+  "ml4trading.io",
+  "internal_bnr_reports",
+  "curated_public_price_action",
+]

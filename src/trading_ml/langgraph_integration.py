@@ -13,6 +13,7 @@ from trading_ml.agent_nodes import (
     cto_agent_node,
     data_steward_agent_node,
     diagnosis_agent_node,
+    domain_research_agent_node,
     feature_agent_node,
     governor_agent_node,
     iteration_controller_node,
@@ -20,6 +21,7 @@ from trading_ml.agent_nodes import (
     model_agent_node,
     program_director_node,
     promotion_decision_node,
+    research_director_agent_node,
     search_controller_agent_node,
     setup_redesign_agent_node,
     strategy_intake_agent_node,
@@ -89,6 +91,12 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
 
     def strategy_intake(state: AgentLoopState) -> dict[str, Any]:
         return strategy_intake_agent_node(state)
+
+    def research_director(state: AgentLoopState) -> dict[str, Any]:
+        return research_director_agent_node(state)
+
+    def domain_research(state: AgentLoopState) -> dict[str, Any]:
+        return domain_research_agent_node(state)
 
     def program_director(state: AgentLoopState) -> dict[str, Any]:
         return program_director_node(state)
@@ -211,6 +219,12 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     def iteration_controller(state: AgentLoopState) -> dict[str, Any]:
         return iteration_controller_node(state)
 
+    def route_after_research_director(state: AgentLoopState) -> str:
+        summary = dict(state.get("research_director_summary", {}) or {})
+        if summary.get("recommended_action") == "research_domain_priors":
+            return "domain_research_agent"
+        return "program_director"
+
     def route_after_governor(state: AgentLoopState) -> str:
         if state.get("blocking_issues"):
             return "diagnosis_agent"
@@ -246,6 +260,8 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
 
     graph = StateGraph(AgentLoopState)
     graph.add_node("strategy_intake_agent", strategy_intake)
+    graph.add_node("research_director_agent", research_director)
+    graph.add_node("domain_research_agent", domain_research)
     graph.add_node("program_director", program_director)
     graph.add_node("setup_redesign_agent", setup_redesign)
     graph.add_node("governor_agent", governor)
@@ -268,7 +284,9 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     graph.add_node("iteration_controller", iteration_controller)
 
     graph.add_edge(START, "strategy_intake_agent")
-    graph.add_edge("strategy_intake_agent", "program_director")
+    graph.add_edge("strategy_intake_agent", "research_director_agent")
+    graph.add_conditional_edges("research_director_agent", route_after_research_director)
+    graph.add_edge("domain_research_agent", "program_director")
     graph.add_conditional_edges("program_director", route_after_program_director)
     graph.add_edge("setup_redesign_agent", END)
     graph.add_conditional_edges("governor_agent", route_after_governor)
@@ -294,7 +312,7 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
         if prior and prior[-1].get("actor") == "iteration_controller":
             payload = dict(prior[-1].get("payload", {}))
             if payload.get("continue_iteration"):
-                return "data_steward_agent"
+                return "research_director_agent"
         return END
 
     graph.add_conditional_edges("iteration_controller", route_after_iteration)
@@ -303,5 +321,14 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     return graph.compile(checkpointer=saver)
 
 
-def build_langgraph_initial_input() -> AgentLoopState:
-    return build_agent_loop_state()
+def build_langgraph_initial_input(
+    *,
+    preapproved_checkpoints: list[str] | None = None,
+    max_research_cycles: int | None = None,
+    compute_budget_overrides: dict[str, Any] | None = None,
+) -> AgentLoopState:
+    return build_agent_loop_state(
+        preapproved_checkpoints=preapproved_checkpoints,
+        max_research_cycles=max_research_cycles,
+        compute_budget_overrides=compute_budget_overrides,
+    )

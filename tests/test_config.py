@@ -47,6 +47,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config["program"]["primary_objective"], "maximize_utility_subject_to_research_validity")
         self.assertIn("thesis_lab", config["program"]["workstreams"])
         self.assertIn("execution_lab", config["program"]["workstreams"])
+        self.assertEqual(config["program"]["domain_research"]["priority_sources"][0], "ml4trading.io")
 
 
 if __name__ == "__main__":

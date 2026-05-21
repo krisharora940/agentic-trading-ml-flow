@@ -29,6 +29,7 @@ class AgentLoopState(TypedDict, total=False):
     run_id: str
     program_state: dict[str, Any]
     next_step_plan: dict[str, Any]
+    research_director_summary: dict[str, Any]
     benchmark_status: str
     setup_redesign_plan: dict[str, Any]
     strategy_notes: str
@@ -64,6 +65,11 @@ class AgentLoopState(TypedDict, total=False):
     audit_summary: dict[str, Any]
     backtest_summary: dict[str, Any]
     technical_review: dict[str, Any]
+    domain_priors: list[dict[str, Any]]
+    research_backlog: list[dict[str, Any]]
+    active_hypothesis: dict[str, Any]
+    failure_memory: list[dict[str, Any]]
+    research_action_history: list[dict[str, Any]]
     candidate_setups_defined: bool
     promotion_decision: str
     holdout_consumed: bool

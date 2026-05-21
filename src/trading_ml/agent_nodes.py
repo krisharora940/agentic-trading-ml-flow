@@ -11,6 +11,15 @@ from trading_ml.price_action_feature_catalog import build_strategy_intake
 from trading_ml.config import load_bnr_config
 from trading_ml.feature_diagnostics import build_feature_diagnostics
 from trading_ml.market_state_quality import build_market_state_setup_quality_diagnostic
+from trading_ml.research_actions import available_research_actions, execute_research_action
+from trading_ml.research_os import (
+    append_failure_memory,
+    build_curated_domain_priors,
+    build_hypotheses_from_priors,
+    build_research_backlog,
+    build_research_director_summary,
+    count_viable_hypotheses,
+)
 from trading_ml.research_program import evaluate_program_state
 from trading_ml.research_controller import (
     build_candidate_universe_expansion_search_space,
@@ -107,6 +116,11 @@ def _stage2_safe_overrides(overrides: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in overrides.items() if key in allowed}
 
 
+def _current_action_kind(state: dict[str, Any]) -> str:
+    action = dict(dict(state.get("search_results", {}) or {}).get("action", {}) or {})
+    return str(action.get("callable_kind", ""))
+
+
 def _cheap_screen_subtype_candidates(state: dict[str, Any], search_space: dict[str, Any]) -> dict[str, Any]:
     configured = list(search_space.get("space", {}).get("setup_subtype", []) or [])
     attribution = dict((state.get("next_step_plan", {}) or {}).get("evidence_used", {}) or {})
@@ -191,6 +205,74 @@ def strategy_intake_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def research_director_agent_node(state: dict[str, Any]) -> dict[str, Any]:
+    priors = list(state.get("domain_priors", []) or [])
+    backlog = build_research_backlog(
+        list(state.get("research_backlog", []) or []),
+        list(state.get("failure_memory", []) or []),
+        stage2_result=dict(state.get("stage2_result", {}) or {}),
+    )
+    active_hypothesis = dict(backlog[0]) if backlog else {}
+    summary_state = {
+        **state,
+        "domain_priors": priors,
+        "research_backlog": backlog,
+    }
+    summary = build_research_director_summary(summary_state)
+    return {
+        "current_node": "research_director_agent",
+        "research_backlog": backlog,
+        "active_hypothesis": active_hypothesis,
+        "research_director_summary": summary,
+        "run_log": _append_log(
+            state,
+            "research_director_agent",
+            "Ranked the research backlog and selected the next working hypothesis.",
+            {
+                "domain_priors_loaded": bool(priors),
+                "recommended_action": summary.get("recommended_action"),
+                "active_hypothesis": active_hypothesis,
+                "backlog_size": len(backlog),
+            },
+        ),
+    }
+
+
+def domain_research_agent_node(state: dict[str, Any]) -> dict[str, Any]:
+    priors = build_curated_domain_priors()
+    hypotheses = build_hypotheses_from_priors(priors)
+    backlog = build_research_backlog(
+        hypotheses,
+        list(state.get("failure_memory", []) or []),
+        stage2_result=dict(state.get("stage2_result", {}) or {}),
+    )
+    active_hypothesis = dict(backlog[0]) if backlog else {}
+    summary = build_research_director_summary(
+        {
+            **state,
+            "domain_priors": priors,
+            "research_backlog": backlog,
+        }
+    )
+    return {
+        "current_node": "domain_research_agent",
+        "domain_priors": priors,
+        "research_backlog": backlog,
+        "active_hypothesis": active_hypothesis,
+        "research_director_summary": summary,
+        "run_log": _append_log(
+            state,
+            "domain_research_agent",
+            "Compiled domain priors into measurable BNR research hypotheses.",
+            {
+                "priority_sources": sorted({row["source"] for row in priors}),
+                "hypothesis_count": len(backlog),
+                "top_hypothesis": active_hypothesis,
+            },
+        ),
+    }
+
+
 def program_director_node(state: dict[str, Any]) -> dict[str, Any]:
     program_state = evaluate_program_state(state)
     next_step_plan = dict(program_state.get("next_step_plan", {}))
@@ -208,6 +290,7 @@ def program_director_node(state: dict[str, Any]) -> dict[str, Any]:
                 "priority_mandates": program_state["priority_mandates"],
                 "program_gaps": program_state["program_gaps"][:6],
                 "next_step_plan": next_step_plan,
+                "active_hypothesis": state.get("active_hypothesis", {}),
             },
         ),
     }
@@ -507,12 +590,29 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     if candidate_trial_limits:
         controller["max_batch_trials"] = min(candidate_trial_limits)
     selected_family = str(next_step_plan.get("selected_family", active_family))
+    action_registry = available_research_actions()
+    preferred_action = next_step_plan.get("assigned_research_action")
+    if preferred_action:
+        action_id = str(preferred_action)
+    elif selected_family in action_registry:
+        action_id = selected_family
+    else:
+        action_id = str(active_family)
+    if action_id not in action_registry and selected_family in action_registry:
+        action_id = selected_family
+    action_spec = action_registry.get(action_id)
     cycle = int(state.get("research_cycle", 1) or 1)
     approvals = dict(state.get("approvals", {}))
     pending = list(state.get("checkpoints_pending", []))
     issues = list(state.get("blocking_issues", []))
     search_results: dict[str, Any] = {}
-    execution_mode = "cheap_search" if active_family in {"subtype", "market_state_setup_quality", "exit_behavior_research", "candidate_universe_expansion"} else "full_validation"
+    execution_mode = (
+        "diagnostic_only"
+        if action_spec and action_spec.callable_kind != "governed_research_cycle"
+        else "cheap_search"
+        if active_family in {"subtype", "market_state_setup_quality", "exit_behavior_research", "candidate_universe_expansion"}
+        else "full_validation"
+    )
     route_payload = {"selected_family": selected_family, "active_family": active_family}
 
     if (
@@ -612,7 +712,15 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         if active_family == "subtype":
             cheap_screen = _cheap_screen_subtype_candidates(state, search_space)
             controller["allowed_setup_subtypes"] = cheap_screen["shortlisted_candidates"]
-        search_results = run_governed_search(trial_config, controller_override=controller)
+        if action_id in action_registry:
+            search_results = execute_research_action(
+                action_id,
+                base_config=trial_config,
+                controller_state=controller,
+                state=state,
+            )
+        else:
+            search_results = run_governed_search(trial_config, controller_override=controller)
         counts["trials"] += int(search_results.get("trial_count", 0))
         budget_usage["trials"] = int(budget_usage.get("trials", 0) or 0) + int(search_results.get("trial_count", 0))
         budget_usage["model_trains"] = int(budget_usage.get("model_trains", 0) or 0) + int(search_results.get("models_trained", search_results.get("trial_count", 0)) or 0)
@@ -639,6 +747,18 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
             "execution_mode": execution_mode,
         },
     )
+    action_history = [
+        *list(state.get("research_action_history", []) or []),
+        {
+            "action_id": action_id,
+            "family": selected_family,
+            "cycle": cycle,
+            "hypothesis_id": next_step_plan.get("hypothesis_id"),
+            "callable_kind": action_spec.callable_kind if action_spec else "implicit",
+            "status": search_results.get("status", search_results.get("batch_decision", "complete")),
+            "batch_decision": search_results.get("batch_decision"),
+        },
+    ]
     return {
         "current_node": "search_controller_agent",
         "search_space": search_space,
@@ -652,6 +772,11 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         "execution_mode": execution_mode,
         "budget_usage": budget_usage,
         "blocking_issues": issues,
+        "research_action_history": action_history,
+        "domain_priors": search_results.get("domain_priors", state.get("domain_priors", [])),
+        "research_backlog": search_results.get("research_backlog", state.get("research_backlog", [])),
+        "active_hypothesis": search_results.get("active_hypothesis", state.get("active_hypothesis", {})),
+        "setup_redesign_plan": search_results.get("setup_redesign_plan", state.get("setup_redesign_plan", {})),
         "checkpoints_pending": [name for name in pending if name != "search_space_approval"],
         "route_decisions": _append_route_decision(state, decision),
         "run_log": _append_log(
@@ -669,6 +794,7 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
                 "executed_family_cycle": cycle,
                 "search_batch_status": "complete" if search_results else "skipped",
                 "execution_mode": execution_mode,
+                "action_id": action_id,
                 "diagnostic_evidence_used": next_step_plan.get("diagnostic_evidence_used"),
                 "rejected_alternatives": next_step_plan.get("rejected_alternatives"),
                 "rationale": next_step_plan.get("rationale"),
@@ -682,6 +808,37 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
 def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     stage2 = dict(state.get("stage2_result", {}))
     budget_usage = _ensure_budget_usage(state)
+    action_kind = _current_action_kind(state)
+    if action_kind and action_kind != "governed_research_cycle":
+        search_results = dict(state.get("search_results", {}) or {})
+        action = dict(search_results.get("action", {}) or {})
+        audit_summary = {
+            **dict(state.get("audit_summary", {}) or {}),
+            "research_diagnostics": {
+                "status": "inform",
+                "action_id": action.get("action_id"),
+                "callable_kind": action.get("callable_kind"),
+            },
+        }
+        decision = _route_decision(
+            state,
+            node="audit_agent",
+            decision="diagnostic_audit_route_to_translation",
+            reason="Diagnostic research actions bypass full validation and preserve existing audit evidence.",
+            payload={"action_id": action.get("action_id"), "budget_usage": budget_usage},
+        )
+        return {
+            "current_node": "audit_agent",
+            "audit_summary": audit_summary,
+            "budget_usage": budget_usage,
+            "route_decisions": _append_route_decision(state, decision),
+            "run_log": _append_log(
+                state,
+                "audit_agent",
+                "Recorded diagnostic research action without rerunning full validation.",
+                {"audit_summary": audit_summary, "budget_usage": budget_usage, "route_decision": decision},
+            ),
+        }
     if stage2:
         feature_audit = stage2.get("feature_audit", {})
         data_flags = stage2.get("data_quality", {}).get("quality_flags", [])
@@ -700,7 +857,7 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             "cpcv": validation_audit["cpcv"],
             "deflated_sharpe": validation_audit["deflated_sharpe"],
             "purging": validation_audit["purging"],
-            "random_signal_plumbing": "pass",
+            "random_signal_plumbing": validation_audit["random_signal_plumbing"],
             "robustness": robustness,
             "data_quality_flags": data_flags,
             "feature_diagnostics": state.get("feature_diagnostics", {}),
@@ -810,14 +967,50 @@ def _has_opening_hours_coverage(stage2: dict[str, Any]) -> bool:
 def diagnosis_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     category = diagnose_failure(state)
     diagnostics = [*state.get("diagnostics", []), {"category": category, "created_at": utc_now_iso()}]
+    failure_memory = append_failure_memory(state)
     return {
         "current_node": "diagnosis_agent",
         "diagnostics": diagnostics,
-        "run_log": _append_log(state, "diagnosis_agent", "Categorized current workflow failure.", diagnostics[-1]),
+        "failure_memory": failure_memory,
+        "run_log": _append_log(
+            state,
+            "diagnosis_agent",
+            "Categorized current workflow failure and stored it in research memory.",
+            {"diagnostic": diagnostics[-1], "failure_memory_count": len(failure_memory)},
+        ),
     }
 
 
 def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
+    action_kind = _current_action_kind(state)
+    if action_kind and action_kind != "governed_research_cycle":
+        search_results = dict(state.get("search_results", {}) or {})
+        action = dict(search_results.get("action", {}) or {})
+        summary = {
+            "status": "inform",
+            "diagnostic_action": action.get("action_id"),
+            "callable_kind": action.get("callable_kind"),
+            "note": "Diagnostic research action completed; returned to the research director without translation gating.",
+        }
+        decision = _route_decision(
+            state,
+            node="translation_checkpoint",
+            decision="route_to_review_frozen_spec",
+            reason="Diagnostic actions skip translation analysis but keep cycle accounting through diagnosis and iteration control.",
+            payload={"diagnostic_action": action.get("action_id"), "translation_status": "inform"},
+        )
+        summary["route_decision"] = decision
+        return {
+            "current_node": "translation_checkpoint",
+            "translation_summary": summary,
+            "route_decisions": _append_route_decision(state, decision),
+            "run_log": _append_log(
+                state,
+                "translation_checkpoint",
+                "Skipped translation analysis for a diagnostic research action.",
+                summary,
+            ),
+        }
     bnr_config = load_bnr_config()
     stage2 = dict(state.get("stage2_result", {}))
     data_quality = dict(stage2.get("data_quality", {}))
@@ -899,6 +1092,18 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
     deflated_sharpe = dict(audit_summary.get("deflated_sharpe", {}))
     purging = dict(audit_summary.get("purging", {}))
     multiple_testing = dict(audit_summary.get("multiple_testing", {}))
+    random_signal_plumbing = dict(audit_summary.get("random_signal_plumbing", {}))
+    promotion_gate = {
+        "walk_forward_status": walk_forward.get("status"),
+        "cpcv_status": cpcv.get("status"),
+        "deflated_sharpe_status": deflated_sharpe.get("status"),
+        "purging_status": purging.get("status"),
+        "multiple_testing_status": multiple_testing.get("status"),
+        "multiple_testing_promotable_method": bool(multiple_testing.get("promotable_method", False)),
+        "random_signal_plumbing_status": random_signal_plumbing.get("status"),
+        "translation_status": translation_summary.get("status"),
+        "calibration_status": calibration.get("status"),
+    }
 
     if state.get("blocking_issues"):
         decision = "revise"
@@ -920,6 +1125,10 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
         decision = "freeze"
     elif multiple_testing.get("status") != "pass":
         decision = "freeze"
+    elif not bool(multiple_testing.get("promotable_method", False)):
+        decision = "freeze"
+    elif random_signal_plumbing.get("status") != "pass":
+        decision = "freeze"
     elif calibration.get("status") != "pass":
         decision = "freeze"
     elif translation_summary.get("status") == "fail":
@@ -933,7 +1142,12 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "current_node": "promotion_decision",
         "promotion_decision": decision,
-        "run_log": _append_log(state, "promotion_decision", "Computed promotion decision.", {"decision": decision}),
+        "run_log": _append_log(
+            state,
+            "promotion_decision",
+            "Computed promotion decision from the canonical validation gate.",
+            {"decision": decision, "promotion_gate": promotion_gate},
+        ),
     }
 
 
@@ -968,6 +1182,12 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
     cpcv_status = dict(audit_summary.get("cpcv", {}) or {}).get("status")
     dsr_status = dict(audit_summary.get("deflated_sharpe", {}) or {}).get("status")
     hard_gates_pass = cpcv_status == "pass" and dsr_status == "pass"
+    refreshed_backlog = build_research_backlog(
+        list(state.get("research_backlog", []) or []),
+        list(state.get("failure_memory", []) or []),
+        stage2_result=dict(state.get("stage2_result", {}) or {}),
+    )
+    viable_hypotheses = count_viable_hypotheses(refreshed_backlog)
     continue_iteration = (
         state.get("promotion_decision") == "freeze"
         and bool(accepted_trial)
@@ -976,9 +1196,16 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
         and dict(audit_summary.get("walk_forward", {}) or {}).get("status") in {"pending", "pass"}
         and dict(audit_summary.get("purging", {}) or {}).get("status") != "fail"
     )
+    if state.get("promotion_decision") == "freeze" and cycle < max_cycles and viable_hypotheses > 0 and not state.get("blocking_issues"):
+        continue_iteration = True
     if family == "setup" and state.get("promotion_decision") == "advance_to_validation" and bool(accepted_trial) and cycle < max_cycles:
         continue_iteration = True
-    payload = {"continue_iteration": continue_iteration, "research_cycle": cycle, "max_research_cycles": max_cycles}
+    payload = {
+        "continue_iteration": continue_iteration,
+        "research_cycle": cycle,
+        "max_research_cycles": max_cycles,
+        "viable_hypotheses": viable_hypotheses,
+    }
     if bool(accepted_trial) and not hard_gates_pass:
         payload["stop_reasons"] = ["accepted trial vetoed by hard validation gates"]
         payload["cpcv_status"] = cpcv_status
@@ -1010,6 +1237,24 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
                 stage2_config.update(stage2_overrides)
             controller_state["spec_version"] = f"{controller_state.get('spec_version', 'bnr_spec_vA')}.c{cycle + 1}"
             payload["adopted_trial_id"] = accepted_trial.get("trial_id")
+        if state.get("promotion_decision") == "freeze":
+            payload["handoff"] = "failure_memory_to_research_director"
+            payload["next_cycle_mode"] = "new_hypothesis"
+            return {
+                "current_node": "iteration_controller",
+                "controller_state": controller_state,
+                "research_cycle": cycle + 1,
+                "research_backlog": refreshed_backlog,
+                "search_space": {},
+                "search_results": {},
+                "search_batch_status": "pending",
+                "translation_summary": {},
+                "audit_summary": {},
+                "executed_research_family": "",
+                "executed_family_cycle": 0,
+                "next_step_plan": {},
+                "run_log": _append_log(state, "iteration_controller", "Continued autonomous research with a new hypothesis after a frozen branch.", payload),
+            }
         payload["new_spec_version"] = controller_state["spec_version"]
         payload["stage2_config"] = stage2_config
         return {

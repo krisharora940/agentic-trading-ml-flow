@@ -5,6 +5,7 @@ from typing import Any
 
 from trading_ml.config import load_bnr_config, load_research_program_config
 from trading_ml.paths import REPORTS_DIR
+from trading_ml.research_os import build_research_director_plan
 from trading_ml.registry import REGISTRY_PATH
 
 
@@ -152,6 +153,7 @@ def evaluate_program_state(state: dict[str, Any]) -> dict[str, Any]:
 
     priority_mandates = _priority_mandates(state, program_gaps)
     next_step_plan = _next_step_plan(state, program_gaps)
+    next_step_plan = build_research_director_plan(state, next_step_plan)
     program["workstreams"] = workstreams
     program["program_gaps"] = program_gaps
     program["priority_mandates"] = priority_mandates
@@ -216,7 +218,11 @@ def _present_artifacts(state: dict[str, Any]) -> set[str]:
         present.add("promotion_policy")
         present.add("shadow_mode_plan")
         present.add("monitoring_plan")
-    if audit.get("random_signal_plumbing") not in (None, "pending"):
+    random_signal_plumbing = audit.get("random_signal_plumbing")
+    if isinstance(random_signal_plumbing, dict):
+        if random_signal_plumbing.get("status") not in (None, "pending"):
+            present.add("random_signal_plumbing")
+    elif random_signal_plumbing not in (None, "pending"):
         present.add("random_signal_plumbing")
     if state.get("stage2_config", {}).get("symbol") == "MNQ":
         present.add("slippage_model")

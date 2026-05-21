@@ -1,0 +1,58 @@
+{
+  "status": "complete",
+  "benchmark_name": "market_state_setup_quality_v1",
+  "boundary_role": "validation_walk_forward_oos",
+  "source_path": "/Users/radhikaarora/Documents/Trading ML V4/data/cache/mnq_30s_validation_opening.parquet",
+  "entry_policy": "exclude_weak_or_grindy_continuation + pre_entry_breakout_quality_gate",
+  "exit_policy": "scratch_no_followthrough_after_3_bars",
+  "threshold": 0.45,
+  "walk_forward": {
+    "status": "fail",
+    "mean_roc_auc": 0.5416666666666666,
+    "fold_count": 9,
+    "stitched_candidates": 69
+  },
+  "gates": {
+    "entry_gate": "breakout_quality",
+    "scratch_exit": "scratch_no_followthrough_after_3_bars",
+    "holdout_locked": true
+  },
+  "planned_trade_stream": {
+    "count": 27,
+    "same_timestamp_entry_collisions": 0,
+    "overlap_skips": 0,
+    "close_without_position": 0
+  },
+  "backtest": {
+    "engine": "ml4t.backtest",
+    "execution_mode": "same_bar",
+    "execution_price": "close",
+    "slippage_type": "fixed",
+    "slippage_fixed_points_per_fill": 0.75,
+    "contract_multiplier": 2.0,
+    "num_trades": 27,
+    "win_rate": 0.2962962962962963,
+    "total_return_pct": -0.22999999999999687,
+    "max_drawdown_pct": 0.4240272096612277,
+    "total_gross_pnl": -230.0,
+    "total_costs": 81.0,
+    "sharpe": -1.8272652117725532,
+    "sortino": -0.2845698121430624,
+    "profit_factor": 0.5939982347749339,
+    "avg_trade": -0.00018212807232386916,
+    "largest_win": 0.0016036655211912943,
+    "largest_loss": -0.002261347116782426
+  },
+  "translation": {
+    "status": "pass",
+    "binary_utility": null,
+    "sized_utility": null,
+    "utility_gap": null
+  },
+  "artifacts": {
+    "trade_records": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-9dbfb22b8228/ml4t_backtest/trade_records.json",
+    "fill_records": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-9dbfb22b8228/ml4t_backtest/fill_records.json",
+    "equity_curve": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-9dbfb22b8228/ml4t_backtest/equity_curve.json",
+    "planned_trades": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-9dbfb22b8228/ml4t_backtest/planned_trades.json"
+  }
+}

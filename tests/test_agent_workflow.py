@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
 
-from trading_ml.agent_nodes import search_controller_agent_node, setup_redesign_agent_node
+from trading_ml.agent_nodes import audit_agent_node, iteration_controller_node, search_controller_agent_node, setup_redesign_agent_node, translation_checkpoint_node
 from trading_ml.agent_state import LoopLimits
 from trading_ml.agent_workflow import build_agent_loop_state, pending_human_checkpoints, run_linear_stage3_pass
 
@@ -17,7 +17,15 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertIn("strategy_notes", state)
         self.assertIn("compute_budgets", state)
         self.assertIn("budget_usage", state)
+        self.assertIn("research_backlog", state)
+        self.assertIn("failure_memory", state)
         self.assertEqual(state["search_batch_status"], "pending")
+
+    def test_initial_agent_loop_state_can_preapprove_bounded_cycle_checkpoints(self) -> None:
+        state = build_agent_loop_state(preapproved_checkpoints=["label_approval", "search_space_approval"])
+        self.assertFalse(state["approvals"]["bnr_spec_approval"])
+        self.assertTrue(state["approvals"]["label_approval"])
+        self.assertTrue(state["approvals"]["search_space_approval"])
 
     def test_linear_stage3_pass_is_disabled(self) -> None:
         with self.assertRaises(RuntimeError):
@@ -77,6 +85,72 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertIn("balanced_chop", [row["state"] for row in family["quality_states"]])
         self.assertIn("purged CPCV with changed worst-path signature", family["validation_plan"]["required_gates"])
         self.assertIn("reopening parked BNR benchmark geometry", family["bounded_search_budget"]["disallowed_knobs"])
+
+    def test_iteration_controller_continues_to_new_hypothesis_after_freeze(self) -> None:
+        state = build_agent_loop_state()
+        state["research_backlog"] = [
+            {"hypothesis_id": "H-00001", "family": "setup", "priority": 0.82},
+            {"hypothesis_id": "H-00002", "family": "candidate_universe_expansion", "priority": 0.79},
+        ]
+        state["failure_memory"] = [
+            {
+                "family": "setup",
+                "hypothesis_id": "H-00001",
+                "failure_type": "cpcv_tail_path_fragility",
+                "status": "freeze",
+            }
+        ]
+        state["promotion_decision"] = "freeze"
+        state["translation_summary"] = {"status": "pass"}
+        state["audit_summary"] = {
+            "cpcv": {"status": "fail"},
+            "deflated_sharpe": {"status": "fail"},
+            "walk_forward": {"status": "pass"},
+            "purging": {"status": "pass"},
+        }
+        state["search_results"] = {"family": "setup", "trial_count": 6}
+        result = iteration_controller_node(state)
+        self.assertEqual(result["research_cycle"], 2)
+        self.assertEqual(result["search_batch_status"], "pending")
+        self.assertEqual(result["search_results"], {})
+        self.assertEqual(result["executed_research_family"], "")
+        self.assertEqual(result["translation_summary"], {})
+
+    def test_search_controller_records_director_assigned_action_history(self) -> None:
+        state = build_agent_loop_state()
+        state["approvals"]["search_space_approval"] = True
+        state["next_step_plan"] = {
+            "selected_family": "setup",
+            "assigned_research_action": "validation_failure_analysis",
+            "hypothesis_id": "H-00001",
+            "controller_override": {"active_family": "setup"},
+        }
+        state["stage2_config"]["source_path"] = "dummy"
+        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
+        with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "research_diagnostics", "trial_count": 0, "batch_decision": "inform", "status": "complete"}) as run_action:
+            result = search_controller_agent_node(state, limits)
+        run_action.assert_called_once()
+        self.assertEqual(result["research_action_history"][-1]["action_id"], "validation_failure_analysis")
+
+    def test_diagnostic_action_skips_full_audit_budget_consumption(self) -> None:
+        state = build_agent_loop_state()
+        state["budget_usage"] = {"runtime_seconds": 0, "trials": 6, "full_validations": 2, "cpcv_runs": 2, "model_trains": 6}
+        state["search_results"] = {
+            "action": {"action_id": "cpcv_attribution", "callable_kind": "stateful_diagnostic_action"},
+        }
+        result = audit_agent_node(state)
+        self.assertEqual(result["budget_usage"]["full_validations"], 2)
+        self.assertEqual(result["budget_usage"]["cpcv_runs"], 2)
+        self.assertEqual(result["audit_summary"]["research_diagnostics"]["action_id"], "cpcv_attribution")
+
+    def test_diagnostic_action_skips_translation_analysis(self) -> None:
+        state = build_agent_loop_state()
+        state["search_results"] = {
+            "action": {"action_id": "validation_failure_analysis", "callable_kind": "stateful_diagnostic_action"},
+        }
+        result = translation_checkpoint_node(state)
+        self.assertEqual(result["translation_summary"]["status"], "inform")
+        self.assertEqual(result["translation_summary"]["diagnostic_action"], "validation_failure_analysis")
 
 
 if __name__ == "__main__":

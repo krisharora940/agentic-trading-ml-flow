@@ -34,6 +34,7 @@ from trading_ml.research_controller import load_controller_config
 
 NODE_SEQUENCE = [
     "strategy_intake_agent",
+    "research_director_agent",
     "program_director",
     "governor_agent",
     "cto_agent",
@@ -51,7 +52,12 @@ NODE_SEQUENCE = [
     "promotion_decision",
     "iteration_controller",
 ]
-def build_agent_loop_state() -> AgentLoopState:
+def build_agent_loop_state(
+    *,
+    preapproved_checkpoints: list[str] | None = None,
+    max_research_cycles: int | None = None,
+    compute_budget_overrides: dict[str, Any] | None = None,
+) -> AgentLoopState:
     project_state = build_initial_project_state()
     config = load_agent_loop_config()
     manifest = load_databento_manifest()
@@ -67,10 +73,16 @@ def build_agent_loop_state() -> AgentLoopState:
     if bnr_config.get("setup", {}).get("name") == "BNR":
         blocking_issues = [issue for issue in blocking_issues if issue != "No candidate setup rules defined yet."]
     phase = "exploration" if not blocking_issues else config["graph"]["default_phase"]
+    approvals = {name: False for name, enabled in config["checkpoints"].items() if enabled}
+    for name in preapproved_checkpoints or []:
+        if name in approvals:
+            approvals[name] = True
+    budget_overrides = dict(compute_budget_overrides or {})
     return AgentLoopState(
         run_id=f"bnr-{uuid4().hex[:12]}",
         program_state=build_program_state(),
         next_step_plan={},
+        research_director_summary={},
         strategy_notes=(
             "BNR trades the 9:30-9:30:59 opening zone on MNQ. "
             "The break matters less than the reclaim and continuation quality. "
@@ -113,13 +125,13 @@ def build_agent_loop_state() -> AgentLoopState:
         search_batch_status="pending",
         execution_mode="full_validation",
         compute_budgets={
-            "max_runtime_seconds": int(config["limits"].get("max_runtime_seconds", 1800)),
-            "max_trials": int(config["limits"].get("max_trials", 50)),
-            "max_full_validations": int(config["limits"].get("max_full_validations", 3)),
-            "max_cpcv_runs": int(config["limits"].get("max_cpcv_runs", 3)),
-            "max_model_trains": int(config["limits"].get("max_model_trains", 25)),
-            "reuse_artifacts": bool(config["limits"].get("reuse_artifacts", True)),
-            "stop_on_budget_exhaustion": bool(config["limits"].get("stop_on_budget_exhaustion", True)),
+            "max_runtime_seconds": int(budget_overrides.get("max_runtime_seconds", config["limits"].get("max_runtime_seconds", 1800))),
+            "max_trials": int(budget_overrides.get("max_trials", config["limits"].get("max_trials", 50))),
+            "max_full_validations": int(budget_overrides.get("max_full_validations", config["limits"].get("max_full_validations", 3))),
+            "max_cpcv_runs": int(budget_overrides.get("max_cpcv_runs", config["limits"].get("max_cpcv_runs", 3))),
+            "max_model_trains": int(budget_overrides.get("max_model_trains", config["limits"].get("max_model_trains", 25))),
+            "reuse_artifacts": bool(budget_overrides.get("reuse_artifacts", config["limits"].get("reuse_artifacts", True))),
+            "stop_on_budget_exhaustion": bool(budget_overrides.get("stop_on_budget_exhaustion", config["limits"].get("stop_on_budget_exhaustion", True))),
         },
         budget_usage={
             "runtime_seconds": 0,
@@ -131,15 +143,20 @@ def build_agent_loop_state() -> AgentLoopState:
         route_decisions=[],
         translation_summary={},
         frozen_benchmark={},
-        approvals={name: False for name, enabled in config["checkpoints"].items() if enabled},
+        approvals=approvals,
         checkpoints_pending=[],
         experiment_counts={"trials": 0, "feature_changes": 0, "threshold_changes": 0},
         research_cycle=1,
-        max_research_cycles=3,
+        max_research_cycles=max_research_cycles or 3,
         diagnostics=[],
         audit_summary={},
         backtest_summary={},
         technical_review={},
+        domain_priors=[],
+        research_backlog=[],
+        active_hypothesis={},
+        failure_memory=[],
+        research_action_history=[],
         candidate_setups_defined=False,
         promotion_decision="revise",
         holdout_consumed=False,
