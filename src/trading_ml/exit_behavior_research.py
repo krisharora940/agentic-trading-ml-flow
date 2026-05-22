@@ -53,6 +53,13 @@ def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
     if diagnostic.get("status") != "complete":
         return {"status": "pending", "reason": "diagnostic_unavailable", "diagnostic": diagnostic}
 
+    controller_state = dict(state.get("controller_state", {}) or {})
+    focus_slice = {
+        "setup_state": controller_state.get("focus_setup_state"),
+        "environment_state": controller_state.get("focus_environment_state"),
+        "path_class": controller_state.get("focus_path_class"),
+    }
+    focus_slice = {key: value for key, value in focus_slice.items() if value not in {None, "", "unknown"}}
     config = _diagnostic_config(state, str(diagnostic["source_path"]))
     bars = regular_session(
         load_ohlcv_file(
@@ -85,6 +92,7 @@ def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
     payload = {
         "status": "complete",
         "family": "exit_behavior_research",
+        "focus_slice": focus_slice,
         "candidate": "market_state_setup_quality_v1",
         "entry_definition": "exclude_weak_or_grindy_continuation + pre_entry_breakout_quality_gate",
         "governance": {
@@ -103,6 +111,7 @@ def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
             },
         },
         "stage_1_trade_path_diagnostics": _path_diagnostic_summary(path_rows),
+        "focused_trade_path_diagnostics": _focused_path_diagnostic_summary(path_rows, focus_slice),
         "stage_2_archetypes": archetypes,
         "stage_3_candidate_exit_families": exit_families,
         "stage_4_bounded_replay": [_strip(row) for row in ranked],
@@ -295,6 +304,29 @@ def _trade_path_diagnostics(row: dict[str, Any], bars: Any, horizon_bars: int) -
         "continuation_quality_after_entry": float(continuation_quality),
         "alternating_bar_ratio_path": float(alternating_ratio),
         "trade_outcome_taxonomy": taxonomy,
+    }
+
+
+def _focused_path_diagnostic_summary(path_rows: list[dict[str, Any]], focus_slice: dict[str, Any]) -> dict[str, Any]:
+    if not focus_slice:
+        return {"status": "unfocused", "rows": len(path_rows)}
+    target_path = str(focus_slice.get("path_class", "") or "")
+    taxonomy_map = {
+        "runner": {"runner", "strong_continuation"},
+        "delayed_runner": {"runner", "strong_continuation", "slow_bleed"},
+        "chop": {"chop_decay", "slow_bleed"},
+        "failure": {"fast_failure", "late_reversal", "fake_breakout", "slow_bleed"},
+    }
+    allowed = taxonomy_map.get(target_path, set())
+    if not allowed:
+        return {"status": "focused", "rows": 0, "focus_slice": focus_slice}
+    focused = [row for row in path_rows if str(row.get("trade_outcome_taxonomy", "")) in allowed]
+    summary = _path_diagnostic_summary(focused) if focused else {}
+    return {
+        "status": "focused",
+        "rows": len(focused),
+        "focus_slice": focus_slice,
+        **summary,
     }
 
 

@@ -36,6 +36,24 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(len(trials), 3)
         self.assertIn("feature_family", trials[0])
 
+    def test_generate_feature_family_trials_can_focus_on_bnr_state_slice(self) -> None:
+        state = build_agent_loop_state()
+        trials = generate_search_trials(
+            state["stage2_config"],
+            family="feature",
+            controller_override={
+                "active_family": "feature",
+                "focus_setup_state": "repair",
+                "focus_environment_state": "volatile_chop",
+                "focus_path_class": "failure",
+            },
+        )
+        self.assertEqual(len(trials), 3)
+        self.assertEqual(trials[0]["feature_family"], "context_plus_regime")
+        self.assertEqual(trials[0]["focus_setup_state"], "repair")
+        self.assertEqual(trials[0]["focus_environment_state"], "volatile_chop")
+        self.assertEqual(trials[0]["focus_path_class"], "failure")
+
     def test_generate_threshold_trials_is_bounded(self) -> None:
         state = build_agent_loop_state()
         trials = generate_search_trials(

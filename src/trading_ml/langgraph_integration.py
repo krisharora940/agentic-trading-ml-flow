@@ -40,6 +40,7 @@ from trading_ml.bnr_research_desk import (
     failure_analyst_node,
     feature_engineer_node,
     path_modeler_node,
+    price_action_expert_node,
     route_after_desk_director,
     setup_spec_agent_node,
 )
@@ -124,7 +125,9 @@ def route_after_data_steward_state(state: AgentLoopState) -> str:
     plan = dict(state.get("next_step_plan", {}) or {})
     desk_handoff = dict(plan.get("desk_handoff", {}) or {})
     action_id = str(plan.get("assigned_research_action", "") or "")
-    if desk_handoff.get("first_governed_batch") and action_id in {"candidate_universe_expansion", "exit_behavior_research"}:
+    if action_id in {"candidate_universe_expansion", "exit_behavior_research", "validation_failure_analysis", "cpcv_attribution", "market_state_setup_quality"}:
+        return "search_controller_agent"
+    if desk_handoff.get("first_governed_batch") and action_id in {"setup", "candidate_universe_expansion", "exit_behavior_research", "market_state_setup_quality"}:
         return "search_controller_agent"
     return "bnr_research_agent"
 
@@ -351,14 +354,18 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     return graph.compile(checkpointer=saver)
 
 
-def compile_bnr_research_desk_graph(checkpointer: Any | None = None) -> Any:
+def compile_bnr_research_desk_graph(checkpointer: Any | None = None, llm: Any | None = None, *, use_llm: bool = True) -> Any:
     StateGraph, START, END, (InMemorySaver, _, _) = require_langgraph()
     load_runtime_env()
+    llm_client = llm
+    if llm_client is None and use_llm and llm_enabled():
+        llm_client = create_chat_model(temperature=0)
 
     graph = StateGraph(AgentLoopState)
     graph.add_node("desk_data_steward", desk_data_steward_node)
     graph.add_node("event_librarian", event_librarian_node)
     graph.add_node("failure_analyst", failure_analyst_node)
+    graph.add_node("price_action_expert", lambda state: price_action_expert_node(state, llm=llm_client))
     graph.add_node("desk_director", desk_director_node)
     graph.add_node("feature_engineer", feature_engineer_node)
     graph.add_node("setup_spec_agent", setup_spec_agent_node)
@@ -371,7 +378,8 @@ def compile_bnr_research_desk_graph(checkpointer: Any | None = None) -> Any:
     graph.add_edge(START, "desk_data_steward")
     graph.add_edge("desk_data_steward", "event_librarian")
     graph.add_edge("event_librarian", "failure_analyst")
-    graph.add_edge("failure_analyst", "desk_director")
+    graph.add_edge("failure_analyst", "price_action_expert")
+    graph.add_edge("price_action_expert", "desk_director")
     graph.add_conditional_edges("desk_director", route_after_desk_director)
     graph.add_edge("feature_engineer", "desk_governor")
     graph.add_edge("setup_spec_agent", "desk_governor")
@@ -456,6 +464,7 @@ def build_governor_state_from_desk_handoff(
     state["stage2_result"] = dict(desk_state.get("stage2_result", {}) or {})
     state["bnr_attempts"] = list(desk_state.get("bnr_attempts", []) or [])
     state["failure_clusters"] = list(desk_state.get("failure_clusters", []) or [])
+    state["price_action_expert"] = dict(desk_state.get("price_action_expert", {}) or {})
     state["desk_summary"] = dict(desk_state.get("desk_summary", {}) or {})
     state["desk_proposals"] = list(desk_state.get("desk_proposals", []) or [])
     state["desk_memory"] = list(desk_state.get("desk_memory", []) or [])

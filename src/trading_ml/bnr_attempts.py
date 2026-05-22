@@ -62,6 +62,8 @@ def build_bnr_attempts(
             session_date=str(row.get("session_date") or row.get("session_date_feature") or ""),
             direction=str(row.get("direction", "unknown")),
             setup_subtype=str(row.get("setup_subtype", "unknown")),
+            setup_state=_setup_state(row),
+            environment_state=_environment_state(row),
             time_bucket=_time_bucket(trigger_seconds),
             probability_bucket=_probability_bucket(probability),
             executed=bool(prediction == 1),
@@ -118,6 +120,49 @@ def _path_class(row: dict[str, Any]) -> str:
     if pnl_r is not None and pnl_r <= 0:
         return "failure"
     return "unclear"
+
+
+def _setup_state(row: dict[str, Any]) -> str:
+    retrace = _safe_float(row.get("deepest_zone_retrace_fraction")) or 0.0
+    continuation = _safe_float(row.get("post_reclaim_close_strength")) or 0.0
+    break_efficiency = _safe_float(row.get("break_efficiency_ratio")) or 0.0
+    reclaim_close = _safe_float(row.get("reclaim_close_location")) or 0.0
+    reclaim_failures = _safe_int(row.get("reclaim_failure_count")) or 0
+    outcome = str(row.get("outcome", "unknown"))
+
+    if outcome == "timeout" and continuation < 0.25:
+        return "chop"
+    if retrace >= 0.75:
+        return "repair"
+    if reclaim_failures >= 2:
+        return "failed_reclaim"
+    if (
+        break_efficiency >= 0.55
+        and reclaim_close >= 0.65
+        and continuation >= 0.45
+        and reclaim_failures <= 1
+    ):
+        return "continuation"
+    if continuation >= 0.3 or reclaim_close >= 0.45:
+        return "late_followthrough"
+    return "weak_confirmation"
+
+
+def _environment_state(row: dict[str, Any]) -> str:
+    high_vol = _safe_int(row.get("reg_high_vol_state"))
+    trending = _safe_int(row.get("reg_trending_state"))
+    continuation = _safe_float(row.get("post_reclaim_close_strength")) or 0.0
+    break_efficiency = _safe_float(row.get("break_efficiency_ratio")) or 0.0
+
+    if trending == 1 and high_vol == 1:
+        return "trend_expansion"
+    if trending == 1:
+        return "trend_day"
+    if high_vol == 1 and continuation < 0.25:
+        return "volatile_chop"
+    if break_efficiency < 0.3 and continuation < 0.2:
+        return "balance_chop"
+    return "mixed_auction"
 
 
 def _failure_reason(row: dict[str, Any]) -> str:

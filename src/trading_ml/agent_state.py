@@ -36,6 +36,7 @@ class AgentLoopState(TypedDict, total=False):
     setup_redesign_plan: dict[str, Any]
     strategy_notes: str
     research_intake: dict[str, Any]
+    feature_catalog: dict[str, Any]
     phase: str
     current_node: str
     evidence_boundary: dict[str, Any]
@@ -43,6 +44,7 @@ class AgentLoopState(TypedDict, total=False):
     label_spec: dict[str, Any]
     feature_spec: dict[str, Any]
     feature_diagnostics: dict[str, Any]
+    feature_catalog_candidates: list[dict[str, Any]]
     model_spec: dict[str, Any]
     stage2_config: dict[str, Any]
     stage2_result: dict[str, Any]
@@ -72,6 +74,7 @@ class AgentLoopState(TypedDict, total=False):
     active_hypothesis: dict[str, Any]
     bnr_attempts: list[dict[str, Any]]
     failure_clusters: list[dict[str, Any]]
+    price_action_expert: dict[str, Any]
     desk_summary: dict[str, Any]
     desk_proposals: list[dict[str, Any]]
     desk_memory: list[dict[str, Any]]

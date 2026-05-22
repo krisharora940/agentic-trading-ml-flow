@@ -175,6 +175,7 @@ def load_controller_config(override: dict[str, Any] | None = None) -> dict[str, 
 
 def generate_search_trials(base_config: dict[str, Any], family: str | None = None, controller_override: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     active_family = family or load_controller_config(controller_override)["active_family"]
+    controller = load_controller_config(controller_override)
     trials: list[dict[str, Any]] = []
     if active_family == "setup":
         search_v1 = build_search_space()
@@ -196,11 +197,13 @@ def generate_search_trials(base_config: dict[str, Any], family: str | None = Non
     if active_family == "feature":
         search_v1 = build_feature_search_space()
         valid_families = set(list_feature_families())
-        for feature_family in search_v1["space"]["feature_family"]:
+        feature_families = _focused_feature_families(search_v1["space"]["feature_family"], controller)
+        for feature_family in feature_families:
             if feature_family not in valid_families:
                 continue
             trial = dict(base_config)
             trial["feature_family"] = feature_family
+            trial.update(_focus_trial_fields(controller))
             trials.append(trial)
         return trials[: int(search_v1["max_batch_trials"])]
     if active_family == "feature_threshold":
@@ -215,6 +218,7 @@ def generate_search_trials(base_config: dict[str, Any], family: str | None = Non
             trial = dict(base_config)
             trial["feature_family"] = feature_family
             trial["decision_threshold"] = float(decision_threshold)
+            trial.update(_focus_trial_fields(controller))
             trials.append(trial)
         return trials[: int(search_v1["max_batch_trials"])]
     if active_family == "threshold":
@@ -265,7 +269,7 @@ def generate_search_trials(base_config: dict[str, Any], family: str | None = Non
     if active_family == "subtype":
         search_v1 = build_subtype_search_space()
         valid_subtypes = set(list_bnr_subtypes())
-        allowed_subtypes = set(load_controller_config(controller_override).get("allowed_setup_subtypes", []) or [])
+        allowed_subtypes = set(controller.get("allowed_setup_subtypes", []) or [])
         for setup_subtype in search_v1["space"]["setup_subtype"]:
             if allowed_subtypes and setup_subtype not in allowed_subtypes:
                 continue
@@ -332,6 +336,7 @@ def run_governed_research_cycle(
     return {
         "family": active_family,
         "spec_version": controller["spec_version"],
+        "focus_slice": _focus_trial_fields(controller),
         "space": (
             build_search_space()
             if active_family == "setup"
@@ -438,11 +443,15 @@ def _trial_overrides(family: str, config: dict[str, Any]) -> dict[str, Any]:
     if family == "model":
         return {"model_family": config["model_family"]}
     if family == "feature":
-        return {"feature_family": config["feature_family"]}
+        return {
+            "feature_family": config["feature_family"],
+            **_focus_overrides(config),
+        }
     if family == "feature_threshold":
         return {
             "feature_family": config["feature_family"],
             "decision_threshold": float(config["decision_threshold"]),
+            **_focus_overrides(config),
         }
     if family == "threshold":
         return {"decision_threshold": float(config["decision_threshold"])}
@@ -473,6 +482,49 @@ def _trial_overrides(family: str, config: dict[str, Any]) -> dict[str, Any]:
         "target_multiple": config["target_multiple"],
         "break_buffer_points": config["break_buffer_points"],
     }
+
+
+def _focus_overrides(config: dict[str, Any]) -> dict[str, Any]:
+    mapping = {
+        "focus_setup_state": config.get("focus_setup_state"),
+        "focus_environment_state": config.get("focus_environment_state"),
+        "focus_path_class": config.get("focus_path_class"),
+    }
+    return {key: value for key, value in mapping.items() if value not in {None, "", "unknown"}}
+
+
+def _focus_trial_fields(controller: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in {
+            "focus_setup_state": controller.get("focus_setup_state"),
+            "focus_environment_state": controller.get("focus_environment_state"),
+            "focus_path_class": controller.get("focus_path_class"),
+        }.items()
+        if value not in {None, "", "unknown"}
+    }
+
+
+def _focused_feature_families(feature_families: list[str], controller: dict[str, Any]) -> list[str]:
+    setup_state = str(controller.get("focus_setup_state", "") or "")
+    environment_state = str(controller.get("focus_environment_state", "") or "")
+    path_class = str(controller.get("focus_path_class", "") or "")
+    priority: list[str] = []
+    if environment_state in {"volatile_chop", "balance_chop", "trend_expansion", "trend_day"}:
+        priority.extend(["context_plus_regime", "reclaim_plus_regime", "regime_features"])
+    if setup_state in {"continuation", "late_followthrough", "repair", "failed_reclaim", "weak_confirmation"}:
+        priority.extend(["context_plus_reclaim", "bnr_plus_context", "pivot_reclaim"])
+    if path_class in {"chop", "failure", "runner", "delayed_runner"}:
+        priority.extend(["context_plus_geometry", "bnr_core", "pre_trigger_context"])
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for family in [*priority, *feature_families]:
+        if family in seen:
+            continue
+        seen.add(family)
+        ordered.append(family)
+    trial_limit = int(controller.get("max_batch_trials", len(ordered)) or len(ordered))
+    return ordered[: max(1, trial_limit)]
 
 
 def _decide_trial(

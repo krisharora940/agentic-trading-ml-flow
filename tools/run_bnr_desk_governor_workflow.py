@@ -99,7 +99,7 @@ def main() -> None:
         os.environ.setdefault("MPLCONFIGDIR", tempfile.mkdtemp(prefix="mplcfg-"))
 
     require_langgraph()
-    desk_graph = compile_bnr_research_desk_graph()
+    desk_graph = compile_bnr_research_desk_graph(use_llm=args.use_llm)
     governor_graph = compile_bnr_langgraph(use_llm=args.use_llm)
     desk_config = {"configurable": {"thread_id": f"{args.thread_id}-desk"}}
     governor_config = {"configurable": {"thread_id": f"{args.thread_id}-governor"}}
@@ -113,7 +113,7 @@ def main() -> None:
         "max_model_trains": 1 if not unattended else 12,
     }
     governor_budget_overrides = {
-        "max_trials": 1 if not unattended else 3,
+        "max_trials": 1 if not unattended else max(6, max_cycles * 2),
         "max_full_validations": 1 if not unattended else 6,
         "max_cpcv_runs": 1 if not unattended else 6,
         "max_model_trains": 1 if not unattended else 20,

@@ -9,10 +9,11 @@ class StrategyIntakeTests(unittest.TestCase):
             "The setup depends on reclaim quality, break quality, VWAP context, and opening volume."
         )
         groups = set(intake["selected_feature_groups"])
-        self.assertIn("pivot_reclaim", groups)
-        self.assertIn("break_quality", groups)
-        self.assertIn("context_structure", groups)
-        self.assertIn("opening_auction", groups)
+        self.assertIn("structure", groups)
+        self.assertIn("momentum", groups)
+        self.assertIn("auction", groups)
+        self.assertIn("liquidity", groups)
+        self.assertTrue(intake["feature_catalog_candidates"])
 
 
 if __name__ == "__main__":

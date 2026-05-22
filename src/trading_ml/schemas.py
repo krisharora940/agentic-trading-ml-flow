@@ -106,6 +106,8 @@ class BNRAttempt:
     session_date: str
     direction: str
     setup_subtype: str
+    setup_state: str
+    environment_state: str
     time_bucket: str
     probability_bucket: str
     executed: bool
@@ -127,6 +129,8 @@ class FailureCluster:
     avg_pnl_r: float
     avg_probability: float
     dominant_subtype: str
+    dominant_setup_state: str
+    dominant_environment_state: str
     dominant_time_bucket: str
     recommended_family: str
     recommended_focus: list[str] = field(default_factory=list)

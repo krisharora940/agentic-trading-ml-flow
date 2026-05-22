@@ -102,6 +102,8 @@ def build_agent_loop_state(
         label_spec={},
         feature_spec={},
         feature_diagnostics={},
+        feature_catalog={},
+        feature_catalog_candidates=[],
         model_spec={},
         stage2_config=(
             {
@@ -163,6 +165,7 @@ def build_agent_loop_state(
         active_hypothesis={},
         bnr_attempts=[],
         failure_clusters=[],
+        price_action_expert={},
         desk_summary={},
         desk_proposals=[],
         desk_memory=list(persisted_memory.get("desk_memory", [])),

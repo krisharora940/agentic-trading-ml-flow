@@ -24,19 +24,21 @@ def build_failure_clusters(attempts: list[dict[str, Any]], *, limit: int = 5) ->
         return []
 
     clusters: list[dict[str, Any]] = []
-    grouped = failed.groupby(["failure_reason", "time_bucket"], dropna=False)
-    for (failure_reason, time_bucket), group in grouped:
+    grouped = failed.groupby(["failure_reason", "setup_state", "environment_state", "time_bucket"], dropna=False)
+    for (failure_reason, setup_state, environment_state, time_bucket), group in grouped:
         if len(group) < 2:
             continue
         dominant_subtype = _mode(group.get("setup_subtype"))
         recommendation = _recommendation(str(failure_reason))
         cluster = FailureCluster(
-            cluster_id=f"FC-{failure_reason}-{time_bucket}",
+            cluster_id=f"FC-{failure_reason}-{setup_state}-{environment_state}-{time_bucket}",
             family=str(failure_reason),
             rows=int(len(group)),
             avg_pnl_r=float(group["pnl_r"].mean()) if "pnl_r" in group else 0.0,
             avg_probability=float(group["probability"].mean()) if "probability" in group else 0.0,
             dominant_subtype=dominant_subtype,
+            dominant_setup_state=str(setup_state),
+            dominant_environment_state=str(environment_state),
             dominant_time_bucket=str(time_bucket),
             recommended_family=recommendation["family"],
             recommended_focus=recommendation["focus"],
@@ -47,6 +49,8 @@ def build_failure_clusters(attempts: list[dict[str, Any]], *, limit: int = 5) ->
                 "avg_post_reclaim_close_strength": _mean(group, "feature_post_reclaim_close_strength"),
                 "probability_bucket_mode": _mode(group.get("probability_bucket")),
                 "path_class_mode": _mode(group.get("path_class")),
+                "setup_state_mode": _mode(group.get("setup_state")),
+                "environment_state_mode": _mode(group.get("environment_state")),
             },
         )
         clusters.append(asdict(cluster))

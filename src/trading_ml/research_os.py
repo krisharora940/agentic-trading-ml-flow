@@ -7,6 +7,10 @@ from trading_ml.research_actions import available_research_actions
 from trading_ml.schemas import utc_now_iso
 
 
+MAX_SAME_FAMILY_CYCLES = 2
+MAX_FEATURE_CYCLES_WITHOUT_ROBUSTNESS_IMPROVEMENT = 2
+
+
 def build_curated_domain_priors() -> list[dict[str, Any]]:
     config = load_research_program_config()["program"]
     sources = list(config.get("domain_research", {}).get("priority_sources", []))
@@ -116,6 +120,7 @@ def build_research_backlog(
     }
     recent_failure_types = {str(item.get("failure_type")) for item in failure_memory if item.get("failure_type")}
     attempted_families = {str(item.get("family")) for item in action_history if item.get("family")}
+    loop_blocked_families = _loop_blocked_families(action_history)
 
     for row in hypotheses:
         item = dict(row)
@@ -148,6 +153,10 @@ def build_research_backlog(
             blocked_by.append("prior_failed_family")
             score -= 0.35
             reason_bits.append("family already failed in prior governed branch")
+        if family in loop_blocked_families:
+            blocked_by.append("low_marginal_value_loop")
+            score -= 0.5
+            reason_bits.append("family throttled after repeated accepted cycles without robustness improvement")
         elif family in attempted_families and family in {"translation_policy", "threshold", "model"}:
             blocked_by.append("prior_attempted_family")
             score -= 0.15
@@ -206,6 +215,27 @@ def build_research_director_plan(state: dict[str, Any], fallback_plan: dict[str,
         return plan
 
     selected_family = str(plan.get("selected_family") or plan.get("controller_override", {}).get("active_family") or "")
+    requested_family = selected_family
+    preselected_loop_guard = _same_family_loop_guard(state, selected_family)
+    if preselected_loop_guard:
+        guarded_hypothesis = _top_viable_hypothesis(backlog) or dict(backlog[0])
+        plan["next_action"] = "planning_review"
+        plan["selected_family"] = preselected_loop_guard["selected_family"]
+        plan["assigned_research_action"] = preselected_loop_guard["assigned_research_action"]
+        plan["hypothesis_id"] = guarded_hypothesis.get("hypothesis_id")
+        plan["hypothesis_claim"] = guarded_hypothesis.get("claim")
+        plan["blocked_actions"] = _blocked_actions(state, guarded_hypothesis)
+        plan["loop_guard"] = preselected_loop_guard
+        plan["reason"] = preselected_loop_guard["reason"]
+        plan.setdefault("controller_override", {})
+        plan["controller_override"]["active_family"] = preselected_loop_guard["selected_family"]
+        plan["research_director"] = {
+            **summary,
+            "active_hypothesis": guarded_hypothesis,
+            "assigned_research_action": preselected_loop_guard["assigned_research_action"],
+            "loop_guard": preselected_loop_guard,
+        }
+        return plan
     hypothesis = _pick_hypothesis_for_family(backlog, selected_family) if selected_family else _top_viable_hypothesis(backlog)
     if not hypothesis:
         hypothesis = _top_viable_hypothesis(backlog) or dict(backlog[0])
@@ -225,6 +255,20 @@ def build_research_director_plan(state: dict[str, Any], fallback_plan: dict[str,
 
     blocked_actions = _blocked_actions(state, hypothesis)
     assigned_action = _choose_research_action(state, hypothesis, selected_family)
+    if _should_pivot_candidate_universe(state, requested_family):
+        selected_family = "exit_behavior_research"
+        plan["selected_family"] = selected_family
+        plan.setdefault("controller_override", {})
+        plan["controller_override"]["active_family"] = selected_family
+        assigned_action = "exit_behavior_research"
+    loop_guard = _same_family_loop_guard(state, selected_family)
+    if loop_guard:
+        assigned_action = loop_guard["assigned_research_action"]
+        plan["loop_guard"] = loop_guard
+        plan["selected_family"] = loop_guard["selected_family"]
+        plan.setdefault("controller_override", {})
+        plan["controller_override"]["active_family"] = loop_guard["selected_family"]
+        selected_family = loop_guard["selected_family"]
     plan["next_action"] = "run_family_experiment" if summary.get("domain_priors_loaded") else "research_domain_priors"
     plan["assigned_research_action"] = assigned_action if assigned_action in available_research_actions() else None
     plan["hypothesis_id"] = hypothesis.get("hypothesis_id")
@@ -250,6 +294,15 @@ def build_research_director_plan(state: dict[str, Any], fallback_plan: dict[str,
         plan["evidence_used"] = {"top_failure_cluster": summary["top_failure_cluster"]}
     if desk_handoff:
         plan = _apply_desk_handoff_to_plan(plan, desk_handoff, hypothesis)
+        handoff_guard = _same_family_loop_guard(state, str(plan.get("selected_family", "")))
+        if handoff_guard:
+            plan["loop_guard"] = handoff_guard
+            plan["next_action"] = "planning_review"
+            plan["selected_family"] = handoff_guard["selected_family"]
+            plan["assigned_research_action"] = handoff_guard["assigned_research_action"]
+            plan.setdefault("controller_override", {})
+            plan["controller_override"]["active_family"] = handoff_guard["selected_family"]
+            plan["reason"] = handoff_guard["reason"]
     return plan
 
 
@@ -351,6 +404,9 @@ def _choose_research_action(state: dict[str, Any], hypothesis: dict[str, Any], s
     hypothesis_id = str(hypothesis.get("hypothesis_id", "") or "")
     top_cluster = dict(failure_clusters[0]) if failure_clusters else {}
 
+    if _same_family_loop_guard(state, selected_family):
+        return "validation_failure_analysis"
+
     def action_used(action_id: str) -> bool:
         for row in history:
             if str(row.get("action_id")) != action_id:
@@ -359,6 +415,11 @@ def _choose_research_action(state: dict[str, Any], hypothesis: dict[str, Any], s
                 return True
         return False
 
+    if selected_family == "candidate_universe_expansion" and any(
+        str(row.get("family")) == "candidate_universe_expansion" and str(row.get("status")) in {"freeze", "reject", "complete"}
+        for row in history
+    ):
+        return "exit_behavior_research"
     if selected_family in {"candidate_universe_expansion", "exit_behavior_research", "feature"}:
         return selected_family if selected_family in available_research_actions() else None
     if latest_failure_type == "cpcv_tail_path_fragility" and not action_used("cpcv_attribution"):
@@ -399,6 +460,8 @@ def _latest_desk_handoff(state: dict[str, Any]) -> dict[str, Any]:
     mapped = _map_desk_proposal(latest)
     if not mapped:
         return {}
+    if _same_family_loop_guard(state, mapped["selected_family"]):
+        return {}
     return {
         "proposal": latest,
         **mapped,
@@ -409,7 +472,7 @@ def _map_desk_proposal(proposal: dict[str, Any]) -> dict[str, Any]:
     family = str(proposal.get("family", "") or "")
     mapping = {
         "feature": ("feature", "feature"),
-        "setup": ("setup", "setup"),
+        "setup": ("setup", "market_state_setup_quality"),
         "eligibility": ("candidate_universe_expansion", "candidate_universe_expansion"),
         "path_modeling": ("exit_behavior_research", "exit_behavior_research"),
         "exit_behavior_research": ("exit_behavior_research", "exit_behavior_research"),
@@ -420,6 +483,11 @@ def _map_desk_proposal(proposal: dict[str, Any]) -> dict[str, Any]:
     return {
         "selected_family": selected[0],
         "assigned_research_action": selected[1],
+        "controller_focus": {
+            "focus_setup_state": proposal.get("target_setup_state"),
+            "focus_environment_state": proposal.get("target_environment_state"),
+            "focus_path_class": proposal.get("target_path_class"),
+        },
     }
 
 
@@ -429,7 +497,10 @@ def _apply_desk_handoff_to_plan(plan: dict[str, Any], desk_handoff: dict[str, An
     plan["selected_family"] = desk_handoff["selected_family"]
     plan["assigned_research_action"] = desk_handoff["assigned_research_action"]
     plan.setdefault("controller_override", {})
-    plan["controller_override"]["active_family"] = desk_handoff["selected_family"]
+    plan["controller_override"]["active_family"] = desk_handoff["assigned_research_action"]
+    for key, value in dict(desk_handoff.get("controller_focus", {}) or {}).items():
+        if value not in {None, "", "unknown"}:
+            plan["controller_override"][key] = value
     plan["reason"] = f"BNR desk handoff: {proposal.get('claim', 'proposal-driven governed branch.')}"
     plan["hypothesis_id"] = proposal.get("proposal_id", hypothesis.get("hypothesis_id"))
     plan["hypothesis_claim"] = proposal.get("claim", hypothesis.get("claim"))
@@ -439,6 +510,7 @@ def _apply_desk_handoff_to_plan(plan: dict[str, Any], desk_handoff: dict[str, An
         "selected_family": desk_handoff["selected_family"],
         "assigned_research_action": desk_handoff["assigned_research_action"],
         "first_governed_batch": True,
+        "controller_focus": dict(desk_handoff.get("controller_focus", {}) or {}),
     }
     plan["search_budget"] = {
         "max_trials": 1,
@@ -464,6 +536,75 @@ def _blocked_actions(state: dict[str, Any], hypothesis: dict[str, Any]) -> list[
         if row.get("failure_type") == "validation_failed":
             blocked.update({"holdout", "micro_tuning"})
     return sorted(blocked)
+
+
+def _should_pivot_candidate_universe(state: dict[str, Any], selected_family: str) -> bool:
+    if selected_family != "candidate_universe_expansion":
+        return False
+    history = list(state.get("research_action_history", []) or [])
+    return any(
+        str(row.get("family")) == "candidate_universe_expansion" and str(row.get("status")) in {"freeze", "reject", "complete"}
+        for row in history
+    )
+
+
+def _loop_blocked_families(history: list[dict[str, Any]]) -> set[str]:
+    blocked: set[str] = set()
+    families = {str(row.get("family")) for row in history if row.get("family")}
+    for family in families:
+        if _same_family_loop_guard({"research_action_history": history}, family):
+            blocked.add(family)
+    return blocked
+
+
+def _same_family_loop_guard(state: dict[str, Any], family: str) -> dict[str, Any]:
+    if not family:
+        return {}
+    history = list(state.get("research_action_history", []) or [])
+    same_family_streak = 0
+    for row in reversed(history):
+        if str(row.get("family")) == family:
+            same_family_streak += 1
+            continue
+        break
+    if same_family_streak >= MAX_SAME_FAMILY_CYCLES:
+        return _planning_review_guard(family, f"{family} ran {same_family_streak} consecutive cycles")
+    if family == "feature":
+        accepted = [
+            row for row in history
+            if str(row.get("family")) == "feature" and str(row.get("batch_decision")) == "accept"
+        ]
+        recent = accepted[-MAX_FEATURE_CYCLES_WITHOUT_ROBUSTNESS_IMPROVEMENT:]
+        if len(recent) >= MAX_FEATURE_CYCLES_WITHOUT_ROBUSTNESS_IMPROVEMENT and not any(_has_robustness_improvement(row) for row in recent):
+            return _planning_review_guard("feature", "feature accepted repeatedly without CPCV/DSR/calibration improvement")
+    return {}
+
+
+def _planning_review_guard(family: str, reason: str) -> dict[str, Any]:
+    next_family = {
+        "feature": "exit_behavior_research",
+        "setup": "candidate_universe_expansion",
+        "candidate_universe_expansion": "exit_behavior_research",
+        "exit_behavior_research": "setup",
+    }.get(family, "setup")
+    return {
+        "status": "active",
+        "reason": reason,
+        "blocked_family": family,
+        "selected_family": next_family,
+        "assigned_research_action": "validation_failure_analysis",
+        "required_review": "planning_only_low_marginal_value_review",
+    }
+
+
+def _has_robustness_improvement(row: dict[str, Any]) -> bool:
+    evidence = dict(row.get("marginal_evidence", {}) or {})
+    return bool(
+        evidence.get("cpcv_delta")
+        or evidence.get("dsr_delta")
+        or evidence.get("calibration_delta")
+        or evidence.get("worst_path_loss_delta")
+    )
 
 
 def _base_family_priority(family: str) -> float:

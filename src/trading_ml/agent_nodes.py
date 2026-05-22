@@ -8,7 +8,7 @@ from typing import Any
 from trading_ml.agent_state import DecisionName, FailureCategory, LoopLimits, ReviewCheckpoint
 from trading_ml.artifact_store import persist_node_artifact
 from trading_ml.bnr_attempts import build_bnr_attempts
-from trading_ml.price_action_feature_catalog import build_strategy_intake
+from trading_ml.price_action_feature_catalog import build_catalog_feature_proposals, build_strategy_intake
 from trading_ml.config import load_bnr_config
 from trading_ml.failure_clusters import build_failure_clusters
 from trading_ml.feature_diagnostics import build_feature_diagnostics
@@ -125,7 +125,7 @@ def _current_action_kind(state: dict[str, Any]) -> str:
 
 
 def _runtime_profile_trial_cap(state: dict[str, Any], selected_family: str, action_kind: str) -> int | None:
-    if str(state.get("runtime_profile", "standard")) != "bounded_autonomous":
+    if str(state.get("runtime_profile", "standard")) not in {"bounded_autonomous", "unattended"}:
         return None
     if action_kind != "governed_research_cycle":
         return None
@@ -170,6 +170,23 @@ def _cheap_screen_subtype_candidates(state: dict[str, Any], search_space: dict[s
         "dominant_failure_subtype": dominant,
         "subtype_counts": subtype_counts,
         "reuse_artifacts": bool(dict(state.get("compute_budgets", {}) or {}).get("reuse_artifacts", True)),
+    }
+
+
+def _search_marginal_evidence(search_results: dict[str, Any]) -> dict[str, Any]:
+    best = dict(search_results.get("best_trial", {}) or {})
+    accepted = dict(search_results.get("accepted_trial", {}) or {})
+    source = accepted or best
+    if not source:
+        return {"status": "missing"}
+    return {
+        "status": "available",
+        "trial_id": source.get("trial_id"),
+        "net_delta_vs_baseline": source.get("net_delta_vs_baseline"),
+        "roc_auc_delta_vs_baseline": source.get("roc_auc_delta_vs_baseline"),
+        "net_avg_pnl_r": source.get("net_avg_pnl_r"),
+        "roc_auc": source.get("roc_auc"),
+        "decision": source.get("decision"),
     }
 
 
@@ -503,9 +520,27 @@ def feature_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     intake = dict(state.get("research_intake", {}))
     if intake.get("feature_backlog"):
         feature_spec["strategy_feature_backlog"] = intake["feature_backlog"]
+    top_cluster = dict((state.get("failure_clusters", []) or [{}])[0])
+    catalog_intake = build_catalog_feature_proposals(
+        str(state.get("strategy_notes", "") or ""),
+        top_cluster=top_cluster,
+        bnr_spec=dict(state.get("bnr_spec", {}) or {}),
+        limit=8,
+    )
+    feature_spec["feature_catalog_version"] = catalog_intake.get("catalog_version", 1)
+    feature_spec["feature_catalog_groups"] = catalog_intake.get("selected_feature_groups", [])
+    feature_spec["feature_catalog_candidates"] = catalog_intake.get("feature_catalog_candidates", [])
+    feature_spec["feature_catalog_claim"] = catalog_intake.get("feature_claim")
+    feature_spec["target_setup_state"] = top_cluster.get("dominant_setup_state")
+    feature_spec["target_environment_state"] = top_cluster.get("dominant_environment_state")
+    feature_spec["target_path_class"] = dict(top_cluster.get("evidence", {}) or {}).get("path_class_mode")
+    if not feature_spec.get("strategy_feature_backlog"):
+        feature_spec["strategy_feature_backlog"] = catalog_intake.get("feature_backlog", {})
     return {
         "current_node": "feature_agent",
         "feature_spec": feature_spec,
+        "feature_catalog": catalog_intake,
+        "feature_catalog_candidates": catalog_intake.get("feature_catalog_candidates", []),
         "feature_diagnostics": diagnostics,
         "run_log": _append_log(state, "feature_agent", "Prepared feature proposal set and timestamp validation requirements.", {**feature_spec, "feature_diagnostics": diagnostics}),
     }
@@ -564,6 +599,7 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     next_step_plan = dict(state.get("next_step_plan", {}))
     if next_step_plan.get("controller_override"):
         controller.update(dict(next_step_plan["controller_override"]))
+    _apply_bnr_state_focus_to_controller(controller, state, next_step_plan)
     stage2_config = dict(state.get("stage2_config", {}))
     if next_step_plan.get("stage2_overrides"):
         stage2_config.update(_stage2_safe_overrides(dict(next_step_plan["stage2_overrides"])))
@@ -772,6 +808,9 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         budget_usage["model_trains"] = int(budget_usage.get("model_trains", 0) or 0) + int(search_results.get("models_trained", search_results.get("trial_count", 0)) or 0)
         if cheap_screen:
             search_results["cheap_screen"] = cheap_screen
+        focus_slice = _controller_focus_slice(controller)
+        if focus_slice:
+            search_results["focus_slice"] = focus_slice
         family = search_results.get("family")
         if family in {"feature", "feature_threshold"}:
             counts["feature_changes"] += int(search_results.get("trial_count", 0))
@@ -804,6 +843,9 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
             "callable_kind": action_spec.callable_kind if action_spec else "implicit",
             "status": search_results.get("status", search_results.get("batch_decision", "complete")),
             "batch_decision": search_results.get("batch_decision"),
+            "best_trial": search_results.get("best_trial"),
+            "accepted_trial": search_results.get("accepted_trial"),
+            "marginal_evidence": _search_marginal_evidence(search_results),
         },
     ]
     append_action_history_entry(action_history[-1])
@@ -850,7 +892,43 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
                 "search_results": search_results,
             },
         ),
+}
+
+
+def _apply_bnr_state_focus_to_controller(
+    controller: dict[str, Any],
+    state: dict[str, Any],
+    next_step_plan: dict[str, Any],
+) -> None:
+    focus_keys = ("focus_setup_state", "focus_environment_state", "focus_path_class")
+    for key in focus_keys:
+        value = controller.get(key)
+        if value not in {None, "", "unknown"}:
+            continue
+        desk_handoff = dict(next_step_plan.get("desk_handoff", {}) or {})
+        controller_focus = dict(desk_handoff.get("controller_focus", {}) or {})
+        value = controller_focus.get(key)
+        if value not in {None, "", "unknown"}:
+            controller[key] = value
+            continue
+        top_cluster = dict(dict(next_step_plan.get("evidence_used", {}) or {}).get("top_failure_cluster", {}) or {})
+        if key == "focus_setup_state":
+            value = top_cluster.get("dominant_setup_state")
+        elif key == "focus_environment_state":
+            value = top_cluster.get("dominant_environment_state")
+        else:
+            value = dict(top_cluster.get("evidence", {}) or {}).get("path_class_mode")
+        if value not in {None, "", "unknown"}:
+            controller[key] = value
+
+
+def _controller_focus_slice(controller: dict[str, Any]) -> dict[str, Any]:
+    focus = {
+        "setup_state": controller.get("focus_setup_state"),
+        "environment_state": controller.get("focus_environment_state"),
+        "path_class": controller.get("focus_path_class"),
     }
+    return {key: value for key, value in focus.items() if value not in {None, "", "unknown"}}
 
 
 def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -1341,6 +1419,14 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
     )
     if state.get("promotion_decision") == "freeze" and cycle < max_cycles and viable_hypotheses > 0 and not state.get("blocking_issues"):
         continue_iteration = True
+    if (
+        str(state.get("runtime_profile", "standard")) == "unattended"
+        and state.get("promotion_decision") == "reject"
+        and cycle < max_cycles
+        and viable_hypotheses > 0
+        and not state.get("blocking_issues")
+    ):
+        continue_iteration = True
     if state.get("promotion_decision") == "accept":
         continue_iteration = False
     if family == "setup" and state.get("promotion_decision") == "advance_to_validation" and bool(accepted_trial) and cycle < max_cycles:
@@ -1384,7 +1470,7 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
                 stage2_config.update(stage2_overrides)
             controller_state["spec_version"] = f"{controller_state.get('spec_version', 'bnr_spec_vA')}.c{cycle + 1}"
             payload["adopted_trial_id"] = accepted_trial.get("trial_id")
-        if state.get("promotion_decision") == "freeze":
+        if state.get("promotion_decision") in {"freeze", "reject"}:
             payload["handoff"] = "failure_memory_to_research_director"
             payload["next_cycle_mode"] = "new_hypothesis"
             return {
@@ -1400,7 +1486,7 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
                 "executed_research_family": "",
                 "executed_family_cycle": 0,
                 "next_step_plan": {},
-                "run_log": _append_log(state, "iteration_controller", "Continued autonomous research with a new hypothesis after a frozen branch.", payload),
+                "run_log": _append_log(state, "iteration_controller", "Continued autonomous research with a new hypothesis after a non-promotable branch.", payload),
             }
         payload["new_spec_version"] = controller_state["spec_version"]
         payload["stage2_config"] = stage2_config

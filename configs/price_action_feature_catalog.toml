@@ -1,0 +1,327 @@
+[meta]
+version = 1
+purpose = "Canonical price-action ontology for BNR feature exploration."
+default_inputs = ["ohlcv_1m"]
+
+[groups.volatility]
+label = "Volatility"
+features = [
+  "impulse_speed",
+  "volatility_expansion_ratio",
+  "compression_before_break",
+  "candle_tempo_decay",
+]
+
+[groups.momentum]
+label = "Momentum"
+features = [
+  "directional_efficiency",
+  "followthrough_strength",
+  "continuation_displacement_ratio",
+  "failed_followthrough_probability",
+]
+
+[groups.candles]
+label = "Candle Structure"
+features = [
+  "body_to_range_ratio",
+  "upper_wick_fraction",
+  "lower_wick_fraction",
+  "consecutive_directional_bars",
+  "alternating_bar_frequency",
+]
+
+[groups.structure]
+label = "Structure"
+features = [
+  "swing_overlap_score",
+  "pivot_cleanliness",
+  "flem_compression",
+  "repair_depth_fraction",
+]
+
+[groups.liquidity]
+label = "Liquidity"
+features = [
+  "distance_to_recent_high",
+  "distance_to_recent_low",
+  "failed_breakout_reclaim",
+]
+
+[groups.auction]
+label = "Session / Auction"
+features = [
+  "opening_drive_strength",
+  "opening_balance_stability",
+  "trend_day_probability",
+  "session_transition_score",
+]
+
+[features.impulse_speed]
+category = "volatility"
+concept = "Fast directional movement"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["setup_quality", "market_state", "followthrough"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Distance traveled per bar normalized by recent volatility"
+
+[features.volatility_expansion_ratio]
+category = "volatility"
+concept = "Breakout expansion"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["setup_quality", "breakout_quality"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Current bar range relative to recent rolling range"
+
+[features.compression_before_break]
+category = "volatility"
+concept = "Pre-break compression"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["setup_quality", "breakout_quality"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Measures narrowing range before directional expansion"
+
+[features.candle_tempo_decay]
+category = "volatility"
+concept = "Momentum deterioration"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["failure_detection", "exit_behavior"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Decline in directional speed after reclaim"
+
+[features.directional_efficiency]
+category = "momentum"
+concept = "Clean directional travel"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state", "setup_quality"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Net directional distance divided by total traveled distance"
+
+[features.followthrough_strength]
+category = "momentum"
+concept = "Immediate continuation after trigger"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["setup_quality", "exit_behavior"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Measures continuation over next N bars after reclaim"
+
+[features.continuation_displacement_ratio]
+category = "momentum"
+concept = "Directional displacement"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["continuation"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Directional displacement normalized by zone width"
+
+[features.failed_followthrough_probability]
+category = "momentum"
+concept = "Breakout stall risk"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["failure_detection", "eligibility"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Likelihood that breakout stalls within early bars"
+
+[features.body_to_range_ratio]
+category = "candles"
+concept = "Directional conviction"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["setup_quality", "continuation"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Body size relative to total candle range"
+
+[features.upper_wick_fraction]
+category = "candles"
+concept = "Upper rejection"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["rejection", "failure_detection"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Upper wick as fraction of candle range"
+
+[features.lower_wick_fraction]
+category = "candles"
+concept = "Lower rejection"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["rejection", "failure_detection"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Lower wick as fraction of candle range"
+
+[features.consecutive_directional_bars]
+category = "candles"
+concept = "Persistent directional flow"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["continuation", "market_state"]
+risk = "low"
+curve_fit_risk = "medium"
+support_requirement = "low"
+description = "Counts recent same-direction closes"
+
+[features.alternating_bar_frequency]
+category = "candles"
+concept = "Chop / indecision"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state", "chop_detection"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Frequency of alternating directional bars"
+
+[features.swing_overlap_score]
+category = "structure"
+concept = "Messy overlapping structure"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state", "failure_detection"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Overlap between recent swing ranges"
+
+[features.pivot_cleanliness]
+category = "structure"
+concept = "Clean impulse pivots"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["setup_quality"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Measures sharpness and cleanliness of directional pivots"
+
+[features.flem_compression]
+category = "structure"
+concept = "Tight structure compression"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["continuation", "breakout_quality"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Measures structural tightening before expansion"
+
+[features.repair_depth_fraction]
+category = "structure"
+concept = "Deep retrace repair"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["repair", "failure_detection"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Depth of retrace relative to prior impulse"
+
+[features.distance_to_recent_high]
+category = "liquidity"
+concept = "Nearby overhead liquidity"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["eligibility", "breakout_quality"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Distance to recent swing high"
+
+[features.distance_to_recent_low]
+category = "liquidity"
+concept = "Nearby downside liquidity"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["eligibility", "breakout_quality"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Distance to recent swing low"
+
+[features.failed_breakout_reclaim]
+category = "liquidity"
+concept = "Liquidity sweep and reclaim"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["repair", "reversal"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Measures reclaim behavior after failed breakout"
+
+[features.opening_drive_strength]
+category = "auction"
+concept = "Strong opening auction"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state", "continuation"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Strength of opening directional drive"
+
+[features.opening_balance_stability]
+category = "auction"
+concept = "Balanced opening auction"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state", "chop_detection"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Measures opening balance overlap and compression"
+
+[features.trend_day_probability]
+category = "auction"
+concept = "Trend-day environment"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Probability session behaves as trend day"
+
+[features.session_transition_score]
+category = "auction"
+concept = "Environment transition"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state", "state_transition"]
+risk = "medium"
+curve_fit_risk = "high"
+support_requirement = "high"
+description = "Measures transition from impulse to balance or repair"
+
+[restricted]
+exact_time_buckets = ["14:32"]
+path_specific_features = ["cpcv_010", "worst-path-specific tuning"]
+tiny_support_patterns = ["specific 3-candle micro patterns with tiny support"]
