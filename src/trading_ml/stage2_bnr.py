@@ -60,7 +60,9 @@ def require_pandas():
     try:
         import pandas as pd
     except ImportError as exc:
-        raise RuntimeError("Stage 2 requires pandas. Install with `python3 -m pip install pandas pyarrow`.") from exc
+        raise RuntimeError(
+            "Stage 2 requires pandas. Install with `python3 -m pip install pandas pyarrow`."
+        ) from exc
     return pd
 
 
@@ -84,7 +86,9 @@ def calculate_bnr_zones(
         low = float(zone_bars["low"].min())
         midpoint = (high + low) / 2.0
         width = high - low
-        decision_at = pd.Timestamp.combine(session_date, pd.Timestamp(decision_time).time()).tz_localize(bars.index.tz)
+        decision_at = pd.Timestamp.combine(
+            session_date, pd.Timestamp(decision_time).time()
+        ).tz_localize(bars.index.tz)
         flags: list[str] = []
         if width <= 0:
             flags.append("non_positive_zone_width")
@@ -140,7 +144,10 @@ def generate_breakout_candidates(
             if break_close_time.time() > pd.Timestamp(latest_trigger_time).time():
                 continue
 
-            if counts["long"] < max_candidates_per_direction and float(break_row["close"]) > zone.high + break_buffer_points:
+            if (
+                counts["long"] < max_candidates_per_direction
+                and float(break_row["close"]) > zone.high + break_buffer_points
+            ):
                 candidate = _candidate_from_break_state(
                     zone=zone,
                     day_bars=day_bars,
@@ -156,7 +163,10 @@ def generate_breakout_candidates(
                     candidates.append(candidate)
                     counts["long"] += 1
 
-            if counts["short"] < max_candidates_per_direction and float(break_row["close"]) < zone.low - break_buffer_points:
+            if (
+                counts["short"] < max_candidates_per_direction
+                and float(break_row["close"]) < zone.low - break_buffer_points
+            ):
                 candidate = _candidate_from_break_state(
                     zone=zone,
                     day_bars=day_bars,
@@ -180,7 +190,15 @@ def generate_breakout_candidates(
 def _build_one_minute_bars(day_bars: Any) -> Any:
     agg = (
         day_bars.resample("1min", label="left", closed="left")
-        .agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"})
+        .agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
         .dropna(subset=["open", "high", "low", "close"])
     )
     return agg
@@ -200,8 +218,13 @@ def _candidate_from_break_state(
 ) -> CandidateSetup | None:
     pd = require_pandas()
     break_decision_time = break_ts + timedelta(minutes=1)
-    earliest_entry_dt = pd.Timestamp.combine(pd.Timestamp(zone.session_date).date(), pd.Timestamp(earliest_trigger_time).time()).tz_localize(day_bars.index.tz)
-    latest_entry_dt = pd.Timestamp.combine(pd.Timestamp(zone.session_date).date(), pd.Timestamp(latest_trigger_time).time()).tz_localize(day_bars.index.tz)
+    earliest_entry_dt = pd.Timestamp.combine(
+        pd.Timestamp(zone.session_date).date(),
+        pd.Timestamp(earliest_trigger_time).time(),
+    ).tz_localize(day_bars.index.tz)
+    latest_entry_dt = pd.Timestamp.combine(
+        pd.Timestamp(zone.session_date).date(), pd.Timestamp(latest_trigger_time).time()
+    ).tz_localize(day_bars.index.tz)
     post_break_bars = day_bars[day_bars.index >= break_ts]
     if post_break_bars.empty:
         return None
@@ -234,7 +257,9 @@ def _candidate_from_break_state(
                 flem_price = flem_candidate
                 flem_time = bar_close_time
 
-        if _invalidated_before_entry(invalidation_minutes, zone, direction, bar_close_time):
+        if _invalidated_before_entry(
+            invalidation_minutes, zone, direction, bar_close_time
+        ):
             return None
 
         in_zone = float(row["low"]) <= zone.high and float(row["high"]) >= zone.low
@@ -257,7 +282,11 @@ def _candidate_from_break_state(
             if reclaimed and not above_boundary_prev:
                 reclaim_count += 1
             above_boundary_prev = float(row["close"]) > zone.high
-            if reclaimed and bar_close_time >= earliest_entry_dt and pivot_price is not None:
+            if (
+                reclaimed
+                and bar_close_time >= earliest_entry_dt
+                and pivot_price is not None
+            ):
                 return _finalize_candidate(
                     zone=zone,
                     break_ts=break_ts,
@@ -278,7 +307,11 @@ def _candidate_from_break_state(
             if reclaimed and not below_boundary_prev:
                 reclaim_count += 1
             below_boundary_prev = float(row["close"]) < zone.low
-            if reclaimed and bar_close_time >= earliest_entry_dt and pivot_price is not None:
+            if (
+                reclaimed
+                and bar_close_time >= earliest_entry_dt
+                and pivot_price is not None
+            ):
                 return _finalize_candidate(
                     zone=zone,
                     break_ts=break_ts,
@@ -297,8 +330,12 @@ def _candidate_from_break_state(
     return None
 
 
-def _invalidated_before_entry(invalidation_minutes: Any, zone: BNRZone, direction: Direction, bar_close_time: Any) -> bool:
-    eligible = invalidation_minutes[(invalidation_minutes.index + timedelta(minutes=1)) <= bar_close_time]
+def _invalidated_before_entry(
+    invalidation_minutes: Any, zone: BNRZone, direction: Direction, bar_close_time: Any
+) -> bool:
+    eligible = invalidation_minutes[
+        (invalidation_minutes.index + timedelta(minutes=1)) <= bar_close_time
+    ]
     if eligible.empty:
         return False
     if direction == "long":
@@ -325,22 +362,48 @@ def _finalize_candidate(
     break_decision_time = break_ts + timedelta(minutes=1)
     decision_time = _bar_completion_time(entry_ts, timeframe)
     setup_type = f"break_reentry_reclaim_{direction}"
-    candidate_id = f"{zone.symbol}-{zone.session_date}-{setup_type}-{entry_ts.isoformat()}"
+    candidate_id = (
+        f"{zone.symbol}-{zone.session_date}-{setup_type}-{entry_ts.isoformat()}"
+    )
 
     if direction == "long":
         first_break_wick_excess = max(float(break_row["high"]) - zone.high, 0.0)
         first_break_close_excess = max(float(break_row["close"]) - zone.high, 0.0)
-        first_break_wick_only = first_break_wick_excess > 0 and first_break_close_excess <= 0
-        deepest_zone_retrace_fraction = max(zone.high - pivot_price, 0.0) / zone.width if zone.width else 0.0
-        continuation_displacement_ratio = max(float(entry_row["close"]) - pivot_price, 0.0) / zone.width if zone.width else 0.0
-        post_reclaim_close_strength = max(float(entry_row["close"]) - zone.high, 0.0) / zone.width if zone.width else 0.0
+        first_break_wick_only = (
+            first_break_wick_excess > 0 and first_break_close_excess <= 0
+        )
+        deepest_zone_retrace_fraction = (
+            max(zone.high - pivot_price, 0.0) / zone.width if zone.width else 0.0
+        )
+        continuation_displacement_ratio = (
+            max(float(entry_row["close"]) - pivot_price, 0.0) / zone.width
+            if zone.width
+            else 0.0
+        )
+        post_reclaim_close_strength = (
+            max(float(entry_row["close"]) - zone.high, 0.0) / zone.width
+            if zone.width
+            else 0.0
+        )
     else:
         first_break_wick_excess = max(zone.low - float(break_row["low"]), 0.0)
         first_break_close_excess = max(zone.low - float(break_row["close"]), 0.0)
-        first_break_wick_only = first_break_wick_excess > 0 and first_break_close_excess <= 0
-        deepest_zone_retrace_fraction = max(pivot_price - zone.low, 0.0) / zone.width if zone.width else 0.0
-        continuation_displacement_ratio = max(pivot_price - float(entry_row["close"]), 0.0) / zone.width if zone.width else 0.0
-        post_reclaim_close_strength = max(zone.low - float(entry_row["close"]), 0.0) / zone.width if zone.width else 0.0
+        first_break_wick_only = (
+            first_break_wick_excess > 0 and first_break_close_excess <= 0
+        )
+        deepest_zone_retrace_fraction = (
+            max(pivot_price - zone.low, 0.0) / zone.width if zone.width else 0.0
+        )
+        continuation_displacement_ratio = (
+            max(pivot_price - float(entry_row["close"]), 0.0) / zone.width
+            if zone.width
+            else 0.0
+        )
+        post_reclaim_close_strength = (
+            max(zone.low - float(entry_row["close"]), 0.0) / zone.width
+            if zone.width
+            else 0.0
+        )
 
     return CandidateSetup(
         candidate_id=candidate_id,
@@ -354,7 +417,9 @@ def _finalize_candidate(
         direction=direction,
         setup_type=setup_type,
         entry_reference_price=float(entry_row["close"]),
-        invalidation_reference_price=float(zone.low if direction == "long" else zone.high),
+        invalidation_reference_price=float(
+            zone.low if direction == "long" else zone.high
+        ),
         pivot_price=float(pivot_price),
         pivot_time=pivot_time.isoformat(),
         flem_price=float(flem_price),
@@ -378,7 +443,9 @@ def _finalize_candidate(
             "first_break_wick_excess_points": float(first_break_wick_excess),
             "first_break_close_excess_points": float(first_break_close_excess),
             "pivot_duration_bars": float(max(reentry_count + reclaim_count - 1, 0)),
-            "continuation_delay_bars": float(max(int((decision_time - break_decision_time).total_seconds() // 30), 0)),
+            "continuation_delay_bars": float(
+                max(int((decision_time - break_decision_time).total_seconds() // 30), 0)
+            ),
             "deepest_zone_retrace_fraction": float(deepest_zone_retrace_fraction),
             "continuation_displacement_ratio": float(continuation_displacement_ratio),
             "post_reclaim_close_strength": float(post_reclaim_close_strength),

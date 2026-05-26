@@ -43,7 +43,12 @@ def build_bnr_attempts(
             how="left",
             suffixes=("", "_label"),
         )
-        .merge(features[available], on="candidate_id", how="left", suffixes=("", "_feature"))
+        .merge(
+            features[available],
+            on="candidate_id",
+            how="left",
+            suffixes=("", "_feature"),
+        )
         .copy()
     )
     if merged.empty:
@@ -59,7 +64,9 @@ def build_bnr_attempts(
         attempt = BNRAttempt(
             attempt_id=f"ATT-{row.get('candidate_id')}",
             candidate_id=str(row.get("candidate_id")),
-            session_date=str(row.get("session_date") or row.get("session_date_feature") or ""),
+            session_date=str(
+                row.get("session_date") or row.get("session_date_feature") or ""
+            ),
             direction=str(row.get("direction", "unknown")),
             setup_subtype=str(row.get("setup_subtype", "unknown")),
             setup_state=_setup_state(row),
@@ -76,11 +83,19 @@ def build_bnr_attempts(
             path_class=_path_class(row),
             features={
                 "trigger_seconds_after_open": trigger_seconds,
-                "break_efficiency_ratio": _safe_float(row.get("break_efficiency_ratio")),
-                "reclaim_close_location": _safe_float(row.get("reclaim_close_location")),
+                "break_efficiency_ratio": _safe_float(
+                    row.get("break_efficiency_ratio")
+                ),
+                "reclaim_close_location": _safe_float(
+                    row.get("reclaim_close_location")
+                ),
                 "reclaim_failure_count": _safe_int(row.get("reclaim_failure_count")),
-                "deepest_zone_retrace_fraction": _safe_float(row.get("deepest_zone_retrace_fraction")),
-                "post_reclaim_close_strength": _safe_float(row.get("post_reclaim_close_strength")),
+                "deepest_zone_retrace_fraction": _safe_float(
+                    row.get("deepest_zone_retrace_fraction")
+                ),
+                "post_reclaim_close_strength": _safe_float(
+                    row.get("post_reclaim_close_strength")
+                ),
                 "reg_high_vol_state": _safe_int(row.get("reg_high_vol_state")),
                 "reg_trending_state": _safe_int(row.get("reg_trending_state")),
             },

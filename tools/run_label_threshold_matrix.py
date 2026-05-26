@@ -16,7 +16,9 @@ def main() -> None:
     state = build_agent_loop_state()
     bnr_config = load_bnr_config()
     label_space = bnr_config["label_search_v1"]["space"]
-    thresholds = [float(x) for x in bnr_config["translation_contract"]["threshold_grid"]]
+    thresholds = [
+        float(x) for x in bnr_config["translation_contract"]["threshold_grid"]
+    ]
     output = Path("reports/label_threshold_matrix.json")
 
     rows: list[dict] = []
@@ -31,10 +33,16 @@ def main() -> None:
         config["target_multiple"] = float(target_multiple)
         result = run_stage2_research_engine(Stage2Config(**config))
         validation = build_validation_audit(result, {})
-        stitched = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []))
+        stitched = list(
+            validation.get("walk_forward", {}).get("stitched_prediction_records", [])
+        )
         for threshold in thresholds:
             execution = run_event_driven_policy_backtest(stitched, threshold=threshold)
-            utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+            utility = (
+                compute_execution_utility(execution)
+                if execution.get("status") == "complete"
+                else {"score": None}
+            )
             rows.append(
                 {
                     "feature_family": config["feature_family"],
@@ -43,14 +51,20 @@ def main() -> None:
                     "target_multiple": float(target_multiple),
                     "threshold": float(threshold),
                     "candidate_count": int(result.get("candidate_count", 0)),
-                    "walk_forward_status": validation.get("walk_forward", {}).get("status"),
-                    "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get("mean_roc_auc"),
+                    "walk_forward_status": validation.get("walk_forward", {}).get(
+                        "status"
+                    ),
+                    "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get(
+                        "mean_roc_auc"
+                    ),
                     "signal_count": int(execution.get("signal_count", 0) or 0),
                     "trade_count": int(execution.get("trade_count", 0) or 0),
                     "total_pnl_r": float(execution.get("total_pnl_r", 0.0) or 0.0),
                     "avg_trade_r": float(execution.get("avg_trade_r", 0.0) or 0.0),
                     "win_rate": float(execution.get("win_rate", 0.0) or 0.0),
-                    "max_drawdown_r": float(execution.get("max_drawdown_r", 0.0) or 0.0),
+                    "max_drawdown_r": float(
+                        execution.get("max_drawdown_r", 0.0) or 0.0
+                    ),
                     "utility_score": utility.get("score"),
                 }
             )

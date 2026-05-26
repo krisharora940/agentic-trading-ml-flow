@@ -4,12 +4,20 @@ import unittest
 
 import pandas as pd
 
-from trading_ml.candidate_universe_expansion import build_candidate_universe_expansion_space, _resolve_variant_subset, _slice_bars_for_runtime
-from trading_ml.research_controller import build_candidate_universe_expansion_search_space
+from trading_ml.candidate_universe_expansion import (
+    build_candidate_universe_expansion_space,
+    _resolve_variant_subset,
+    _slice_bars_for_runtime,
+)
+from trading_ml.research_controller import (
+    build_candidate_universe_expansion_search_space,
+)
 
 
 class CandidateUniverseExpansionTests(unittest.TestCase):
-    def test_candidate_universe_space_requires_lineage_and_effective_sample_size(self) -> None:
+    def test_candidate_universe_space_requires_lineage_and_effective_sample_size(
+        self,
+    ) -> None:
         space = build_candidate_universe_expansion_space()
 
         self.assertEqual(space["family"], "candidate_universe_expansion")
@@ -28,7 +36,9 @@ class CandidateUniverseExpansionTests(unittest.TestCase):
         self.assertIn("extended_structure_zone", names)
 
     def test_resolve_variant_subset_includes_baseline(self) -> None:
-        variants = _resolve_variant_subset({"fast_variant_names": ["allow_delayed_reclaim"]})
+        variants = _resolve_variant_subset(
+            {"fast_variant_names": ["allow_delayed_reclaim"]}
+        )
         names = [row["name"] for row in variants]
         self.assertEqual(names[0], "first_reclaim_only_baseline")
         self.assertIn("allow_delayed_reclaim", names)

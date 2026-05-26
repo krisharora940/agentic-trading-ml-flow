@@ -7,7 +7,9 @@ from trading_ml.stage2_data import build_data_quality_report, load_ohlcv_file
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Normalize OHLCV source data and cache it as Parquet.")
+    parser = argparse.ArgumentParser(
+        description="Normalize OHLCV source data and cache it as Parquet."
+    )
     parser.add_argument("--source", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--symbol", default="MNQ")

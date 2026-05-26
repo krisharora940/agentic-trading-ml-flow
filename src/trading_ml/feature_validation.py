@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 
-def build_feature_validation(features: list[dict[str, Any]], labels: list[dict[str, Any]]) -> dict[str, Any]:
+def build_feature_validation(
+    features: list[dict[str, Any]], labels: list[dict[str, Any]]
+) -> dict[str, Any]:
     try:
         import pandas as pd
     except ImportError:
@@ -15,14 +17,17 @@ def build_feature_validation(features: list[dict[str, Any]], labels: list[dict[s
         return {"status": "pending", "reason": "empty_features"}
     if labels_df.empty or not {"candidate_id", "label"} <= set(labels_df.columns):
         return {"status": "pending", "reason": "empty_labels"}
-    merged = features_df.merge(labels_df[["candidate_id", "label"]], on="candidate_id", how="inner")
+    merged = features_df.merge(
+        labels_df[["candidate_id", "label"]], on="candidate_id", how="inner"
+    )
     if merged.empty:
         return {"status": "pending", "reason": "empty_merged_dataset"}
 
     numeric_cols = [
         col
         for col in merged.columns
-        if col not in {"candidate_id", "session_date", "label"} and pd.api.types.is_numeric_dtype(merged[col])
+        if col not in {"candidate_id", "session_date", "label"}
+        and pd.api.types.is_numeric_dtype(merged[col])
     ]
     rows = []
     for col in numeric_cols:
@@ -40,11 +45,7 @@ def build_feature_validation(features: list[dict[str, Any]], labels: list[dict[s
             }
         )
 
-    failed = [
-        row
-        for row in rows
-        if row["is_constant"] or row["missing_rate"] > 0.25
-    ]
+    failed = [row for row in rows if row["is_constant"] or row["missing_rate"] > 0.25]
     return {
         "status": "complete",
         "feature_count": len(rows),

@@ -14,17 +14,31 @@ from trading_ml.validation_audit import build_validation_audit
 def main() -> None:
     state = build_agent_loop_state()
     bnr_config = load_bnr_config()
-    thresholds = list(bnr_config.get("translation_contract", {}).get("threshold_grid", [0.45, 0.5, 0.55, 0.6, 0.65]))
-    benchmark_name = str(bnr_config.get("controller", {}).get("benchmark_name", "bnr_benchmark"))
+    thresholds = list(
+        bnr_config.get("translation_contract", {}).get(
+            "threshold_grid", [0.45, 0.5, 0.55, 0.6, 0.65]
+        )
+    )
+    benchmark_name = str(
+        bnr_config.get("controller", {}).get("benchmark_name", "bnr_benchmark")
+    )
 
     result = run_stage2_research_engine(Stage2Config(**state["stage2_config"]))
     validation = build_validation_audit(result, {})
-    stitched_records = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []))
+    stitched_records = list(
+        validation.get("walk_forward", {}).get("stitched_prediction_records", [])
+    )
 
     rows: list[dict] = []
     for threshold in thresholds:
-        summary = run_event_driven_policy_backtest(stitched_records, threshold=float(threshold))
-        utility = compute_execution_utility(summary) if summary.get("status") == "complete" else {"score": None}
+        summary = run_event_driven_policy_backtest(
+            stitched_records, threshold=float(threshold)
+        )
+        utility = (
+            compute_execution_utility(summary)
+            if summary.get("status") == "complete"
+            else {"score": None}
+        )
         rows.append(
             {
                 "threshold": float(threshold),
@@ -61,7 +75,9 @@ def main() -> None:
     }
 
     output_path = Path("reports") / f"{benchmark_name}_event_threshold_sweep.json"
-    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8")
+    output_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8"
+    )
     print(json.dumps(payload, indent=2, sort_keys=True, default=str))
 
 

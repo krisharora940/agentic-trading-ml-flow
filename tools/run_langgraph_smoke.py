@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from trading_ml.langgraph_integration import build_langgraph_initial_input, compile_bnr_langgraph
+from trading_ml.langgraph_integration import (
+    build_langgraph_initial_input,
+    compile_bnr_langgraph,
+)
 
 
 def main() -> None:

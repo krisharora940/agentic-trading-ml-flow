@@ -140,78 +140,340 @@ CATEGORY_GUIDES = {
 
 
 SKILLS = [
-    ("Concepts", "ml4t-information-ratio", "Use when evaluating strategy quality with information ratio, tracking error, and risk-adjusted active returns."),
-    ("Concepts", "ml4t-tcs", "Use when reasoning about the true cost of skill, including friction, uncertainty, and signal decay in trading ML."),
-    ("Concepts", "ml4t-parkinson-volatility", "Use when estimating volatility from high-low ranges instead of close-to-close returns."),
-    ("Concepts", "ml4t-rolling-sharpe", "Use when measuring time-varying Sharpe behavior and degradation across regimes."),
-    ("Concepts", "ml4t-pnl-labeling", "Use when defining labels directly from realized PnL, execution rules, or trade outcomes."),
-    ("Concepts", "ml4t-concept-drift", "Use when detecting regime change, model staleness, or feature-target relationship drift."),
-    ("Concepts", "ml4t-f1-threshold", "Use when tuning classification thresholds where class balance and trade economics matter more than raw accuracy."),
-    ("Concepts", "ml4t-hyperparameter-validation", "Use when validating hyperparameters without contaminating holdout evidence."),
-    ("Concepts", "ml4t-neutralization", "Use when removing market, sector, beta, or other common exposures from features or signals."),
-    ("Data Acquisition", "ml4t-reddit-ohlc", "Use when sourcing or reconstructing OHLC-style market data from Reddit discussions, posts, or community signals."),
-    ("Data Acquisition", "ml4t-whalewisdom", "Use when using WhaleWisdom or 13F-style holdings data in a point-in-time research workflow."),
-    ("Data Acquisition", "ml4t-sec-filings", "Use when ingesting SEC filings, fundamentals, or event timestamps for trading models."),
-    ("Data Acquisition", "ml4t-quote-data", "Use when handling bid, ask, spread, or quote-derived microstructure data."),
-    ("Data Acquisition", "ml4t-tiingo", "Use when working with Tiingo market data, adjusted prices, or corporate actions."),
-    ("Data Acquisition", "ml4t-binance", "Use when acquiring Binance spot or derivatives data for crypto trading research."),
-    ("Data Acquisition", "ml4t-databento", "Use when using Databento datasets, schemas, and timestamped market data feeds."),
-    ("Data Acquisition", "ml4t-polygon", "Use when sourcing equities or options data from Polygon with timestamp and adjustment hygiene."),
-    ("Feature Engineering", "ml4t-fracdiff", "Use when applying fractional differencing to preserve memory while reducing non-stationarity."),
-    ("Feature Engineering", "ml4t-fte", "Use when building feature transformation pipelines for trading data with strict fit/transform separation."),
-    ("Feature Engineering", "ml4t-ohlcv-features", "Use when engineering indicators or statistical features from OHLCV bars."),
-    ("Feature Engineering", "ml4t-zscore", "Use when standardizing features with rolling or cross-sectional z-score transforms."),
-    ("Feature Engineering", "ml4t-kelly-fraction", "Use when deriving Kelly-style sizing features or decision rules from estimated edge and odds."),
-    ("Feature Engineering", "ml4t-feature-importance", "Use when ranking, pruning, or diagnosing trading features with robust importance methods."),
-    ("Feature Engineering", "ml4t-clustering", "Use when clustering assets, regimes, or feature states to simplify model structure."),
-    ("Feature Engineering", "ml4t-volatility-targeting", "Use when scaling features, forecasts, or positions to a volatility target."),
-    ("Evaluation & Validation", "ml4t-backtest-overfitting", "Use when estimating whether backtest performance is overstated by search, selection, or repeated tuning."),
-    ("Evaluation & Validation", "ml4t-multiple-testing", "Use when correcting for many trials, many factors, or repeated hypothesis search."),
-    ("Evaluation & Validation", "ml4t-walk-forward", "Use when validating models with sequential walk-forward or rolling-origin evaluation."),
-    ("Evaluation & Validation", "ml4t-psi", "Use when using population stability index to detect feature drift or train-live mismatch."),
-    ("Evaluation & Validation", "ml4t-cpcv", "Use when applying combinatorial purged cross-validation to overlapping trading samples."),
-    ("Evaluation & Validation", "ml4t-cv", "Use when choosing cross-validation structure for time series or panel-style trading data."),
-    ("Evaluation & Validation", "ml4t-uniqueness", "Use when quantifying sample uniqueness under overlapping labels or event windows."),
-    ("Evaluation & Validation", "ml4t-sfi", "Use when using single-feature importance to test whether a feature contributes standalone signal."),
-    ("Backtesting", "ml4t-vectorbt", "Use when prototyping vectorized backtests with explicit assumptions around fees, fills, and timing."),
-    ("Backtesting", "ml4t-backtrader", "Use when building event-driven backtests in Backtrader and auditing execution assumptions."),
-    ("Backtesting", "ml4t-zipline", "Use when working with Zipline-style pipelines, calendars, and execution simulation."),
-    ("Backtesting", "ml4t-backtesting-py", "Use when using backtesting.py for fast strategy iteration with realistic parameter discipline."),
-    ("Backtesting", "ml4t-slippage", "Use when modeling slippage, spread, queue risk, or impact in a trading simulator."),
-    ("Portfolio Management", "ml4t-hrp", "Use when allocating capital with hierarchical risk parity or correlation-aware diversification."),
-    ("Portfolio Management", "ml4t-position-sizing", "Use when turning model scores into position sizes under risk and turnover constraints."),
-    ("Portfolio Management", "ml4t-risk-management", "Use when defining stop logic, exposure limits, drawdown controls, or kill-switch behavior."),
-    ("Infrastructure", "ml4t-fastapi", "Use when exposing research or trading services through FastAPI with operational safeguards."),
-    ("Infrastructure", "ml4t-postgres", "Use when storing market data, features, labels, or model artifacts in PostgreSQL."),
-    ("Infrastructure", "ml4t-kafka", "Use when designing streaming market-data or event pipelines with Kafka."),
-    ("Infrastructure", "ml4t-airflow", "Use when orchestrating scheduled data, training, or backtest workflows with Airflow."),
-    ("Workflows", "ml4t-triple-barrier", "Use when labeling events with triple-barrier logic and timestamp-aware exits."),
-    ("Workflows", "ml4t-meta-labeling", "Use when stacking a second model on top of primary signals to decide whether to act."),
-    ("Workflows", "ml4t-ensemble", "Use when combining multiple models or signals into a more stable trading decision."),
-    ("Workflows", "ml4t-point-in-time", "Use when enforcing point-in-time correctness across datasets, features, and joins."),
-    ("Workflows", "ml4t-purging", "Use when purging overlapping samples and embargoing adjacent periods during validation."),
-    ("Workflows", "ml4t-sbt", "Use when running sequential bootstrap techniques for dependent financial samples."),
-    ("Workflows", "ml4t-data-leakage", "Use when auditing a pipeline for leakage across features, labels, joins, scaling, or validation."),
-    ("Workflows", "ml4t-case-study-development", "Use when turning a trading idea into a reproducible end-to-end case-study research build."),
-    ("Workflows", "ml4t-factor-research", "Use when researching, validating, and pressure-testing factor-style signals before strategy integration."),
-    ("Workflows", "ml4t-model-validation", "Use when validating a trading ML model with sequential splits, overlap controls, and economic thresholds."),
-    ("Workflows", "ml4t-production-readiness", "Use when deciding whether a research result is operationally and statistically ready to advance toward paper or live trading."),
-    ("Workflows", "ml4t-strategy-workflow", "Use when managing the full ML4T strategy workflow from scoping through feature design, validation, backtest, and promotion."),
-    ("Production", "ml4t-ibkr", "Use when integrating Interactive Brokers workflows for live or paper trading."),
-    ("Production", "ml4t-live-monitoring", "Use when monitoring live predictions, fills, pnl, risk, or model health."),
-    ("Production", "ml4t-model-registry", "Use when versioning, promoting, rolling back, or governing trained trading models."),
-    ("Production", "ml4t-drift-retraining", "Use when defining retraining triggers, drift thresholds, and promotion criteria."),
-    ("Guardrails", "ml4t-guardrail-lookahead-bias", "Use when checking that no feature, label, or execution rule leaks future information."),
-    ("Guardrails", "ml4t-guardrail-point-in-time", "Use when validating point-in-time joins, timestamps, revisions, and knowledge dates."),
-    ("Guardrails", "ml4t-guardrail-execution-realism", "Use when pressure-testing fill assumptions, costs, latency, and liquidity realism."),
-    ("Guardrails", "ml4t-guardrail-research-discipline", "Use when enforcing holdout integrity, limited tuning loops, and evidence-preserving research workflow."),
+    (
+        "Concepts",
+        "ml4t-information-ratio",
+        "Use when evaluating strategy quality with information ratio, tracking error, and risk-adjusted active returns.",
+    ),
+    (
+        "Concepts",
+        "ml4t-tcs",
+        "Use when reasoning about the true cost of skill, including friction, uncertainty, and signal decay in trading ML.",
+    ),
+    (
+        "Concepts",
+        "ml4t-parkinson-volatility",
+        "Use when estimating volatility from high-low ranges instead of close-to-close returns.",
+    ),
+    (
+        "Concepts",
+        "ml4t-rolling-sharpe",
+        "Use when measuring time-varying Sharpe behavior and degradation across regimes.",
+    ),
+    (
+        "Concepts",
+        "ml4t-pnl-labeling",
+        "Use when defining labels directly from realized PnL, execution rules, or trade outcomes.",
+    ),
+    (
+        "Concepts",
+        "ml4t-concept-drift",
+        "Use when detecting regime change, model staleness, or feature-target relationship drift.",
+    ),
+    (
+        "Concepts",
+        "ml4t-f1-threshold",
+        "Use when tuning classification thresholds where class balance and trade economics matter more than raw accuracy.",
+    ),
+    (
+        "Concepts",
+        "ml4t-hyperparameter-validation",
+        "Use when validating hyperparameters without contaminating holdout evidence.",
+    ),
+    (
+        "Concepts",
+        "ml4t-neutralization",
+        "Use when removing market, sector, beta, or other common exposures from features or signals.",
+    ),
+    (
+        "Data Acquisition",
+        "ml4t-reddit-ohlc",
+        "Use when sourcing or reconstructing OHLC-style market data from Reddit discussions, posts, or community signals.",
+    ),
+    (
+        "Data Acquisition",
+        "ml4t-whalewisdom",
+        "Use when using WhaleWisdom or 13F-style holdings data in a point-in-time research workflow.",
+    ),
+    (
+        "Data Acquisition",
+        "ml4t-sec-filings",
+        "Use when ingesting SEC filings, fundamentals, or event timestamps for trading models.",
+    ),
+    (
+        "Data Acquisition",
+        "ml4t-quote-data",
+        "Use when handling bid, ask, spread, or quote-derived microstructure data.",
+    ),
+    (
+        "Data Acquisition",
+        "ml4t-tiingo",
+        "Use when working with Tiingo market data, adjusted prices, or corporate actions.",
+    ),
+    (
+        "Data Acquisition",
+        "ml4t-binance",
+        "Use when acquiring Binance spot or derivatives data for crypto trading research.",
+    ),
+    (
+        "Data Acquisition",
+        "ml4t-databento",
+        "Use when using Databento datasets, schemas, and timestamped market data feeds.",
+    ),
+    (
+        "Data Acquisition",
+        "ml4t-polygon",
+        "Use when sourcing equities or options data from Polygon with timestamp and adjustment hygiene.",
+    ),
+    (
+        "Feature Engineering",
+        "ml4t-fracdiff",
+        "Use when applying fractional differencing to preserve memory while reducing non-stationarity.",
+    ),
+    (
+        "Feature Engineering",
+        "ml4t-fte",
+        "Use when building feature transformation pipelines for trading data with strict fit/transform separation.",
+    ),
+    (
+        "Feature Engineering",
+        "ml4t-ohlcv-features",
+        "Use when engineering indicators or statistical features from OHLCV bars.",
+    ),
+    (
+        "Feature Engineering",
+        "ml4t-zscore",
+        "Use when standardizing features with rolling or cross-sectional z-score transforms.",
+    ),
+    (
+        "Feature Engineering",
+        "ml4t-kelly-fraction",
+        "Use when deriving Kelly-style sizing features or decision rules from estimated edge and odds.",
+    ),
+    (
+        "Feature Engineering",
+        "ml4t-feature-importance",
+        "Use when ranking, pruning, or diagnosing trading features with robust importance methods.",
+    ),
+    (
+        "Feature Engineering",
+        "ml4t-clustering",
+        "Use when clustering assets, regimes, or feature states to simplify model structure.",
+    ),
+    (
+        "Feature Engineering",
+        "ml4t-volatility-targeting",
+        "Use when scaling features, forecasts, or positions to a volatility target.",
+    ),
+    (
+        "Evaluation & Validation",
+        "ml4t-backtest-overfitting",
+        "Use when estimating whether backtest performance is overstated by search, selection, or repeated tuning.",
+    ),
+    (
+        "Evaluation & Validation",
+        "ml4t-multiple-testing",
+        "Use when correcting for many trials, many factors, or repeated hypothesis search.",
+    ),
+    (
+        "Evaluation & Validation",
+        "ml4t-walk-forward",
+        "Use when validating models with sequential walk-forward or rolling-origin evaluation.",
+    ),
+    (
+        "Evaluation & Validation",
+        "ml4t-psi",
+        "Use when using population stability index to detect feature drift or train-live mismatch.",
+    ),
+    (
+        "Evaluation & Validation",
+        "ml4t-cpcv",
+        "Use when applying combinatorial purged cross-validation to overlapping trading samples.",
+    ),
+    (
+        "Evaluation & Validation",
+        "ml4t-cv",
+        "Use when choosing cross-validation structure for time series or panel-style trading data.",
+    ),
+    (
+        "Evaluation & Validation",
+        "ml4t-uniqueness",
+        "Use when quantifying sample uniqueness under overlapping labels or event windows.",
+    ),
+    (
+        "Evaluation & Validation",
+        "ml4t-sfi",
+        "Use when using single-feature importance to test whether a feature contributes standalone signal.",
+    ),
+    (
+        "Backtesting",
+        "ml4t-vectorbt",
+        "Use when prototyping vectorized backtests with explicit assumptions around fees, fills, and timing.",
+    ),
+    (
+        "Backtesting",
+        "ml4t-backtrader",
+        "Use when building event-driven backtests in Backtrader and auditing execution assumptions.",
+    ),
+    (
+        "Backtesting",
+        "ml4t-zipline",
+        "Use when working with Zipline-style pipelines, calendars, and execution simulation.",
+    ),
+    (
+        "Backtesting",
+        "ml4t-backtesting-py",
+        "Use when using backtesting.py for fast strategy iteration with realistic parameter discipline.",
+    ),
+    (
+        "Backtesting",
+        "ml4t-slippage",
+        "Use when modeling slippage, spread, queue risk, or impact in a trading simulator.",
+    ),
+    (
+        "Portfolio Management",
+        "ml4t-hrp",
+        "Use when allocating capital with hierarchical risk parity or correlation-aware diversification.",
+    ),
+    (
+        "Portfolio Management",
+        "ml4t-position-sizing",
+        "Use when turning model scores into position sizes under risk and turnover constraints.",
+    ),
+    (
+        "Portfolio Management",
+        "ml4t-risk-management",
+        "Use when defining stop logic, exposure limits, drawdown controls, or kill-switch behavior.",
+    ),
+    (
+        "Infrastructure",
+        "ml4t-fastapi",
+        "Use when exposing research or trading services through FastAPI with operational safeguards.",
+    ),
+    (
+        "Infrastructure",
+        "ml4t-postgres",
+        "Use when storing market data, features, labels, or model artifacts in PostgreSQL.",
+    ),
+    (
+        "Infrastructure",
+        "ml4t-kafka",
+        "Use when designing streaming market-data or event pipelines with Kafka.",
+    ),
+    (
+        "Infrastructure",
+        "ml4t-airflow",
+        "Use when orchestrating scheduled data, training, or backtest workflows with Airflow.",
+    ),
+    (
+        "Workflows",
+        "ml4t-triple-barrier",
+        "Use when labeling events with triple-barrier logic and timestamp-aware exits.",
+    ),
+    (
+        "Workflows",
+        "ml4t-meta-labeling",
+        "Use when stacking a second model on top of primary signals to decide whether to act.",
+    ),
+    (
+        "Workflows",
+        "ml4t-ensemble",
+        "Use when combining multiple models or signals into a more stable trading decision.",
+    ),
+    (
+        "Workflows",
+        "ml4t-point-in-time",
+        "Use when enforcing point-in-time correctness across datasets, features, and joins.",
+    ),
+    (
+        "Workflows",
+        "ml4t-purging",
+        "Use when purging overlapping samples and embargoing adjacent periods during validation.",
+    ),
+    (
+        "Workflows",
+        "ml4t-sbt",
+        "Use when running sequential bootstrap techniques for dependent financial samples.",
+    ),
+    (
+        "Workflows",
+        "ml4t-data-leakage",
+        "Use when auditing a pipeline for leakage across features, labels, joins, scaling, or validation.",
+    ),
+    (
+        "Workflows",
+        "ml4t-case-study-development",
+        "Use when turning a trading idea into a reproducible end-to-end case-study research build.",
+    ),
+    (
+        "Workflows",
+        "ml4t-factor-research",
+        "Use when researching, validating, and pressure-testing factor-style signals before strategy integration.",
+    ),
+    (
+        "Workflows",
+        "ml4t-model-validation",
+        "Use when validating a trading ML model with sequential splits, overlap controls, and economic thresholds.",
+    ),
+    (
+        "Workflows",
+        "ml4t-production-readiness",
+        "Use when deciding whether a research result is operationally and statistically ready to advance toward paper or live trading.",
+    ),
+    (
+        "Workflows",
+        "ml4t-strategy-workflow",
+        "Use when managing the full ML4T strategy workflow from scoping through feature design, validation, backtest, and promotion.",
+    ),
+    (
+        "Production",
+        "ml4t-ibkr",
+        "Use when integrating Interactive Brokers workflows for live or paper trading.",
+    ),
+    (
+        "Production",
+        "ml4t-live-monitoring",
+        "Use when monitoring live predictions, fills, pnl, risk, or model health.",
+    ),
+    (
+        "Production",
+        "ml4t-model-registry",
+        "Use when versioning, promoting, rolling back, or governing trained trading models.",
+    ),
+    (
+        "Production",
+        "ml4t-drift-retraining",
+        "Use when defining retraining triggers, drift thresholds, and promotion criteria.",
+    ),
+    (
+        "Guardrails",
+        "ml4t-guardrail-lookahead-bias",
+        "Use when checking that no feature, label, or execution rule leaks future information.",
+    ),
+    (
+        "Guardrails",
+        "ml4t-guardrail-point-in-time",
+        "Use when validating point-in-time joins, timestamps, revisions, and knowledge dates.",
+    ),
+    (
+        "Guardrails",
+        "ml4t-guardrail-execution-realism",
+        "Use when pressure-testing fill assumptions, costs, latency, and liquidity realism.",
+    ),
+    (
+        "Guardrails",
+        "ml4t-guardrail-research-discipline",
+        "Use when enforcing holdout integrity, limited tuning loops, and evidence-preserving research workflow.",
+    ),
 ]
 
 
 def render_skill(category: str, name: str, description: str) -> str:
     guide = CATEGORY_GUIDES[category]
     title = name.replace("ml4t-", "").replace("-", " ").title()
-    workflow = "\n".join(f"{i}. {step}" for i, step in enumerate(guide["workflow"], start=1))
+    workflow = "\n".join(
+        f"{i}. {step}" for i, step in enumerate(guide["workflow"], start=1)
+    )
     docs = "\n".join(f"- {url}" for url in guide["docs"])
     guardrails = [
         "Do not assume bar close data was tradable at bar open.",
@@ -220,13 +482,17 @@ def render_skill(category: str, name: str, description: str) -> str:
         "Prefer rejecting a result to rationalizing unrealistic assumptions.",
     ]
     if category == "Production":
-        guardrails[0] = "Do not ship a live path without kill-switches, stale-data checks, and rollback."
+        guardrails[0] = (
+            "Do not ship a live path without kill-switches, stale-data checks, and rollback."
+        )
     elif category == "Data Acquisition":
         guardrails[0] = "Do not mix adjusted and unadjusted fields without stating why."
     elif category == "Portfolio Management":
         guardrails[0] = "Do not let sizing logic hide weak alpha quality."
     elif category == "Guardrails":
-        guardrails[0] = "Treat unclear timing as a blocking issue, not a documentation gap."
+        guardrails[0] = (
+            "Treat unclear timing as a blocking issue, not a documentation gap."
+        )
     guardrail_lines = "\n".join(f"- {line}" for line in guardrails)
 
     body = f"""---

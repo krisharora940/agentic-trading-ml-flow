@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 
-def build_regime_features(session: Any, pre_trigger: Any, candidate: Any) -> dict[str, float]:
+def build_regime_features(
+    session: Any, pre_trigger: Any, candidate: Any
+) -> dict[str, float]:
     if pre_trigger.empty:
         return _default_features()
 
@@ -40,7 +42,9 @@ def build_regime_features(session: Any, pre_trigger: Any, candidate: Any) -> dic
         "reg_range_ratio_30": range_ratio_30,
         "reg_pretrigger_bar_count": float(len(pre_trigger)),
         "reg_high_vol_state": 1.0 if vol_ratio > 1.1 else 0.0,
-        "reg_trending_state": 1.0 if abs(trend_strength_10) > 1.0 and chop_10 < 8.0 else 0.0,
+        "reg_trending_state": (
+            1.0 if abs(trend_strength_10) > 1.0 and chop_10 < 8.0 else 0.0
+        ),
     }
 
 

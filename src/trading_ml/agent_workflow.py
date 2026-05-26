@@ -7,23 +7,7 @@ from uuid import uuid4
 from trading_ml.agent_config import load_agent_loop_config
 from trading_ml.config import load_bnr_config, load_databento_manifest
 from trading_ml.agent_nodes import (
-    audit_agent_node,
-    backtest_agent_node,
-    bnr_research_agent_node,
     checkpoint_payload,
-    cto_agent_node,
-    data_steward_agent_node,
-    diagnosis_agent_node,
-    feature_agent_node,
-    governor_agent_node,
-    iteration_controller_node,
-    labeling_agent_node,
-    model_agent_node,
-    program_director_node,
-    promotion_decision_node,
-    search_controller_agent_node,
-    strategy_intake_agent_node,
-    translation_checkpoint_node,
 )
 from trading_ml.agent_state import AgentLoopState, LoopLimits
 from trading_ml.bootstrap import build_initial_project_state
@@ -53,6 +37,8 @@ NODE_SEQUENCE = [
     "promotion_decision",
     "iteration_controller",
 ]
+
+
 def build_agent_loop_state(
     *,
     preapproved_checkpoints: list[str] | None = None,
@@ -66,25 +52,43 @@ def build_agent_loop_state(
     manifest = load_databento_manifest()
     bnr_config = load_bnr_config()
     persisted_memory = load_persisted_research_memory()
-    stage2_source_path = select_manifest_source_path(manifest, timeframe="30s", boundary_role="exploration")
+    stage2_source_path = select_manifest_source_path(
+        manifest, timeframe="30s", boundary_role="exploration"
+    )
     if stage2_source_path is None:
         stage2_source_path = select_manifest_source_path(manifest, timeframe="30s")
     blocking_issues = list(project_state.blocking_issues)
     if manifest.get("symbol"):
-        blocking_issues = [issue for issue in blocking_issues if issue != "No symbols configured yet."]
+        blocking_issues = [
+            issue for issue in blocking_issues if issue != "No symbols configured yet."
+        ]
     if manifest.get("files"):
-        blocking_issues = [issue for issue in blocking_issues if issue != "No Databento manifests loaded yet."]
+        blocking_issues = [
+            issue
+            for issue in blocking_issues
+            if issue != "No Databento manifests loaded yet."
+        ]
     if bnr_config.get("setup", {}).get("name") == "BNR":
-        blocking_issues = [issue for issue in blocking_issues if issue != "No candidate setup rules defined yet."]
+        blocking_issues = [
+            issue
+            for issue in blocking_issues
+            if issue != "No candidate setup rules defined yet."
+        ]
     phase = "exploration" if not blocking_issues else config["graph"]["default_phase"]
-    approvals = {name: False for name, enabled in config["checkpoints"].items() if enabled}
+    approvals = {
+        name: False for name, enabled in config["checkpoints"].items() if enabled
+    }
     for name in preapproved_checkpoints or []:
         if name in approvals:
             approvals[name] = True
     budget_overrides = dict(compute_budget_overrides or {})
     return AgentLoopState(
         run_id=f"bnr-{uuid4().hex[:12]}",
-        runtime_profile=runtime_profile if runtime_profile in {"bounded_autonomous", "unattended"} else "standard",
+        runtime_profile=(
+            runtime_profile
+            if runtime_profile in {"bounded_autonomous", "unattended"}
+            else "standard"
+        ),
         auto_accept_robust=auto_accept_robust,
         program_state=build_program_state(),
         next_step_plan={},
@@ -97,7 +101,11 @@ def build_agent_loop_state(
         research_intake={},
         phase=phase,
         current_node="start",
-        evidence_boundary=project_state.evidence_boundary.to_dict() if hasattr(project_state.evidence_boundary, "to_dict") else asdict(project_state.evidence_boundary),
+        evidence_boundary=(
+            project_state.evidence_boundary.to_dict()
+            if hasattr(project_state.evidence_boundary, "to_dict")
+            else asdict(project_state.evidence_boundary)
+        ),
         bnr_spec=bnr_config,
         label_spec={},
         feature_spec={},
@@ -111,15 +119,29 @@ def build_agent_loop_state(
                 "symbol": manifest.get("symbol", "MNQ"),
                 "timeframe": "30s",
                 "timezone": manifest.get("timezone", "America/New_York"),
-                "earliest_trigger_time": bnr_config.get("frozen_benchmark", {}).get("setup_earliest_trigger_time", bnr_config["phases"]["entry"]["earliest_entry_time"]),
+                "earliest_trigger_time": bnr_config.get("frozen_benchmark", {}).get(
+                    "setup_earliest_trigger_time",
+                    bnr_config["phases"]["entry"]["earliest_entry_time"],
+                ),
                 "latest_trigger_time": "11:00:00",
-                "horizon_bars": bnr_config.get("frozen_benchmark", {}).get("setup_horizon_bars", bnr_config["label_v1"]["horizon_bars"]),
+                "horizon_bars": bnr_config.get("frozen_benchmark", {}).get(
+                    "setup_horizon_bars", bnr_config["label_v1"]["horizon_bars"]
+                ),
                 "stop_multiple": bnr_config["label_v1"]["stop_r"],
-                "target_multiple": bnr_config.get("frozen_benchmark", {}).get("setup_target_multiple", bnr_config["label_v1"]["target_r"]),
-                "break_buffer_points": bnr_config.get("frozen_benchmark", {}).get("setup_break_buffer_points", bnr_config["phases"]["break"]["minimum_break_magnitude_points"]),
+                "target_multiple": bnr_config.get("frozen_benchmark", {}).get(
+                    "setup_target_multiple", bnr_config["label_v1"]["target_r"]
+                ),
+                "break_buffer_points": bnr_config.get("frozen_benchmark", {}).get(
+                    "setup_break_buffer_points",
+                    bnr_config["phases"]["break"]["minimum_break_magnitude_points"],
+                ),
                 "spec_name": bnr_config["setup"]["name"],
-                "model_family": bnr_config.get("frozen_benchmark", {}).get("model_family", "linear_baseline"),
-                "feature_family": bnr_config.get("frozen_benchmark", {}).get("feature_family", "all_features"),
+                "model_family": bnr_config.get("frozen_benchmark", {}).get(
+                    "model_family", "linear_baseline"
+                ),
+                "feature_family": bnr_config.get("frozen_benchmark", {}).get(
+                    "feature_family", "all_features"
+                ),
             }
             if stage2_source_path
             else {}
@@ -132,14 +154,46 @@ def build_agent_loop_state(
         executed_family_cycle=0,
         search_batch_status="pending",
         execution_mode="full_validation",
+        execute_research_actions=True,
         compute_budgets={
-            "max_runtime_seconds": int(budget_overrides.get("max_runtime_seconds", config["limits"].get("max_runtime_seconds", 1800))),
-            "max_trials": int(budget_overrides.get("max_trials", config["limits"].get("max_trials", 50))),
-            "max_full_validations": int(budget_overrides.get("max_full_validations", config["limits"].get("max_full_validations", 3))),
-            "max_cpcv_runs": int(budget_overrides.get("max_cpcv_runs", config["limits"].get("max_cpcv_runs", 3))),
-            "max_model_trains": int(budget_overrides.get("max_model_trains", config["limits"].get("max_model_trains", 25))),
-            "reuse_artifacts": bool(budget_overrides.get("reuse_artifacts", config["limits"].get("reuse_artifacts", True))),
-            "stop_on_budget_exhaustion": bool(budget_overrides.get("stop_on_budget_exhaustion", config["limits"].get("stop_on_budget_exhaustion", True))),
+            "max_runtime_seconds": int(
+                budget_overrides.get(
+                    "max_runtime_seconds",
+                    config["limits"].get("max_runtime_seconds", 1800),
+                )
+            ),
+            "max_trials": int(
+                budget_overrides.get(
+                    "max_trials", config["limits"].get("max_trials", 50)
+                )
+            ),
+            "max_full_validations": int(
+                budget_overrides.get(
+                    "max_full_validations",
+                    config["limits"].get("max_full_validations", 3),
+                )
+            ),
+            "max_cpcv_runs": int(
+                budget_overrides.get(
+                    "max_cpcv_runs", config["limits"].get("max_cpcv_runs", 3)
+                )
+            ),
+            "max_model_trains": int(
+                budget_overrides.get(
+                    "max_model_trains", config["limits"].get("max_model_trains", 25)
+                )
+            ),
+            "reuse_artifacts": bool(
+                budget_overrides.get(
+                    "reuse_artifacts", config["limits"].get("reuse_artifacts", True)
+                )
+            ),
+            "stop_on_budget_exhaustion": bool(
+                budget_overrides.get(
+                    "stop_on_budget_exhaustion",
+                    config["limits"].get("stop_on_budget_exhaustion", True),
+                )
+            ),
         },
         budget_usage={
             "runtime_seconds": 0,
@@ -165,12 +219,21 @@ def build_agent_loop_state(
         active_hypothesis={},
         bnr_attempts=[],
         failure_clusters=[],
+        responsibility_boundaries={},
+        state_ontology={},
+        research_branch_status=[],
         price_action_expert={},
         desk_summary={},
         desk_proposals=[],
+        research_action_plan={},
+        red_team_review={},
+        research_action_result={},
+        marginal_evidence={},
         desk_memory=list(persisted_memory.get("desk_memory", [])),
         failure_memory=list(persisted_memory.get("failure_memory", [])),
-        research_action_history=list(persisted_memory.get("research_action_history", [])),
+        research_action_history=list(
+            persisted_memory.get("research_action_history", [])
+        ),
         candidate_setups_defined=False,
         promotion_decision="revise",
         holdout_consumed=False,

@@ -1,6 +1,9 @@
 import unittest
 
-from trading_ml.bnr_subtypes import classify_candidate_subtype, filter_candidates_by_subtype
+from trading_ml.bnr_subtypes import (
+    classify_candidate_subtype,
+    filter_candidates_by_subtype,
+)
 from trading_ml.stage2_bnr import BNRZone, CandidateSetup
 
 
@@ -47,8 +50,13 @@ class BNRSubtypesTests(unittest.TestCase):
                 "continuation_displacement_ratio": 0.8,
             },
         )
-        self.assertEqual(classify_candidate_subtype(candidate), "clean_break_continuation")
-        self.assertEqual(len(filter_candidates_by_subtype([candidate], "clean_break_continuation")), 1)
+        self.assertEqual(
+            classify_candidate_subtype(candidate), "clean_break_continuation"
+        )
+        self.assertEqual(
+            len(filter_candidates_by_subtype([candidate], "clean_break_continuation")),
+            1,
+        )
 
 
 if __name__ == "__main__":

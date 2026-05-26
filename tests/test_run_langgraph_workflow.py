@@ -5,7 +5,9 @@ from pathlib import Path
 
 
 def _load_module():
-    module_path = Path(__file__).resolve().parents[1] / "tools" / "run_langgraph_workflow.py"
+    module_path = (
+        Path(__file__).resolve().parents[1] / "tools" / "run_langgraph_workflow.py"
+    )
     spec = importlib.util.spec_from_file_location("run_langgraph_workflow", module_path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -24,12 +26,22 @@ def test_build_run_summary_includes_core_research_decision(tmp_path):
         "next_step_plan": {"selected_family": "setup"},
         "active_hypothesis": {"hypothesis_id": "H-1", "claim": "Test claim"},
         "search_batch_status": "complete",
-        "search_results": {"trial_count": 6, "batch_decision": "revise", "family": "setup"},
+        "search_results": {
+            "trial_count": 6,
+            "batch_decision": "revise",
+            "family": "setup",
+        },
         "translation_summary": {"translation_status": "pass"},
         "promotion_decision": "freeze",
         "blocking_issues": [],
         "run_log": [
-            {"actor": "promotion_decision", "payload": {"decision": "freeze", "promotion_gate": {"cpcv_status": "fail"}}},
+            {
+                "actor": "promotion_decision",
+                "payload": {
+                    "decision": "freeze",
+                    "promotion_gate": {"cpcv_status": "fail"},
+                },
+            },
             {"actor": "iteration_controller", "payload": {"continue_iteration": False}},
         ],
     }

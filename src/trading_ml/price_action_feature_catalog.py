@@ -21,6 +21,7 @@ DEFAULT_GROUP_ORDER = [
     "structure",
     "liquidity",
     "auction",
+    "continuation_lifecycle",
 ]
 
 KEYWORD_GROUP_MAP: dict[str, tuple[str, ...]] = {
@@ -36,10 +37,12 @@ KEYWORD_GROUP_MAP: dict[str, tuple[str, ...]] = {
     "volume": ("volatility", "momentum", "auction"),
     "wick": ("candles", "structure"),
     "chop": ("auction", "structure", "candles"),
-    "repair": ("structure", "liquidity"),
     "followthrough": ("momentum", "candles"),
+    "decay": ("continuation_lifecycle",),
+    "repair": ("structure", "liquidity", "continuation_lifecycle"),
     "liquidity": ("liquidity",),
     "auction": ("auction",),
+    "state": ("auction", "continuation_lifecycle"),
     "structure": ("structure",),
     "momentum": ("momentum",),
     "volatility": ("volatility",),
@@ -47,11 +50,16 @@ KEYWORD_GROUP_MAP: dict[str, tuple[str, ...]] = {
 }
 
 CLUSTER_GROUP_MAP: dict[str, tuple[str, ...]] = {
-    "no_follow_through": ("momentum", "candles", "auction"),
-    "weak_continuation": ("momentum", "candles", "auction"),
-    "deep_retrace_failure": ("structure", "liquidity", "auction"),
+    "no_follow_through": ("momentum", "candles", "auction", "continuation_lifecycle"),
+    "weak_continuation": ("momentum", "candles", "auction", "continuation_lifecycle"),
+    "deep_retrace_failure": (
+        "structure",
+        "liquidity",
+        "auction",
+        "continuation_lifecycle",
+    ),
     "no_reclaim_edge": ("liquidity", "structure", "momentum"),
-    "failed_breakout": ("liquidity", "momentum", "structure"),
+    "failed_breakout": ("liquidity", "momentum", "structure", "continuation_lifecycle"),
 }
 
 GROUP_LABS: dict[str, str] = {
@@ -61,6 +69,7 @@ GROUP_LABS: dict[str, str] = {
     "structure": "structure_repair_lab",
     "liquidity": "liquidity_context_lab",
     "auction": "auction_context_lab",
+    "continuation_lifecycle": "continuation_lifecycle_lab",
 }
 
 RISK_RANK = {"low": 0, "medium": 1, "high": 2}
@@ -107,11 +116,15 @@ def build_catalog_feature_proposals(
     )
     return {
         **intake,
-        "feature_claim": _feature_claim(top_cluster or {}, intake.get("feature_catalog_candidates", [])),
+        "feature_claim": _feature_claim(
+            top_cluster or {}, intake.get("feature_catalog_candidates", [])
+        ),
     }
 
 
-def build_strategy_intake(strategy_notes: str, bnr_spec: dict[str, Any] | None = None) -> dict[str, Any]:
+def build_strategy_intake(
+    strategy_notes: str, bnr_spec: dict[str, Any] | None = None
+) -> dict[str, Any]:
     return build_feature_catalog_intake(strategy_notes, bnr_spec=bnr_spec)
 
 
@@ -127,7 +140,9 @@ def build_feature_catalog_intake(
     lower = notes.lower()
     selected_groups = _select_groups(lower, top_cluster or {}, catalog)
     feature_index = build_feature_catalog_index()
-    candidates = _rank_feature_candidates(feature_index, selected_groups, lower, top_cluster or {}, limit=limit)
+    candidates = _rank_feature_candidates(
+        feature_index, selected_groups, lower, top_cluster or {}, limit=limit
+    )
     backlog = _feature_backlog(selected_groups, catalog)
     research_questions = _build_research_questions(lower, top_cluster or {}, candidates)
     return {
@@ -176,7 +191,9 @@ def _normalize_catalog(raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _select_groups(lower_notes: str, top_cluster: dict[str, Any], catalog: dict[str, Any]) -> list[str]:
+def _select_groups(
+    lower_notes: str, top_cluster: dict[str, Any], catalog: dict[str, Any]
+) -> list[str]:
     selected: list[str] = []
     for keyword, groups in KEYWORD_GROUP_MAP.items():
         if keyword in lower_notes:
@@ -193,7 +210,9 @@ def _select_groups(lower_notes: str, top_cluster: dict[str, Any], catalog: dict[
         for group in DEFAULT_GROUP_ORDER:
             if group in catalog.get("groups", {}):
                 selected.append(group)
-    if "auction" not in selected and any(token in lower_notes for token in ("open", "opening", "session")):
+    if "auction" not in selected and any(
+        token in lower_notes for token in ("open", "opening", "session")
+    ):
         if "auction" in catalog.get("groups", {}):
             selected.append("auction")
     return selected
@@ -224,7 +243,9 @@ def _rank_feature_candidates(
         group = str(spec.get("category", ""))
         if group not in selected_groups:
             continue
-        score = _feature_score(name, spec, requested_terms, cluster_focus, selected_groups)
+        score = _feature_score(
+            name, spec, requested_terms, cluster_focus, selected_groups
+        )
         ranked.append(
             {
                 "feature_name": name,
@@ -286,7 +307,9 @@ def _feature_score(
     return score
 
 
-def _feature_backlog(selected_groups: list[str], catalog: dict[str, Any]) -> dict[str, list[str]]:
+def _feature_backlog(
+    selected_groups: list[str], catalog: dict[str, Any]
+) -> dict[str, list[str]]:
     groups = dict(catalog.get("groups", {}) or {})
     return {
         group: list(dict(groups.get(group, {}) or {}).get("features", []) or [])
@@ -295,7 +318,9 @@ def _feature_backlog(selected_groups: list[str], catalog: dict[str, Any]) -> dic
     }
 
 
-def _build_research_questions(lower_notes: str, top_cluster: dict[str, Any], candidates: list[dict[str, Any]]) -> list[str]:
+def _build_research_questions(
+    lower_notes: str, top_cluster: dict[str, Any], candidates: list[dict[str, Any]]
+) -> list[str]:
     family = str(top_cluster.get("family", "unknown") or "unknown")
     recommended = str(top_cluster.get("recommended_family", "") or "")
     questions = [
@@ -304,11 +329,17 @@ def _build_research_questions(lower_notes: str, top_cluster: dict[str, Any], can
         "Which points-in-time signals improve BNR eligibility without adding path-specific leakage?",
     ]
     if "vwap" in lower_notes:
-        questions.append("How does VWAP location interact with reclaim quality and continuation quality?")
+        questions.append(
+            "How does VWAP location interact with reclaim quality and continuation quality?"
+        )
     if "volume" in lower_notes:
-        questions.append("Does volume expansion at the break or reclaim survive CPCV and plumbing controls?")
+        questions.append(
+            "Does volume expansion at the break or reclaim survive CPCV and plumbing controls?"
+        )
     if candidates:
-        questions.append(f"Can {candidates[0]['feature_name']} improve the cluster's weakest failure mode?")
+        questions.append(
+            f"Can {candidates[0]['feature_name']} improve the cluster's weakest failure mode?"
+        )
     return questions
 
 
@@ -316,7 +347,9 @@ def _next_feature_labs(selected_groups: list[str]) -> list[str]:
     return [GROUP_LABS[group] for group in selected_groups if group in GROUP_LABS]
 
 
-def _feature_claim(top_cluster: dict[str, Any], candidates: list[dict[str, Any]]) -> str:
+def _feature_claim(
+    top_cluster: dict[str, Any], candidates: list[dict[str, Any]]
+) -> str:
     if not candidates:
         return "No catalog-backed feature candidates available yet."
     top_family = str(top_cluster.get("family", "BNR") or "BNR")

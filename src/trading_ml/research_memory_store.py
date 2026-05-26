@@ -15,9 +15,17 @@ DESK_MEMORY_PATH = MEMORY_DIR / "desk_memory.jsonl"
 
 def load_persisted_research_memory() -> dict[str, list[dict[str, Any]]]:
     return {
-        "failure_memory": _dedupe_by_signature(_read_jsonl(FAILURE_MEMORY_PATH), keys=("family", "hypothesis_id", "failure_type", "status")),
-        "research_action_history": _dedupe_by_signature(_read_jsonl(ACTION_HISTORY_PATH), keys=("action_id", "family", "hypothesis_id", "proposal_id")),
-        "desk_memory": _dedupe_by_signature(_read_jsonl(DESK_MEMORY_PATH), keys=("proposal_id",)),
+        "failure_memory": _dedupe_by_signature(
+            _read_jsonl(FAILURE_MEMORY_PATH),
+            keys=("family", "hypothesis_id", "failure_type", "status"),
+        ),
+        "research_action_history": _dedupe_by_signature(
+            _read_jsonl(ACTION_HISTORY_PATH),
+            keys=("action_id", "family", "hypothesis_id", "proposal_id"),
+        ),
+        "desk_memory": _dedupe_by_signature(
+            _read_jsonl(DESK_MEMORY_PATH), keys=("proposal_id",)
+        ),
     }
 
 
@@ -56,7 +64,9 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def _dedupe_by_signature(rows: list[dict[str, Any]], *, keys: tuple[str, ...]) -> list[dict[str, Any]]:
+def _dedupe_by_signature(
+    rows: list[dict[str, Any]], *, keys: tuple[str, ...]
+) -> list[dict[str, Any]]:
     seen: set[tuple[str, ...]] = set()
     deduped: list[dict[str, Any]] = []
     for row in rows:

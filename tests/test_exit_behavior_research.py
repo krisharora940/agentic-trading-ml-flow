@@ -15,7 +15,9 @@ class ExitBehaviorResearchTests(unittest.TestCase):
         self.assertIn("bounded_replay_existing_entries", space["stages"])
         self.assertIn("model_training", space["disallowed_knobs"])
         self.assertIn("holdout", space["disallowed_knobs"])
-        self.assertEqual(space["max_batch_trials"], len(space["bounded_replay_variants"]))
+        self.assertEqual(
+            space["max_batch_trials"], len(space["bounded_replay_variants"])
+        )
 
     def test_research_controller_exposes_exit_behavior_space(self) -> None:
         space = build_exit_behavior_research_search_space()

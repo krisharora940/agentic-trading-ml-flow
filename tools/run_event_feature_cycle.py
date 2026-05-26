@@ -15,9 +15,18 @@ def main() -> None:
     state = build_agent_loop_state()
     bnr_config = load_bnr_config()
     benchmark = dict(bnr_config.get("frozen_benchmark", {}))
-    benchmark_name = str(bnr_config.get("controller", {}).get("benchmark_name", "bnr_benchmark"))
+    benchmark_name = str(
+        bnr_config.get("controller", {}).get("benchmark_name", "bnr_benchmark")
+    )
     threshold = float(benchmark.get("threshold", 0.6))
-    feature_families = [benchmark.get("feature_family", "pre_trigger_context"), *list(bnr_config.get("feature_search_v1", {}).get("space", {}).get("feature_family", []))]
+    feature_families = [
+        benchmark.get("feature_family", "pre_trigger_context"),
+        *list(
+            bnr_config.get("feature_search_v1", {})
+            .get("space", {})
+            .get("feature_family", [])
+        ),
+    ]
 
     rows: list[dict] = []
     seen: set[str] = set()
@@ -29,9 +38,17 @@ def main() -> None:
         config["feature_family"] = str(family)
         result = run_stage2_research_engine(Stage2Config(**config))
         validation = build_validation_audit(result, {})
-        stitched_records = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []))
-        execution = run_event_driven_policy_backtest(stitched_records, threshold=threshold)
-        utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+        stitched_records = list(
+            validation.get("walk_forward", {}).get("stitched_prediction_records", [])
+        )
+        execution = run_event_driven_policy_backtest(
+            stitched_records, threshold=threshold
+        )
+        utility = (
+            compute_execution_utility(execution)
+            if execution.get("status") == "complete"
+            else {"score": None}
+        )
         rows.append(
             {
                 "feature_family": str(family),
@@ -47,7 +64,14 @@ def main() -> None:
             }
         )
 
-    ranked = sorted(rows, key=lambda row: (float(row["utility_score"] or float("-inf")), row["total_pnl_r"]), reverse=True)
+    ranked = sorted(
+        rows,
+        key=lambda row: (
+            float(row["utility_score"] or float("-inf")),
+            row["total_pnl_r"],
+        ),
+        reverse=True,
+    )
     payload = {
         "benchmark_name": benchmark_name,
         "threshold": threshold,
@@ -56,7 +80,9 @@ def main() -> None:
         "best_feature_family": ranked[0] if ranked else None,
     }
     output_path = Path("reports") / f"{benchmark_name}_event_feature_cycle.json"
-    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8")
+    output_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8"
+    )
     print(json.dumps(payload, indent=2, sort_keys=True, default=str))
 
 

@@ -11,7 +11,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from trading_ml.paths import REPORTS_DIR
+from trading_ml.paths import REPORTS_DIR  # noqa: E402
 
 
 SOURCE_REPORT = REPORTS_DIR / "exploration_benchmark_diagnostics.json"
@@ -21,7 +21,9 @@ MAX_PATHS = 6
 
 def main() -> None:
     payload = build_cpcv_failure_attribution(SOURCE_REPORT)
-    OUTPUT_REPORT.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    OUTPUT_REPORT.write_text(
+        json.dumps(payload, indent=2, default=str), encoding="utf-8"
+    )
     print(json.dumps(payload, indent=2, default=str))
 
 
@@ -38,7 +40,9 @@ def build_cpcv_failure_attribution(source_report: Path) -> dict[str, Any]:
     worst_paths = list(cpcv.get("worst_paths", []) or [])
     best_paths = list(cpcv.get("best_paths", []) or [])
     candidate_paths = worst_paths[:3] + best_paths[:3]
-    artifact_refs = [row.get("rows_artifact") for row in candidate_paths if row.get("rows_artifact")]
+    artifact_refs = [
+        row.get("rows_artifact") for row in candidate_paths if row.get("rows_artifact")
+    ]
     if not artifact_refs:
         return _incomplete(
             reason="missing_persisted_cpcv_rows",
@@ -57,7 +61,9 @@ def build_cpcv_failure_attribution(source_report: Path) -> dict[str, Any]:
         if not path.exists():
             missing_refs.append(ref)
             continue
-        loaded_paths.append({"summary": row, "rows": json.loads(path.read_text(encoding="utf-8"))})
+        loaded_paths.append(
+            {"summary": row, "rows": json.loads(path.read_text(encoding="utf-8"))}
+        )
 
     if not loaded_paths:
         return _incomplete(
@@ -162,15 +168,21 @@ def _top_group(rows: list[dict[str, Any]], column: str) -> dict[str, Any] | None
     counts: dict[str, dict[str, Any]] = {}
     for row in rows:
         key = str(row.get(column, "unknown"))
-        bucket = counts.setdefault(key, {"key": key, "trade_count": 0, "total_pnl_r": 0.0})
+        bucket = counts.setdefault(
+            key, {"key": key, "trade_count": 0, "total_pnl_r": 0.0}
+        )
         bucket["trade_count"] += 1
         bucket["total_pnl_r"] += float(row.get("executed_pnl_r", 0.0) or 0.0)
     if not counts:
         return None
-    return max(counts.values(), key=lambda item: (item["trade_count"], -item["total_pnl_r"]))
+    return max(
+        counts.values(), key=lambda item: (item["trade_count"], -item["total_pnl_r"])
+    )
 
 
-def _binary_state_group(rows: list[dict[str, Any]], column: str) -> dict[str, Any] | None:
+def _binary_state_group(
+    rows: list[dict[str, Any]], column: str
+) -> dict[str, Any] | None:
     normalized: list[dict[str, Any]] = []
     for row in rows:
         copy = dict(row)
@@ -180,7 +192,9 @@ def _binary_state_group(rows: list[dict[str, Any]], column: str) -> dict[str, An
 
 
 def _probability_bucket(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
-    buckets: dict[str, dict[str, Any]] = defaultdict(lambda: {"trade_count": 0, "total_pnl_r": 0.0})
+    buckets: dict[str, dict[str, Any]] = defaultdict(
+        lambda: {"trade_count": 0, "total_pnl_r": 0.0}
+    )
     for row in rows:
         prob = float(row.get("probability", 0.0) or 0.0)
         if prob < 0.55:
@@ -193,7 +207,10 @@ def _probability_bucket(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
         buckets[key]["total_pnl_r"] += float(row.get("executed_pnl_r", 0.0) or 0.0)
     if not buckets:
         return None
-    key, value = max(buckets.items(), key=lambda item: (item[1]["trade_count"], -item[1]["total_pnl_r"]))
+    key, value = max(
+        buckets.items(),
+        key=lambda item: (item[1]["trade_count"], -item[1]["total_pnl_r"]),
+    )
     return {"key": key, **value}
 
 

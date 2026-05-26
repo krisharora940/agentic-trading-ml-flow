@@ -90,7 +90,9 @@ def apply_feature_family(features: Any, family: str) -> Any:
 
     keep = {"candidate_id", "session_date", "setup_subtype"}
     if family == "engineer_indicators":
-        keep.update(column for column in features.columns if str(column).startswith("eng_"))
+        keep.update(
+            column for column in features.columns if str(column).startswith("eng_")
+        )
     elif family == "bnr_core":
         keep.update(FAMILY_COLUMNS["bnr_geometry"])
         keep.update(FAMILY_COLUMNS["pivot_reclaim"])
@@ -101,7 +103,9 @@ def apply_feature_family(features: Any, family: str) -> Any:
     elif family == "bnr_plus_engineer":
         keep.update(FAMILY_COLUMNS["bnr_geometry"])
         keep.update(FAMILY_COLUMNS["pivot_reclaim"])
-        keep.update(column for column in features.columns if str(column).startswith("eng_"))
+        keep.update(
+            column for column in features.columns if str(column).startswith("eng_")
+        )
     elif family == "context_plus_reclaim":
         keep.update(FAMILY_COLUMNS["pre_trigger_context"])
         keep.update(FAMILY_COLUMNS["pivot_reclaim"])
@@ -110,7 +114,9 @@ def apply_feature_family(features: Any, family: str) -> Any:
         keep.update(FAMILY_COLUMNS["bnr_geometry"])
     elif family == "reclaim_plus_engineer":
         keep.update(FAMILY_COLUMNS["pivot_reclaim"])
-        keep.update(column for column in features.columns if str(column).startswith("eng_"))
+        keep.update(
+            column for column in features.columns if str(column).startswith("eng_")
+        )
     elif family == "context_plus_regime":
         keep.update(FAMILY_COLUMNS["pre_trigger_context"])
         keep.update(FAMILY_COLUMNS["regime_features"])

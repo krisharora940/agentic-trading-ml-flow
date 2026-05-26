@@ -21,7 +21,11 @@ def build_stitched_performance_summary(
         return {"status": "pending", "reason": "invalid_prediction_records"}
 
     frame["entry_time"] = pd.to_datetime(frame["entry_time"], errors="coerce", utc=True)
-    frame = frame.dropna(subset=["entry_time"]).sort_values("entry_time").reset_index(drop=True)
+    frame = (
+        frame.dropna(subset=["entry_time"])
+        .sort_values("entry_time")
+        .reset_index(drop=True)
+    )
     trades = frame[frame["probability"] >= float(threshold)].copy()
     if trades.empty:
         return {

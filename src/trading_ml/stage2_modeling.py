@@ -22,9 +22,13 @@ class ModelRunSummary:
         return asdict(self)
 
 
-def train_baseline_classifier(features: Any, labels: Any, *, model_family: str = "linear_baseline") -> ModelRunSummary:
+def train_baseline_classifier(
+    features: Any, labels: Any, *, model_family: str = "linear_baseline"
+) -> ModelRunSummary:
     pd, _np = _require_pandas_numpy()
-    _, brier_score_loss, precision_score, recall_score, roc_auc_score = _require_sklearn_metrics()
+    _, brier_score_loss, precision_score, recall_score, roc_auc_score = (
+        _require_sklearn_metrics()
+    )
 
     merged = features.merge(labels, on="candidate_id", how="inner")
     if len(merged) < 10 or merged["label"].nunique() < 2:
@@ -36,7 +40,11 @@ def train_baseline_classifier(features: Any, labels: Any, *, model_family: str =
             positive_rate_train=0.0,
             positive_rate_test=float(merged["label"].mean()) if len(merged) else 0.0,
             avg_entry_price=float(labels["entry_price"].mean()) if len(labels) else 0.0,
-            avg_risk_points=float((labels["entry_price"] - labels["stop_price"]).abs().mean()) if len(labels) else 0.0,
+            avg_risk_points=(
+                float((labels["entry_price"] - labels["stop_price"]).abs().mean())
+                if len(labels)
+                else 0.0
+            ),
             metrics={},
             prediction_records=[],
             status="insufficient_class_diversity",
@@ -49,14 +57,30 @@ def train_baseline_classifier(features: Any, labels: Any, *, model_family: str =
     feature_cols = [
         col
         for col in merged.columns
-        if col not in {"candidate_id", "session_date", "label", "entry_price", "stop_price", "target_price", "exit_price", "bars_held", "mfe", "mae", "pnl_r"} and pd.api.types.is_numeric_dtype(merged[col])
+        if col
+        not in {
+            "candidate_id",
+            "session_date",
+            "label",
+            "entry_price",
+            "stop_price",
+            "target_price",
+            "exit_price",
+            "bars_held",
+            "mfe",
+            "mae",
+            "pnl_r",
+        }
+        and pd.api.types.is_numeric_dtype(merged[col])
     ]
     model_name, model = build_classifier(model_family)
     model.fit(train[feature_cols], train["label"])
     probabilities = model.predict_proba(test[feature_cols])[:, 1]
     predictions = (probabilities >= 0.5).astype(int)
     metrics = {
-        "precision": float(precision_score(test["label"], predictions, zero_division=0)),
+        "precision": float(
+            precision_score(test["label"], predictions, zero_division=0)
+        ),
         "recall": float(recall_score(test["label"], predictions, zero_division=0)),
         "brier": float(brier_score_loss(test["label"], probabilities)),
     }
@@ -75,7 +99,9 @@ def train_baseline_classifier(features: Any, labels: Any, *, model_family: str =
         positive_rate_train=float(train["label"].mean()),
         positive_rate_test=float(test["label"].mean()),
         avg_entry_price=float(merged["entry_price"].mean()),
-        avg_risk_points=float((merged["entry_price"] - merged["stop_price"]).abs().mean()),
+        avg_risk_points=float(
+            (merged["entry_price"] - merged["stop_price"]).abs().mean()
+        ),
         metrics=metrics,
         prediction_records=prediction_records.to_dict(orient="records"),
         status="fit",
@@ -97,7 +123,9 @@ def build_classifier(model_family: str) -> tuple[str, Any]:
             "hist_gradient_boosting",
             make_pipeline(
                 SimpleImputer(strategy="median"),
-                HistGradientBoostingClassifier(max_depth=4, learning_rate=0.05, max_iter=200),
+                HistGradientBoostingClassifier(
+                    max_depth=4, learning_rate=0.05, max_iter=200
+                ),
             ),
         )
     return (
@@ -117,13 +145,17 @@ def score_model_split(
     model_family: str,
     feature_cols: list[str],
 ) -> dict[str, Any]:
-    _, brier_score_loss, precision_score, recall_score, roc_auc_score = _require_sklearn_metrics()
+    _, brier_score_loss, precision_score, recall_score, roc_auc_score = (
+        _require_sklearn_metrics()
+    )
     model_name, model = build_classifier(model_family)
     model.fit(train[feature_cols], train["label"])
     probabilities = model.predict_proba(test[feature_cols])[:, 1]
     predictions = (probabilities >= 0.5).astype(int)
     metrics = {
-        "precision": float(precision_score(test["label"], predictions, zero_division=0)),
+        "precision": float(
+            precision_score(test["label"], predictions, zero_division=0)
+        ),
         "recall": float(recall_score(test["label"], predictions, zero_division=0)),
         "brier": float(brier_score_loss(test["label"], probabilities)),
     }
@@ -150,7 +182,12 @@ def _require_pandas_numpy():
 
 def _require_sklearn_metrics():
     try:
-        from sklearn.metrics import brier_score_loss, precision_score, recall_score, roc_auc_score
+        from sklearn.metrics import (
+            brier_score_loss,
+            precision_score,
+            recall_score,
+            roc_auc_score,
+        )
     except ImportError as exc:
         raise RuntimeError("Stage 2 modeling requires scikit-learn.") from exc
     return None, brier_score_loss, precision_score, recall_score, roc_auc_score

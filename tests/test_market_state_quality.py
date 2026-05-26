@@ -49,9 +49,16 @@ class MarketStateQualityTests(unittest.TestCase):
         config = Stage2Config(source_path="/tmp/exploration.parquet")
         with mock.patch(
             "trading_ml.market_state_quality._build_point_in_time_inputs",
-            return_value=(features, labels, {"feature_audit": {"failed": 0, "issues": []}, "config": {}}),
+            return_value=(
+                features,
+                labels,
+                {"feature_audit": {"failed": 0, "issues": []}, "config": {}},
+            ),
         ):
-            with mock.patch("trading_ml.market_state_quality._diagnostic_config", return_value=config):
+            with mock.patch(
+                "trading_ml.market_state_quality._diagnostic_config",
+                return_value=config,
+            ):
                 result = build_market_state_setup_quality_diagnostic(state)
 
         self.assertEqual(result["status"], "complete")
@@ -63,7 +70,9 @@ class MarketStateQualityTests(unittest.TestCase):
         self.assertIn("candidate_counts_by_state", result)
         self.assertIn("pnl_by_state", result)
         self.assertEqual(result["cheap_state_policy_simulation"]["status"], "complete")
-        self.assertEqual(len(result["cheap_state_policy_simulation"]["policy_variants"]), 7)
+        self.assertEqual(
+            len(result["cheap_state_policy_simulation"]["policy_variants"]), 7
+        )
         self.assertEqual(result["leakage_audit"]["status"], "pass")
 
 

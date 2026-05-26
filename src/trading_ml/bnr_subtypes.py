@@ -26,7 +26,11 @@ def classify_candidate_subtype(candidate: Any) -> str:
 def filter_candidates_by_subtype(candidates: list[Any], subtype: str) -> list[Any]:
     if subtype in {"", "all", "all_subtypes"}:
         return candidates
-    return [candidate for candidate in candidates if classify_candidate_subtype(candidate) == subtype]
+    return [
+        candidate
+        for candidate in candidates
+        if classify_candidate_subtype(candidate) == subtype
+    ]
 
 
 def list_bnr_subtypes() -> list[str]:

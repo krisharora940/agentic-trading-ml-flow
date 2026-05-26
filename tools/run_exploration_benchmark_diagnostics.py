@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 
 from trading_ml.agent_workflow import build_agent_loop_state
 from trading_ml.diagnostic_adapter import prepare_diagnostic_runtime
@@ -25,13 +24,19 @@ def main() -> None:
         artifact_context={"run_id": state.get("run_id")},
     )
     shap_analysis = result.get("model_diagnostics", {}).get("shap_analysis", {})
-    stitched = list(audit.get("walk_forward", {}).get("stitched_prediction_records", []))
+    stitched = list(
+        audit.get("walk_forward", {}).get("stitched_prediction_records", [])
+    )
     translation = build_translation_analysis(
         result,
         prediction_records=stitched or None,
         sizing_policy=state.get("controller_state", {}).get("benchmark_sizing_policy"),
-        regime_throttle_policy=state.get("controller_state", {}).get("benchmark_regime_throttle_policy"),
-        regime_size_policy=state.get("controller_state", {}).get("benchmark_regime_size_policy"),
+        regime_throttle_policy=state.get("controller_state", {}).get(
+            "benchmark_regime_throttle_policy"
+        ),
+        regime_size_policy=state.get("controller_state", {}).get(
+            "benchmark_regime_size_policy"
+        ),
     )
     best_translation = dict(translation.get("best_threshold", {}))
     payload = {
@@ -39,7 +44,9 @@ def main() -> None:
         "source_path": config.source_path,
         "feature_family": config.feature_family,
         "model_family": config.model_family,
-        "threshold": state.get("bnr_spec", {}).get("frozen_benchmark", {}).get("threshold", 0.45),
+        "threshold": state.get("bnr_spec", {})
+        .get("frozen_benchmark", {})
+        .get("threshold", 0.45),
         "walk_forward": {
             "status": audit["walk_forward"].get("status"),
             "mean_roc_auc": audit["walk_forward"].get("mean_roc_auc"),
@@ -74,7 +81,9 @@ def main() -> None:
         "shap_analysis": {
             "status": shap_analysis.get("status"),
             "top_features": shap_analysis.get("top_features", [])[:10],
-            "worst_trade_explanations": shap_analysis.get("worst_trade_explanations", [])[:5],
+            "worst_trade_explanations": shap_analysis.get(
+                "worst_trade_explanations", []
+            )[:5],
         },
     }
     output = REPORTS_DIR / "exploration_benchmark_diagnostics.json"

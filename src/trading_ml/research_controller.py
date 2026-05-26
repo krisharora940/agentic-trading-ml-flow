@@ -8,24 +8,49 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from trading_ml.break_quality_policy import apply_break_quality_policy, get_break_quality_policies
-from trading_ml.candidate_universe_expansion import build_candidate_universe_expansion_space, run_candidate_universe_expansion_cycle
+from trading_ml.break_quality_policy import (
+    apply_break_quality_policy,
+    get_break_quality_policies,
+)
+from trading_ml.candidate_universe_expansion import (
+    build_candidate_universe_expansion_space,
+    run_candidate_universe_expansion_cycle,
+)
 from trading_ml.config import load_bnr_config, load_global_config
 from trading_ml.bnr_subtypes import list_bnr_subtypes
-from trading_ml.deflated_sharpe_analysis import compute_sharpe_ratio, deflated_sharpe_probability
+from trading_ml.deflated_sharpe_analysis import (
+    compute_sharpe_ratio,
+    deflated_sharpe_probability,
+)
 from trading_ml.evidence_sources import select_manifest_source_path
 from trading_ml.event_driven_backtest import run_event_driven_policy_backtest
-from trading_ml.exit_behavior_research import build_exit_behavior_research_space, run_exit_behavior_research_cycle
+from trading_ml.exit_behavior_research import (
+    build_exit_behavior_research_space,
+    run_exit_behavior_research_cycle,
+)
 from trading_ml.feature_families import list_feature_families
-from trading_ml.market_state_quality import market_state_policy_variant_specs, run_market_state_policy_simulation
+from trading_ml.market_state_quality import (
+    market_state_policy_variant_specs,
+    run_market_state_policy_simulation,
+)
 from trading_ml.paths import REPORTS_DIR
-from trading_ml.reclaim_meta_policy import apply_reclaim_meta_policy, get_reclaim_meta_policies
+from trading_ml.reclaim_meta_policy import (
+    apply_reclaim_meta_policy,
+    get_reclaim_meta_policies,
+)
 from trading_ml.registry import append_experiment_record
 from trading_ml.schemas import ExperimentRecord
 from trading_ml.stage2_pipeline import Stage2Config, run_stage2_research_engine
-from trading_ml.tail_path_cleanup_policy import apply_tail_path_cleanup_policy, get_tail_path_cleanup_policies
+from trading_ml.tail_path_cleanup_policy import (
+    apply_tail_path_cleanup_policy,
+    get_tail_path_cleanup_policies,
+)
 from trading_ml.translation_analysis import build_translation_analysis
-from trading_ml.translation_policy import get_regime_size_policies, get_regime_throttle_policies, get_sizing_policies
+from trading_ml.translation_policy import (
+    get_regime_size_policies,
+    get_regime_throttle_policies,
+    get_sizing_policies,
+)
 from trading_ml.utility_analysis import compute_execution_utility
 from trading_ml.validation_audit import build_validation_audit
 
@@ -92,7 +117,9 @@ def build_policy_gate_search_space() -> dict[str, Any]:
     return {
         "description": "Governed break-quality gate comparison batch.",
         "max_batch_trials": len(get_break_quality_policies()),
-        "policies": [{"name": policy["name"]} for policy in get_break_quality_policies()],
+        "policies": [
+            {"name": policy["name"]} for policy in get_break_quality_policies()
+        ],
     }
 
 
@@ -100,32 +127,47 @@ def build_policy_meta_search_space() -> dict[str, Any]:
     return {
         "description": "Governed reclaim/meta policy comparison batch.",
         "max_batch_trials": len(get_reclaim_meta_policies()),
-        "policies": [{"name": policy["name"]} for policy in get_reclaim_meta_policies()],
+        "policies": [
+            {"name": policy["name"]} for policy in get_reclaim_meta_policies()
+        ],
     }
 
 
 def build_tail_path_cleanup_search_space() -> dict[str, Any]:
     config = load_bnr_config()
     configured = dict(config.get("tail_path_cleanup_search_v1", {}) or {})
-    policy_catalog = {policy["name"]: policy for policy in get_tail_path_cleanup_policies()}
-    policies = list(configured.get("policies", []) or [{"name": policy["name"]} for policy in get_tail_path_cleanup_policies()])
+    policy_catalog = {
+        policy["name"]: policy for policy in get_tail_path_cleanup_policies()
+    }
+    policies = list(
+        configured.get("policies", [])
+        or [{"name": policy["name"]} for policy in get_tail_path_cleanup_policies()]
+    )
     executable = [
         row
         for row in policies
-        if policy_catalog.get(str(row.get("name")), {}).get("executable", True) is not False
+        if policy_catalog.get(str(row.get("name")), {}).get("executable", True)
+        is not False
     ]
     diagnostic_only = [
         {
             "name": row.get("name"),
-            "reason": policy_catalog.get(str(row.get("name")), {}).get("governance_reason", "diagnostic_only"),
+            "reason": policy_catalog.get(str(row.get("name")), {}).get(
+                "governance_reason", "diagnostic_only"
+            ),
         }
         for row in policies
         if policy_catalog.get(str(row.get("name")), {}).get("executable", True) is False
     ]
     return {
         "description": configured.get("description", "CPCV tail-path cleanup batch."),
-        "max_batch_trials": min(int(configured.get("max_batch_trials", len(executable)) or len(executable)), len(executable)),
-        "diagnostic_artifact": configured.get("diagnostic_artifact", "reports/cpcv_failure_attribution.json"),
+        "max_batch_trials": min(
+            int(configured.get("max_batch_trials", len(executable)) or len(executable)),
+            len(executable),
+        ),
+        "diagnostic_artifact": configured.get(
+            "diagnostic_artifact", "reports/cpcv_failure_attribution.json"
+        ),
         "policies": executable,
         "diagnostic_only_policies": diagnostic_only,
     }
@@ -138,7 +180,12 @@ def build_market_state_setup_quality_search_space() -> dict[str, Any]:
         "max_batch_trials": len(variants),
         "family": "market_state_setup_quality",
         "variants": [{"name": variant["name"]} for variant in variants],
-        "disallowed_knobs": ["model_family", "threshold", "holdout", "broad_feature_search"],
+        "disallowed_knobs": [
+            "model_family",
+            "threshold",
+            "holdout",
+            "broad_feature_search",
+        ],
     }
 
 
@@ -157,13 +204,22 @@ def load_controller_config(override: dict[str, Any] | None = None) -> dict[str, 
     controller.setdefault("spec_version", "bnr_spec_vA")
     controller.setdefault("active_family", "setup")
     controller.setdefault("active_model_family", "linear_baseline")
-    controller.setdefault("frozen_threshold", config.get("controller", {}).get("frozen_threshold", 0.45))
-    controller.setdefault("benchmark_name", config.get("controller", {}).get("benchmark_name", "bnr_hybrid_linear_v1"))
+    controller.setdefault(
+        "frozen_threshold", config.get("controller", {}).get("frozen_threshold", 0.45)
+    )
+    controller.setdefault(
+        "benchmark_name",
+        config.get("controller", {}).get("benchmark_name", "bnr_hybrid_linear_v1"),
+    )
     controller.setdefault("benchmark_policy_gate", frozen.get("policy_gate"))
     controller.setdefault("benchmark_meta_policy", frozen.get("policy_meta"))
     controller.setdefault("benchmark_sizing_policy", frozen.get("sizing_policy"))
-    controller.setdefault("benchmark_regime_throttle_policy", frozen.get("regime_throttle_policy"))
-    controller.setdefault("benchmark_regime_size_policy", frozen.get("regime_size_policy"))
+    controller.setdefault(
+        "benchmark_regime_throttle_policy", frozen.get("regime_throttle_policy")
+    )
+    controller.setdefault(
+        "benchmark_regime_size_policy", frozen.get("regime_size_policy")
+    )
     controller.setdefault("parent_benchmark_id", controller.get("benchmark_name"))
     controller.setdefault("min_candidate_ratio_vs_baseline", 0.7)
     controller.setdefault("require_positive_net_delta", True)
@@ -173,14 +229,25 @@ def load_controller_config(override: dict[str, Any] | None = None) -> dict[str, 
     return controller
 
 
-def generate_search_trials(base_config: dict[str, Any], family: str | None = None, controller_override: dict[str, Any] | None = None) -> list[dict[str, Any]]:
-    active_family = family or load_controller_config(controller_override)["active_family"]
+def generate_search_trials(
+    base_config: dict[str, Any],
+    family: str | None = None,
+    controller_override: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    active_family = (
+        family or load_controller_config(controller_override)["active_family"]
+    )
     controller = load_controller_config(controller_override)
     trials: list[dict[str, Any]] = []
     if active_family == "setup":
         search_v1 = build_search_space()
         space = search_v1["space"]
-        ordered_keys = ["earliest_trigger_time", "horizon_bars", "target_multiple", "break_buffer_points"]
+        ordered_keys = [
+            "earliest_trigger_time",
+            "horizon_bars",
+            "target_multiple",
+            "break_buffer_points",
+        ]
         values = [space[key] for key in ordered_keys]
         for combo in product(*values):
             trial = dict(base_config)
@@ -197,7 +264,9 @@ def generate_search_trials(base_config: dict[str, Any], family: str | None = Non
     if active_family == "feature":
         search_v1 = build_feature_search_space()
         valid_families = set(list_feature_families())
-        feature_families = _focused_feature_families(search_v1["space"]["feature_family"], controller)
+        feature_families = _focused_feature_families(
+            search_v1["space"]["feature_family"], controller
+        )
         for feature_family in feature_families:
             if feature_family not in valid_families:
                 continue
@@ -233,13 +302,22 @@ def generate_search_trials(base_config: dict[str, Any], family: str | None = Non
         valid_sizing = {policy["name"] for policy in get_sizing_policies()}
         valid_throttles = {policy["name"] for policy in get_regime_throttle_policies()}
         valid_regime_sizes = {policy["name"] for policy in get_regime_size_policies()}
-        for decision_threshold, sizing_policy, regime_throttle_policy, regime_size_policy in product(
+        for (
+            decision_threshold,
+            sizing_policy,
+            regime_throttle_policy,
+            regime_size_policy,
+        ) in product(
             search_v1["space"]["decision_threshold"],
             search_v1["space"]["sizing_policy"],
             search_v1["space"]["regime_throttle_policy"],
             search_v1["space"]["regime_size_policy"],
         ):
-            if sizing_policy not in valid_sizing or regime_throttle_policy not in valid_throttles or regime_size_policy not in valid_regime_sizes:
+            if (
+                sizing_policy not in valid_sizing
+                or regime_throttle_policy not in valid_throttles
+                or regime_size_policy not in valid_regime_sizes
+            ):
                 continue
             trial = dict(base_config)
             trial["decision_threshold"] = float(decision_threshold)
@@ -259,7 +337,11 @@ def generate_search_trials(base_config: dict[str, Any], family: str | None = Non
         return trials[: int(search_v1["max_batch_trials"])]
     if active_family == "sample_expansion":
         search_v1 = build_sample_expansion_search_space()
-        ordered_keys = ["earliest_trigger_time", "latest_trigger_time", "break_buffer_points"]
+        ordered_keys = [
+            "earliest_trigger_time",
+            "latest_trigger_time",
+            "break_buffer_points",
+        ]
         values = [search_v1["space"][key] for key in ordered_keys]
         for combo in product(*values):
             trial = dict(base_config)
@@ -282,8 +364,12 @@ def generate_search_trials(base_config: dict[str, Any], family: str | None = Non
     raise ValueError(f"Unsupported search family: {active_family}")
 
 
-def run_governed_search(base_config: dict[str, Any], controller_override: dict[str, Any] | None = None) -> dict[str, Any]:
-    return run_governed_research_cycle(base_config, controller_override=controller_override)
+def run_governed_search(
+    base_config: dict[str, Any], controller_override: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    return run_governed_research_cycle(
+        base_config, controller_override=controller_override
+    )
 
 
 def run_governed_research_cycle(
@@ -302,19 +388,31 @@ def run_governed_research_cycle(
     if active_family == "market_state_setup_quality":
         return run_market_state_setup_quality_cycle(base_config, controller)
     if active_family == "exit_behavior_research":
-        return run_exit_behavior_research_cycle({"stage2_config": base_config, "controller_state": controller})
+        return run_exit_behavior_research_cycle(
+            {"stage2_config": base_config, "controller_state": controller}
+        )
     if active_family == "candidate_universe_expansion":
-        return run_candidate_universe_expansion_cycle({"stage2_config": base_config, "controller_state": controller})
+        return run_candidate_universe_expansion_cycle(
+            {"stage2_config": base_config, "controller_state": controller}
+        )
     if active_family == "translation_policy":
         return run_translation_policy_cycle(base_config, controller)
     if active_family == "validation_window":
-        return run_boundary_confirmation_cycle(base_config, controller, boundary_role="validation")
+        return run_boundary_confirmation_cycle(
+            base_config, controller, boundary_role="validation"
+        )
     if active_family == "holdout_confirmation":
-        return run_boundary_confirmation_cycle(base_config, controller, boundary_role="holdout")
+        return run_boundary_confirmation_cycle(
+            base_config, controller, boundary_role="holdout"
+        )
     result_cache: dict[tuple[tuple[str, Any], ...], dict[str, Any]] = {}
     baseline_result = _cached_stage2_result(base_config, result_cache)
-    baseline = _summarize_baseline(active_family, str(controller["spec_version"]), baseline_result, controller)
-    trials = generate_search_trials(base_config, family=active_family, controller_override=controller)
+    baseline = _summarize_baseline(
+        active_family, str(controller["spec_version"]), baseline_result, controller
+    )
+    trials = generate_search_trials(
+        base_config, family=active_family, controller_override=controller
+    )
     results: list[ControllerTrialSummary] = []
     for idx, trial_config in enumerate(trials, start=1):
         result = _cached_stage2_result(trial_config, result_cache)
@@ -330,7 +428,11 @@ def run_governed_research_cycle(
         results.append(summary)
         _record_trial(active_family, summary, trial_config, result)
 
-    ranked = sorted(results, key=lambda item: (item.net_avg_pnl_r, item.roc_auc or float("-inf")), reverse=True)
+    ranked = sorted(
+        results,
+        key=lambda item: (item.net_avg_pnl_r, item.roc_auc or float("-inf")),
+        reverse=True,
+    )
     accepted = next((trial for trial in ranked if trial.decision == "accept"), None)
     _record_baseline(active_family, baseline, base_config, baseline_result)
     return {
@@ -340,27 +442,50 @@ def run_governed_research_cycle(
         "space": (
             build_search_space()
             if active_family == "setup"
-            else build_model_search_space()
-            if active_family == "model"
-            else build_feature_search_space()
-            if active_family == "feature"
-            else build_feature_threshold_search_space()
-            if active_family == "feature_threshold"
-            else build_threshold_search_space()
-            if active_family == "threshold"
-            else build_translation_policy_search_space()
-            if active_family == "translation_policy"
-            else build_sample_expansion_search_space()
-            if active_family == "sample_expansion"
-            else build_subtype_search_space()
-            if active_family == "subtype"
-            else build_market_state_setup_quality_search_space()
-            if active_family == "market_state_setup_quality"
-            else build_exit_behavior_research_search_space()
-            if active_family == "exit_behavior_research"
-            else build_candidate_universe_expansion_search_space()
-            if active_family == "candidate_universe_expansion"
-            else build_label_search_space()
+            else (
+                build_model_search_space()
+                if active_family == "model"
+                else (
+                    build_feature_search_space()
+                    if active_family == "feature"
+                    else (
+                        build_feature_threshold_search_space()
+                        if active_family == "feature_threshold"
+                        else (
+                            build_threshold_search_space()
+                            if active_family == "threshold"
+                            else (
+                                build_translation_policy_search_space()
+                                if active_family == "translation_policy"
+                                else (
+                                    build_sample_expansion_search_space()
+                                    if active_family == "sample_expansion"
+                                    else (
+                                        build_subtype_search_space()
+                                        if active_family == "subtype"
+                                        else (
+                                            build_market_state_setup_quality_search_space()
+                                            if active_family
+                                            == "market_state_setup_quality"
+                                            else (
+                                                build_exit_behavior_research_search_space()
+                                                if active_family
+                                                == "exit_behavior_research"
+                                                else (
+                                                    build_candidate_universe_expansion_search_space()
+                                                    if active_family
+                                                    == "candidate_universe_expansion"
+                                                    else build_label_search_space()
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
         ),
         "controller": controller,
         "baseline": baseline.to_dict(),
@@ -372,7 +497,9 @@ def run_governed_research_cycle(
     }
 
 
-def _summarize_baseline(family: str, spec_version: str, result: dict[str, Any], controller: dict[str, Any]) -> ControllerTrialSummary:
+def _summarize_baseline(
+    family: str, spec_version: str, result: dict[str, Any], controller: dict[str, Any]
+) -> ControllerTrialSummary:
     label_summary = result.get("label_summary", {})
     model_summary = result.get("model_summary", {})
     metrics = model_summary.get("metrics", {})
@@ -384,7 +511,14 @@ def _summarize_baseline(family: str, spec_version: str, result: dict[str, Any], 
         candidate_count=int(result.get("candidate_count", 0)),
         positive_rate=float(label_summary.get("positive_rate", 0.0) or 0.0),
         avg_pnl_r=float(label_summary.get("avg_pnl_r", 0.0) or 0.0),
-        net_avg_pnl_r=_estimate_net_avg_pnl_r(result, threshold=controller.get("frozen_threshold") if family in {"feature", "model", "threshold"} else None),
+        net_avg_pnl_r=_estimate_net_avg_pnl_r(
+            result,
+            threshold=(
+                controller.get("frozen_threshold")
+                if family in {"feature", "model", "threshold"}
+                else None
+            ),
+        ),
         net_delta_vs_baseline=0.0,
         roc_auc=float(metrics["roc_auc"]) if "roc_auc" in metrics else None,
         roc_auc_delta_vs_baseline=0.0 if "roc_auc" in metrics else None,
@@ -410,14 +544,21 @@ def _summarize_trial(
     metrics = model_summary.get("metrics", {})
     threshold = (
         float(config["decision_threshold"])
-        if family in {"threshold", "feature_threshold"} and "decision_threshold" in config
-        else controller.get("frozen_threshold")
-        if family in {"feature", "feature_threshold", "model", "threshold", "label"}
-        else None
+        if family in {"threshold", "feature_threshold"}
+        and "decision_threshold" in config
+        else (
+            controller.get("frozen_threshold")
+            if family in {"feature", "feature_threshold", "model", "threshold", "label"}
+            else None
+        )
     )
     net_avg_pnl_r = _estimate_net_avg_pnl_r(result, threshold=threshold)
     roc_auc = float(metrics["roc_auc"]) if "roc_auc" in metrics else None
-    roc_delta = None if roc_auc is None or baseline.roc_auc is None else roc_auc - baseline.roc_auc
+    roc_delta = (
+        None
+        if roc_auc is None or baseline.roc_auc is None
+        else roc_auc - baseline.roc_auc
+    )
     summary = ControllerTrialSummary(
         trial_id=f"trial-{trial_number:03d}",
         family=family,
@@ -490,7 +631,11 @@ def _focus_overrides(config: dict[str, Any]) -> dict[str, Any]:
         "focus_environment_state": config.get("focus_environment_state"),
         "focus_path_class": config.get("focus_path_class"),
     }
-    return {key: value for key, value in mapping.items() if value not in {None, "", "unknown"}}
+    return {
+        key: value
+        for key, value in mapping.items()
+        if value not in {None, "", "unknown"}
+    }
 
 
 def _focus_trial_fields(controller: dict[str, Any]) -> dict[str, Any]:
@@ -505,14 +650,29 @@ def _focus_trial_fields(controller: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _focused_feature_families(feature_families: list[str], controller: dict[str, Any]) -> list[str]:
+def _focused_feature_families(
+    feature_families: list[str], controller: dict[str, Any]
+) -> list[str]:
     setup_state = str(controller.get("focus_setup_state", "") or "")
     environment_state = str(controller.get("focus_environment_state", "") or "")
     path_class = str(controller.get("focus_path_class", "") or "")
     priority: list[str] = []
-    if environment_state in {"volatile_chop", "balance_chop", "trend_expansion", "trend_day"}:
-        priority.extend(["context_plus_regime", "reclaim_plus_regime", "regime_features"])
-    if setup_state in {"continuation", "late_followthrough", "repair", "failed_reclaim", "weak_confirmation"}:
+    if environment_state in {
+        "volatile_chop",
+        "balance_chop",
+        "trend_expansion",
+        "trend_day",
+    }:
+        priority.extend(
+            ["context_plus_regime", "reclaim_plus_regime", "regime_features"]
+        )
+    if setup_state in {
+        "continuation",
+        "late_followthrough",
+        "repair",
+        "failed_reclaim",
+        "weak_confirmation",
+    }:
         priority.extend(["context_plus_reclaim", "bnr_plus_context", "pivot_reclaim"])
     if path_class in {"chop", "failure", "runner", "delayed_runner"}:
         priority.extend(["context_plus_geometry", "bnr_core", "pre_trigger_context"])
@@ -535,24 +695,42 @@ def _decide_trial(
     if trial.status != "fit":
         return "reject"
     min_candidate_ratio = float(controller["min_candidate_ratio_vs_baseline"])
-    if baseline.candidate_count > 0 and (trial.candidate_count / baseline.candidate_count) < min_candidate_ratio:
+    if (
+        baseline.candidate_count > 0
+        and (trial.candidate_count / baseline.candidate_count) < min_candidate_ratio
+    ):
         return "reject"
-    if bool(controller["require_positive_net_delta"]) and trial.net_delta_vs_baseline <= 0:
+    if (
+        bool(controller["require_positive_net_delta"])
+        and trial.net_delta_vs_baseline <= 0
+    ):
         return "reject"
     min_roc_auc_delta = float(controller["min_roc_auc_delta"])
-    if trial.roc_auc_delta_vs_baseline is not None and trial.roc_auc_delta_vs_baseline < min_roc_auc_delta:
+    if (
+        trial.roc_auc_delta_vs_baseline is not None
+        and trial.roc_auc_delta_vs_baseline < min_roc_auc_delta
+    ):
         return "reject"
     return "accept"
 
 
-def _record_baseline(family: str, baseline: ControllerTrialSummary, config: dict[str, Any], result: dict[str, Any]) -> None:
+def _record_baseline(
+    family: str,
+    baseline: ControllerTrialSummary,
+    config: dict[str, Any],
+    result: dict[str, Any],
+) -> None:
     accounting = _trial_accounting(family, config, result, selected_by="baseline")
     append_experiment_record(
         ExperimentRecord(
             experiment_id=f"{baseline.spec_version}-{family}-baseline",
             hypothesis=f"Frozen {family} baseline for {baseline.spec_version}.",
             config_ref=baseline.spec_version,
-            data_slice={"source_path": config["source_path"], "symbol": config["symbol"], "timeframe": config["timeframe"]},
+            data_slice={
+                "source_path": config["source_path"],
+                "symbol": config["symbol"],
+                "timeframe": config["timeframe"],
+            },
             result={
                 "overrides": {},
                 "candidate_count": result.get("candidate_count", 0),
@@ -567,14 +745,23 @@ def _record_baseline(family: str, baseline: ControllerTrialSummary, config: dict
     )
 
 
-def _record_trial(family: str, summary: ControllerTrialSummary, config: dict[str, Any], result: dict[str, Any]) -> None:
+def _record_trial(
+    family: str,
+    summary: ControllerTrialSummary,
+    config: dict[str, Any],
+    result: dict[str, Any],
+) -> None:
     accounting = _trial_accounting(family, config, result, selected_by="controller")
     append_experiment_record(
         ExperimentRecord(
             experiment_id=f"{summary.spec_version}-{family}-{summary.trial_id}",
             hypothesis=f"Test {family} overrides against frozen baseline.",
             config_ref=summary.spec_version,
-            data_slice={"source_path": config["source_path"], "symbol": config["symbol"], "timeframe": config["timeframe"]},
+            data_slice={
+                "source_path": config["source_path"],
+                "symbol": config["symbol"],
+                "timeframe": config["timeframe"],
+            },
             result={
                 "overrides": summary.overrides,
                 "candidate_count": result.get("candidate_count", 0),
@@ -591,7 +778,9 @@ def _record_trial(family: str, summary: ControllerTrialSummary, config: dict[str
     )
 
 
-def _estimate_net_avg_pnl_r(result: dict[str, Any], threshold: float | None = None) -> float:
+def _estimate_net_avg_pnl_r(
+    result: dict[str, Any], threshold: float | None = None
+) -> float:
     prediction_based = _estimate_prediction_net_avg_pnl_r(result, threshold)
     if prediction_based is not None:
         return prediction_based
@@ -609,7 +798,9 @@ def _estimate_net_avg_pnl_r(result: dict[str, Any], threshold: float | None = No
     return avg_pnl_r - cost_r
 
 
-def _estimate_prediction_net_avg_pnl_r(result: dict[str, Any], threshold: float | None) -> float | None:
+def _estimate_prediction_net_avg_pnl_r(
+    result: dict[str, Any], threshold: float | None
+) -> float | None:
     if threshold is None:
         return None
 
@@ -621,17 +812,25 @@ def _estimate_prediction_net_avg_pnl_r(result: dict[str, Any], threshold: float 
     if not prediction_records or avg_risk_points <= 0 or avg_entry_price <= 0:
         return None
 
-    selected = [row for row in prediction_records if float(row.get("probability", 0.0) or 0.0) >= float(threshold)]
+    selected = [
+        row
+        for row in prediction_records
+        if float(row.get("probability", 0.0) or 0.0) >= float(threshold)
+    ]
     if not selected:
         return 0.0
 
-    avg_pnl_r = sum(float(row.get("pnl_r", 0.0) or 0.0) for row in selected) / len(selected)
+    avg_pnl_r = sum(float(row.get("pnl_r", 0.0) or 0.0) for row in selected) / len(
+        selected
+    )
     cost_points = _round_trip_cost_points(avg_entry_price, global_config)
     cost_r = cost_points / avg_risk_points
     return avg_pnl_r - cost_r
 
 
-def _round_trip_cost_points(avg_entry_price: float, global_config: dict[str, Any]) -> float:
+def _round_trip_cost_points(
+    avg_entry_price: float, global_config: dict[str, Any]
+) -> float:
     slippage = dict(global_config.get("slippage", {}))
     model = str(slippage.get("model", "ticks"))
     if model == "ticks":
@@ -649,7 +848,9 @@ def _round_trip_cost_points(avg_entry_price: float, global_config: dict[str, Any
     return avg_entry_price * (total_bps / 10_000.0)
 
 
-def _cached_stage2_result(config: dict[str, Any], cache: dict[tuple[tuple[str, Any], ...], dict[str, Any]]) -> dict[str, Any]:
+def _cached_stage2_result(
+    config: dict[str, Any], cache: dict[tuple[tuple[str, Any], ...], dict[str, Any]]
+) -> dict[str, Any]:
     stage2_kwargs = _stage2_config_kwargs(config)
     cache_key = tuple(sorted(stage2_kwargs.items()))
     if cache_key not in cache:
@@ -657,14 +858,20 @@ def _cached_stage2_result(config: dict[str, Any], cache: dict[tuple[tuple[str, A
     return cache[cache_key]
 
 
-def _trial_accounting(family: str, config: dict[str, Any], result: dict[str, Any], *, selected_by: str) -> dict[str, Any]:
+def _trial_accounting(
+    family: str, config: dict[str, Any], result: dict[str, Any], *, selected_by: str
+) -> dict[str, Any]:
     return {
         "family": family,
         "config_hash": _stable_hash(config),
         "features_hash": _stable_hash(result.get("features_records", [])),
         "label_hash": _stable_hash(result.get("labels_records", [])),
-        "model_hash": _stable_hash({"model_family": result.get("config", {}).get("model_family")}),
-        "threshold_hash": _stable_hash({"decision_threshold": config.get("decision_threshold")}),
+        "model_hash": _stable_hash(
+            {"model_family": result.get("config", {}).get("model_family")}
+        ),
+        "threshold_hash": _stable_hash(
+            {"decision_threshold": config.get("decision_threshold")}
+        ),
         "translation_policy_hash": _stable_hash(
             {
                 "sizing_policy": config.get("sizing_policy"),
@@ -672,13 +879,17 @@ def _trial_accounting(family: str, config: dict[str, Any], result: dict[str, Any
                 "regime_size_policy": config.get("regime_size_policy"),
             }
         ),
-        "validation_window_hash": _stable_hash({"source_path": config.get("source_path")}),
+        "validation_window_hash": _stable_hash(
+            {"source_path": config.get("source_path")}
+        ),
         "selected_by": selected_by,
     }
 
 
 def _stable_hash(value: Any) -> str:
-    return hashlib.sha256(json.dumps(value, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
 
 
 def _stage2_config_kwargs(config: dict[str, Any]) -> dict[str, Any]:
@@ -700,11 +911,17 @@ def _stage2_config_kwargs(config: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in config.items() if key in allowed_keys}
 
 
-def run_policy_gate_cycle(base_config: dict[str, Any], controller: dict[str, Any]) -> dict[str, Any]:
-    result = run_stage2_research_engine(Stage2Config(**_stage2_config_kwargs(base_config)))
+def run_policy_gate_cycle(
+    base_config: dict[str, Any], controller: dict[str, Any]
+) -> dict[str, Any]:
+    result = run_stage2_research_engine(
+        Stage2Config(**_stage2_config_kwargs(base_config))
+    )
     validation = build_validation_audit(result, {})
     rows: list[dict[str, Any]] = []
-    for policy in get_break_quality_policies()[: _policy_trial_limit(controller, len(get_break_quality_policies()))]:
+    for policy in get_break_quality_policies()[
+        : _policy_trial_limit(controller, len(get_break_quality_policies()))
+    ]:
         filtered = _apply_benchmark_contract(
             result,
             validation,
@@ -719,7 +936,11 @@ def run_policy_gate_cycle(base_config: dict[str, Any], controller: dict[str, Any
             regime_throttle_policy=controller.get("benchmark_regime_throttle_policy"),
             regime_size_policy=controller.get("benchmark_regime_size_policy"),
         )
-        utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+        utility = (
+            compute_execution_utility(execution)
+            if execution.get("status") == "complete"
+            else {"score": None}
+        )
         rows.append(
             {
                 "trial_id": f"trial-gate-{policy['name']}",
@@ -736,11 +957,17 @@ def run_policy_gate_cycle(base_config: dict[str, Any], controller: dict[str, Any
     return _package_policy_cycle("policy_gate", controller, rows)
 
 
-def run_policy_meta_cycle(base_config: dict[str, Any], controller: dict[str, Any]) -> dict[str, Any]:
-    result = run_stage2_research_engine(Stage2Config(**_stage2_config_kwargs(base_config)))
+def run_policy_meta_cycle(
+    base_config: dict[str, Any], controller: dict[str, Any]
+) -> dict[str, Any]:
+    result = run_stage2_research_engine(
+        Stage2Config(**_stage2_config_kwargs(base_config))
+    )
     validation = build_validation_audit(result, {})
     rows: list[dict[str, Any]] = []
-    for policy in get_reclaim_meta_policies()[: _policy_trial_limit(controller, len(get_reclaim_meta_policies()))]:
+    for policy in get_reclaim_meta_policies()[
+        : _policy_trial_limit(controller, len(get_reclaim_meta_policies()))
+    ]:
         filtered = _apply_benchmark_contract(
             result,
             validation,
@@ -755,7 +982,11 @@ def run_policy_meta_cycle(base_config: dict[str, Any], controller: dict[str, Any
             regime_throttle_policy=controller.get("benchmark_regime_throttle_policy"),
             regime_size_policy=controller.get("benchmark_regime_size_policy"),
         )
-        utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+        utility = (
+            compute_execution_utility(execution)
+            if execution.get("status") == "complete"
+            else {"score": None}
+        )
         rows.append(
             {
                 "trial_id": f"trial-meta-{policy['name']}",
@@ -772,12 +1003,21 @@ def run_policy_meta_cycle(base_config: dict[str, Any], controller: dict[str, Any
     return _package_policy_cycle("policy_meta", controller, rows)
 
 
-def run_translation_policy_cycle(base_config: dict[str, Any], controller: dict[str, Any]) -> dict[str, Any]:
-    result = run_stage2_research_engine(Stage2Config(**_stage2_config_kwargs(base_config)))
+def run_translation_policy_cycle(
+    base_config: dict[str, Any], controller: dict[str, Any]
+) -> dict[str, Any]:
+    result = run_stage2_research_engine(
+        Stage2Config(**_stage2_config_kwargs(base_config))
+    )
     validation = build_validation_audit(result, {})
     search_v1 = build_translation_policy_search_space()
     rows: list[dict[str, Any]] = []
-    for decision_threshold, sizing_policy, regime_throttle_policy, regime_size_policy in product(
+    for (
+        decision_threshold,
+        sizing_policy,
+        regime_throttle_policy,
+        regime_size_policy,
+    ) in product(
         search_v1["space"]["decision_threshold"],
         search_v1["space"]["sizing_policy"],
         search_v1["space"]["regime_throttle_policy"],
@@ -797,7 +1037,11 @@ def run_translation_policy_cycle(base_config: dict[str, Any], controller: dict[s
             regime_throttle_policy=str(regime_throttle_policy),
             regime_size_policy=str(regime_size_policy),
         )
-        utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+        utility = (
+            compute_execution_utility(execution)
+            if execution.get("status") == "complete"
+            else {"score": None}
+        )
         rows.append(
             {
                 "trial_id": f"trial-translation-{decision_threshold}-{sizing_policy}-{regime_throttle_policy}-{regime_size_policy}",
@@ -811,7 +1055,9 @@ def run_translation_policy_cycle(base_config: dict[str, Any], controller: dict[s
                 "trade_count": int(execution.get("trade_count", 0) or 0),
                 "total_pnl_r": float(execution.get("total_pnl_r", 0.0) or 0.0),
                 "avg_trade_r": float(execution.get("avg_trade_r", 0.0) or 0.0),
-                "avg_size_multiplier": float(execution.get("avg_size_multiplier", 0.0) or 0.0),
+                "avg_size_multiplier": float(
+                    execution.get("avg_size_multiplier", 0.0) or 0.0
+                ),
                 "max_drawdown_r": float(execution.get("max_drawdown_r", 0.0) or 0.0),
                 "utility_score": utility.get("score"),
                 "decision": "accept",
@@ -820,7 +1066,9 @@ def run_translation_policy_cycle(base_config: dict[str, Any], controller: dict[s
     return _package_policy_cycle("translation_policy", controller, rows)
 
 
-def run_tail_path_cleanup_cycle(base_config: dict[str, Any], controller: dict[str, Any]) -> dict[str, Any]:
+def run_tail_path_cleanup_cycle(
+    base_config: dict[str, Any], controller: dict[str, Any]
+) -> dict[str, Any]:
     diagnostic = _load_tail_cleanup_diagnostic()
     if diagnostic.get("status") != "complete":
         return {
@@ -835,7 +1083,9 @@ def run_tail_path_cleanup_cycle(base_config: dict[str, Any], controller: dict[st
             "reason": diagnostic.get("reason", "missing_cpcv_failure_attribution"),
         }
 
-    result = run_stage2_research_engine(Stage2Config(**_stage2_config_kwargs(base_config)))
+    result = run_stage2_research_engine(
+        Stage2Config(**_stage2_config_kwargs(base_config))
+    )
     validation = build_validation_audit(result, {}, controller)
     threshold = float(controller.get("frozen_threshold", 0.45) or 0.45)
     base_records = _apply_benchmark_contract(
@@ -860,7 +1110,9 @@ def run_tail_path_cleanup_cycle(base_config: dict[str, Any], controller: dict[st
         policy_name = str(policy_row.get("name"))
         if policy_name not in valid_policies:
             continue
-        policy_records = apply_tail_path_cleanup_policy(base_records, policy_name=policy_name, threshold=threshold)
+        policy_records = apply_tail_path_cleanup_policy(
+            base_records, policy_name=policy_name, threshold=threshold
+        )
         binary_execution = run_event_driven_policy_backtest(
             policy_records,
             threshold=threshold,
@@ -875,10 +1127,21 @@ def run_tail_path_cleanup_cycle(base_config: dict[str, Any], controller: dict[st
             regime_throttle_policy=controller.get("benchmark_regime_throttle_policy"),
             regime_size_policy=controller.get("benchmark_regime_size_policy"),
         )
-        binary_utility = compute_execution_utility(binary_execution) if binary_execution.get("status") == "complete" else {"score": None}
-        sized_utility = compute_execution_utility(sized_execution) if sized_execution.get("status") == "complete" else {"score": None}
+        binary_utility = (
+            compute_execution_utility(binary_execution)
+            if binary_execution.get("status") == "complete"
+            else {"score": None}
+        )
+        sized_utility = (
+            compute_execution_utility(sized_execution)
+            if sized_execution.get("status") == "complete"
+            else {"score": None}
+        )
         utility_gap = None
-        if sized_utility.get("score") is not None and binary_utility.get("score") is not None:
+        if (
+            sized_utility.get("score") is not None
+            and binary_utility.get("score") is not None
+        ):
             utility_gap = float(sized_utility["score"]) - float(binary_utility["score"])
         cpcv_eval = _evaluate_tail_cleanup_cpcv(
             diagnostic=diagnostic,
@@ -892,13 +1155,16 @@ def run_tail_path_cleanup_cycle(base_config: dict[str, Any], controller: dict[st
             "trial_id": f"trial-tail-{idx:03d}",
             "family": "tail_path_cleanup",
             "selected_by": "cpcv_failure_attribution",
-            "parent_benchmark_id": controller.get("parent_benchmark_id") or controller.get("benchmark_name"),
+            "parent_benchmark_id": controller.get("parent_benchmark_id")
+            or controller.get("benchmark_name"),
             "targeted_failure_axes": targeted_axes,
             "policy_delta": {"policy_name": policy_name},
             "overrides": {"tail_cleanup_policy": policy_name},
             "walk_forward_status": walk_forward_status,
             "cpcv_status": cpcv_eval.get("status"),
-            "translation_status": "pass" if sized_execution.get("status") == "complete" else "fail",
+            "translation_status": (
+                "pass" if sized_execution.get("status") == "complete" else "fail"
+            ),
             "no_holdout_access": no_holdout_access,
             "binary_utility_score": binary_utility.get("score"),
             "sized_utility_score": sized_utility.get("score"),
@@ -909,7 +1175,12 @@ def run_tail_path_cleanup_cycle(base_config: dict[str, Any], controller: dict[st
             "avg_trade_r": float(sized_execution.get("avg_trade_r", 0.0) or 0.0),
             "max_drawdown_r": float(sized_execution.get("max_drawdown_r", 0.0) or 0.0),
             "utility_score": sized_utility.get("score"),
-            "observed_sharpe": compute_sharpe_ratio([float(item.get("executed_pnl_r", 0.0) or 0.0) for item in sized_execution.get("equity_curve", [])]),
+            "observed_sharpe": compute_sharpe_ratio(
+                [
+                    float(item.get("executed_pnl_r", 0.0) or 0.0)
+                    for item in sized_execution.get("equity_curve", [])
+                ]
+            ),
             "n_obs": int(sized_execution.get("trade_count", 0) or 0),
             "deep_retrace_improved": deep_retrace_improved,
             "dominant_loss_bucket": dominant_bucket,
@@ -917,7 +1188,12 @@ def run_tail_path_cleanup_cycle(base_config: dict[str, Any], controller: dict[st
             "cpcv_summary": cpcv_eval,
         }
         row["trial_accounting"] = {
-            **_trial_accounting("tail_path_cleanup", {**base_config, "tail_cleanup_policy": policy_name}, result, selected_by="cpcv_failure_attribution"),
+            **_trial_accounting(
+                "tail_path_cleanup",
+                {**base_config, "tail_cleanup_policy": policy_name},
+                result,
+                selected_by="cpcv_failure_attribution",
+            ),
             "targeted_failure_axes": targeted_axes,
             "policy_delta": row["policy_delta"],
             "parent_benchmark_id": row["parent_benchmark_id"],
@@ -929,28 +1205,45 @@ def run_tail_path_cleanup_cycle(base_config: dict[str, Any], controller: dict[st
     for row in rows:
         row["decision"] = _decide_tail_cleanup_trial(row)
 
-    ranked = sorted(rows, key=lambda item: (float(item.get("utility_score") or float("-inf")), float(item.get("total_pnl_r", 0.0) or 0.0)), reverse=True)
+    ranked = sorted(
+        rows,
+        key=lambda item: (
+            float(item.get("utility_score") or float("-inf")),
+            float(item.get("total_pnl_r", 0.0) or 0.0),
+        ),
+        reverse=True,
+    )
     accepted = next((row for row in ranked if row.get("decision") == "accept"), None)
     payload = {
         "family": "tail_path_cleanup",
         "spec_version": controller.get("spec_version"),
         "controller": controller,
-        "source_diagnostic": build_tail_path_cleanup_search_space().get("diagnostic_artifact"),
+        "source_diagnostic": build_tail_path_cleanup_search_space().get(
+            "diagnostic_artifact"
+        ),
         "trial_count": len(rows),
         "ranked_trials": ranked,
         "best_trial": ranked[0] if ranked else None,
         "accepted_trial": accepted,
         "batch_decision": "accept" if accepted is not None else "revise",
     }
-    (summary_root / "summary.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    (summary_root / "summary.json").write_text(
+        json.dumps(payload, indent=2, default=str), encoding="utf-8"
+    )
     return payload
 
 
-def run_boundary_confirmation_cycle(base_config: dict[str, Any], controller: dict[str, Any], *, boundary_role: str) -> dict[str, Any]:
+def run_boundary_confirmation_cycle(
+    base_config: dict[str, Any], controller: dict[str, Any], *, boundary_role: str
+) -> dict[str, Any]:
     from trading_ml.config import load_databento_manifest
 
     manifest = load_databento_manifest()
-    source_path = select_manifest_source_path(manifest, timeframe=str(base_config.get("timeframe", "30s")), boundary_role=boundary_role)
+    source_path = select_manifest_source_path(
+        manifest,
+        timeframe=str(base_config.get("timeframe", "30s")),
+        boundary_role=boundary_role,
+    )
     if not source_path:
         return {
             "family": f"{boundary_role}_confirmation",
@@ -962,7 +1255,9 @@ def run_boundary_confirmation_cycle(base_config: dict[str, Any], controller: dic
         }
     trial_config = dict(base_config)
     trial_config["source_path"] = source_path
-    result = run_stage2_research_engine(Stage2Config(**_stage2_config_kwargs(trial_config)))
+    result = run_stage2_research_engine(
+        Stage2Config(**_stage2_config_kwargs(trial_config))
+    )
     validation = build_validation_audit(result, {})
     filtered = _apply_benchmark_contract(
         result,
@@ -978,7 +1273,11 @@ def run_boundary_confirmation_cycle(base_config: dict[str, Any], controller: dic
         regime_throttle_policy=controller.get("benchmark_regime_throttle_policy"),
         regime_size_policy=controller.get("benchmark_regime_size_policy"),
     )
-    utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+    utility = (
+        compute_execution_utility(execution)
+        if execution.get("status") == "complete"
+        else {"score": None}
+    )
     translation = build_translation_analysis(
         result,
         filtered,
@@ -1015,11 +1314,18 @@ def run_boundary_confirmation_cycle(base_config: dict[str, Any], controller: dic
     }
 
 
-def run_market_state_setup_quality_cycle(base_config: dict[str, Any], controller: dict[str, Any]) -> dict[str, Any]:
+def run_market_state_setup_quality_cycle(
+    base_config: dict[str, Any], controller: dict[str, Any]
+) -> dict[str, Any]:
     variants = market_state_policy_variant_specs()
     max_trials = _policy_trial_limit(controller, len(variants))
     variants = variants[:max_trials]
-    simulation = run_market_state_policy_simulation({"stage2_config": base_config}, variants=variants)
+    simulation = run_market_state_policy_simulation(
+        {"stage2_config": base_config},
+        variants=variants,
+        max_cpcv_paths=int(controller.get("market_state_max_cpcv_paths", 0) or 0)
+        or None,
+    )
     if simulation.get("status") != "complete":
         return {
             "family": "market_state_setup_quality",
@@ -1034,10 +1340,20 @@ def run_market_state_setup_quality_cycle(base_config: dict[str, Any], controller
             "simulation": simulation,
         }
 
-    baseline = next((row for row in simulation["policy_variants"] if row["variant"] == "baseline"), simulation["policy_variants"][0])
+    baseline = next(
+        (row for row in simulation["policy_variants"] if row["variant"] == "baseline"),
+        simulation["policy_variants"][0],
+    )
     rows = []
     for idx, variant in enumerate(simulation["policy_variants"], start=1):
-        row = _market_state_trial_row(idx, variant, baseline, base_config, controller, n_trials=len(simulation["policy_variants"]))
+        row = _market_state_trial_row(
+            idx,
+            variant,
+            baseline,
+            base_config,
+            controller,
+            n_trials=len(simulation["policy_variants"]),
+        )
         rows.append(row)
     _attach_market_state_dsr(rows)
     for row in rows:
@@ -1065,6 +1381,11 @@ def run_market_state_setup_quality_cycle(base_config: dict[str, Any], controller
         "space": build_market_state_setup_quality_search_space(),
         "trial_count": len(rows),
         "models_trained": 0,
+        "governance": {
+            "promotion_blocked": True,
+            "models_trained": 0,
+            "reason": "tiny_market_state_setup_probe",
+        },
         "holdout_status": "locked",
         "ranked_trials": ranked,
         "best_trial": ranked[0] if ranked else None,
@@ -1072,12 +1393,20 @@ def run_market_state_setup_quality_cycle(base_config: dict[str, Any], controller
         "batch_decision": "accept" if accepted is not None else "revise",
         "strict_pass_criteria": _market_state_strict_pass_criteria(baseline),
         "simulation_summary": {
-            "candidate_count": simulation.get("diagnostic_summary", {}).get("candidate_count"),
-            "state_counts": simulation.get("diagnostic_summary", {}).get("candidate_counts_by_state"),
-            "quality_counts": simulation.get("diagnostic_summary", {}).get("candidate_counts_by_quality"),
+            "candidate_count": simulation.get("diagnostic_summary", {}).get(
+                "candidate_count"
+            ),
+            "state_counts": simulation.get("diagnostic_summary", {}).get(
+                "candidate_counts_by_state"
+            ),
+            "quality_counts": simulation.get("diagnostic_summary", {}).get(
+                "candidate_counts_by_quality"
+            ),
         },
     }
-    (summary_root / "summary.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    (summary_root / "summary.json").write_text(
+        json.dumps(payload, indent=2, default=str), encoding="utf-8"
+    )
     return payload
 
 
@@ -1094,11 +1423,15 @@ def _market_state_trial_row(
     path_pnls = [float(row.get("total_pnl_r", 0.0) or 0.0) for row in cpcv_paths]
     cpcv_status = _market_state_cpcv_status(variant)
     sharpe = compute_sharpe_ratio(path_pnls)
-    psr_probability = _psr_probability(sharpe, len(path_pnls)) if sharpe is not None else 0.0
+    psr_probability = (
+        _psr_probability(sharpe, len(path_pnls)) if sharpe is not None else 0.0
+    )
     deflated_sharpe = {
         "status": "pending",
         "probability": 0.0,
-        "psr_status": "pass" if psr_probability >= 0.95 and (sharpe or 0.0) > 0 else "fail",
+        "psr_status": (
+            "pass" if psr_probability >= 0.95 and (sharpe or 0.0) > 0 else "fail"
+        ),
         "psr_probability": psr_probability,
         "observed_sharpe": sharpe,
         "n_trials": n_trials,
@@ -1107,19 +1440,30 @@ def _market_state_trial_row(
         "variance_source": "cross_trial_cpcv_path_sharpe",
     }
     min_trade_count = int(controller.get("market_state_min_trade_count", 350) or 350)
-    min_retained_fraction = float(controller.get("market_state_min_retained_fraction", 0.70) or 0.70)
-    worst_path_threshold = float(controller.get("market_state_worst_path_threshold_r", -5.0) or -5.0)
+    min_retained_fraction = float(
+        controller.get("market_state_min_retained_fraction", 0.70) or 0.70
+    )
+    worst_path_threshold = float(
+        controller.get("market_state_worst_path_threshold_r", -5.0) or -5.0
+    )
     baseline_positive_rate = float(baseline.get("positive_path_rate", 0.0) or 0.0)
-    retained_fraction = float(variant.get("trade_count", 0) or 0) / max(float(variant.get("candidate_count", 0) or 0), 1.0)
+    retained_fraction = float(variant.get("trade_count", 0) or 0) / max(
+        float(variant.get("candidate_count", 0) or 0), 1.0
+    )
     strict_gates = {
         "cpcv_pass": cpcv_status == "pass",
         "dsr_pass": deflated_sharpe["status"] == "pass",
         "psr_pass": deflated_sharpe["psr_status"] == "pass",
-        "worst_path_breach_below_threshold": float(min(path_pnls) if path_pnls else 0.0) > worst_path_threshold,
-        "mean_cpcv_positive": float(variant.get("mean_cpcv_path_pnl_r", 0.0) or 0.0) > 0,
-        "median_cpcv_positive": float(variant.get("median_cpcv_path_pnl_r", 0.0) or 0.0) > 0,
-        "positive_path_rate_holds": float(variant.get("positive_path_rate", 0.0) or 0.0) >= baseline_positive_rate,
-        "trade_count_acceptable": int(variant.get("trade_count", 0) or 0) >= min_trade_count,
+        "worst_path_breach_below_threshold": float(min(path_pnls) if path_pnls else 0.0)
+        > worst_path_threshold,
+        "mean_cpcv_positive": float(variant.get("mean_cpcv_path_pnl_r", 0.0) or 0.0)
+        > 0,
+        "median_cpcv_positive": float(variant.get("median_cpcv_path_pnl_r", 0.0) or 0.0)
+        > 0,
+        "positive_path_rate_holds": float(variant.get("positive_path_rate", 0.0) or 0.0)
+        >= baseline_positive_rate,
+        "trade_count_acceptable": int(variant.get("trade_count", 0) or 0)
+        >= min_trade_count,
         "not_deleting_too_many_trades": retained_fraction >= min_retained_fraction,
         "holdout_locked": True,
     }
@@ -1130,12 +1474,16 @@ def _market_state_trial_row(
         "overrides": {"market_state_policy": variant["variant"]},
         "candidate_count": int(variant.get("candidate_count", 0) or 0),
         "trade_count": int(variant.get("trade_count", 0) or 0),
-        "effective_trade_count": float(variant.get("effective_trade_count", 0.0) or 0.0),
+        "effective_trade_count": float(
+            variant.get("effective_trade_count", 0.0) or 0.0
+        ),
         "retained_fraction": retained_fraction,
         "total_pnl_r": float(variant.get("total_pnl_r", 0.0) or 0.0),
         "avoided_pnl_r": float(variant.get("avoided_pnl_r", 0.0) or 0.0),
         "mean_cpcv_path_pnl_r": float(variant.get("mean_cpcv_path_pnl_r", 0.0) or 0.0),
-        "median_cpcv_path_pnl_r": float(variant.get("median_cpcv_path_pnl_r", 0.0) or 0.0),
+        "median_cpcv_path_pnl_r": float(
+            variant.get("median_cpcv_path_pnl_r", 0.0) or 0.0
+        ),
         "worst_3_cpcv_paths": variant.get("worst_3_cpcv_paths", []),
         "positive_path_rate": float(variant.get("positive_path_rate", 0.0) or 0.0),
         "prior_worst_path_effect": variant.get("prior_worst_path_effect", []),
@@ -1148,7 +1496,11 @@ def _market_state_trial_row(
             "family": "market_state_setup_quality",
             "n_trials": n_trials,
             "selected_by": "governed_tiny_market_state_policy_batch",
-            "data_slice": {"source_path": base_config.get("source_path"), "symbol": base_config.get("symbol"), "timeframe": base_config.get("timeframe")},
+            "data_slice": {
+                "source_path": base_config.get("source_path"),
+                "symbol": base_config.get("symbol"),
+                "timeframe": base_config.get("timeframe"),
+            },
             "models_trained": 0,
             "holdout_status": "locked",
         },
@@ -1204,7 +1556,9 @@ def _attach_market_state_dsr(rows: list[dict[str, Any]]) -> None:
         )
         row["deflated_sharpe"].update(
             {
-                "status": "pass" if probability >= 0.95 and float(observed_sr) > 0 else "fail",
+                "status": (
+                    "pass" if probability >= 0.95 and float(observed_sr) > 0 else "fail"
+                ),
                 "probability": probability,
                 "n_trials": n_trials,
                 "sr_std": sr_std,
@@ -1257,13 +1611,19 @@ def _psr_probability(observed_sr: float | None, n_obs: int) -> float:
     )
 
 
-def _record_market_state_trial(row: dict[str, Any], base_config: dict[str, Any], controller: dict[str, Any]) -> None:
+def _record_market_state_trial(
+    row: dict[str, Any], base_config: dict[str, Any], controller: dict[str, Any]
+) -> None:
     append_experiment_record(
         ExperimentRecord(
             experiment_id=f"{controller.get('spec_version', 'bnr')}-{row['trial_id']}",
             hypothesis="Tiny governed market-state/setup-quality policy simulation before any model search.",
             config_ref=str(controller.get("spec_version", "unknown")),
-            data_slice={"source_path": base_config["source_path"], "symbol": base_config["symbol"], "timeframe": base_config["timeframe"]},
+            data_slice={
+                "source_path": base_config["source_path"],
+                "symbol": base_config["symbol"],
+                "timeframe": base_config["timeframe"],
+            },
             result={
                 "variant": row["variant"],
                 "trade_count": row["trade_count"],
@@ -1287,24 +1647,46 @@ def _apply_benchmark_contract(
     gate_policy: str | None,
     meta_policy: str | None,
 ) -> list[dict[str, Any]]:
-    feature_map = {str(row["candidate_id"]): row for row in result.get("features_records", [])}
+    feature_map = {
+        str(row["candidate_id"]): row for row in result.get("features_records", [])
+    }
     filtered = []
-    for row in validation.get("walk_forward", {}).get("stitched_prediction_records", []):
+    for row in validation.get("walk_forward", {}).get(
+        "stitched_prediction_records", []
+    ):
         merged = dict(row)
         merged.update(feature_map.get(str(row.get("candidate_id")), {}))
         filtered.append(merged)
     if gate_policy:
-        filtered = apply_break_quality_policy(filtered, result.get("features_records", []), policy_name=gate_policy, threshold=threshold)
+        filtered = apply_break_quality_policy(
+            filtered,
+            result.get("features_records", []),
+            policy_name=gate_policy,
+            threshold=threshold,
+        )
         threshold = 0.0
     if meta_policy:
         filtered = apply_reclaim_meta_policy(filtered, policy_name=meta_policy)
     if threshold > 0:
-        filtered = [row for row in filtered if float(row.get("probability", 0.0) or 0.0) >= threshold]
+        filtered = [
+            row
+            for row in filtered
+            if float(row.get("probability", 0.0) or 0.0) >= threshold
+        ]
     return filtered
 
 
-def _package_policy_cycle(family: str, controller: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
-    ranked = sorted(rows, key=lambda row: (float(row["utility_score"] or float("-inf")), row["total_pnl_r"]), reverse=True)
+def _package_policy_cycle(
+    family: str, controller: dict[str, Any], rows: list[dict[str, Any]]
+) -> dict[str, Any]:
+    ranked = sorted(
+        rows,
+        key=lambda row: (
+            float(row["utility_score"] or float("-inf")),
+            row["total_pnl_r"],
+        ),
+        reverse=True,
+    )
     accepted = ranked[0] if ranked else None
     return {
         "family": family,
@@ -1328,11 +1710,21 @@ def _policy_trial_limit(controller: dict[str, Any], default: int) -> int:
 
 def _load_tail_cleanup_diagnostic() -> dict[str, Any]:
     search_v1 = build_tail_path_cleanup_search_space()
-    diagnostic_path = Path(str(search_v1.get("diagnostic_artifact", "reports/cpcv_failure_attribution.json")))
+    diagnostic_path = Path(
+        str(
+            search_v1.get(
+                "diagnostic_artifact", "reports/cpcv_failure_attribution.json"
+            )
+        )
+    )
     if not diagnostic_path.is_absolute():
         diagnostic_path = REPORTS_DIR.parent / diagnostic_path
     if not diagnostic_path.exists():
-        return {"status": "missing", "reason": "diagnostic_artifact_missing", "path": str(diagnostic_path)}
+        return {
+            "status": "missing",
+            "reason": "diagnostic_artifact_missing",
+            "path": str(diagnostic_path),
+        }
     return json.loads(diagnostic_path.read_text(encoding="utf-8"))
 
 
@@ -1344,7 +1736,9 @@ def _evaluate_tail_cleanup_cpcv(
     controller: dict[str, Any],
 ) -> dict[str, Any]:
     source = Path(str(diagnostic.get("source_diagnostics", "")))
-    exploration = json.loads(source.read_text(encoding="utf-8")) if source.exists() else {}
+    exploration = (
+        json.loads(source.read_text(encoding="utf-8")) if source.exists() else {}
+    )
     cpcv = dict(exploration.get("cpcv", {}) or {})
     artifact_root = cpcv.get("artifact_root")
     if not artifact_root:
@@ -1359,7 +1753,9 @@ def _evaluate_tail_cleanup_cpcv(
     path_pnls: list[float] = []
     for path_file in path_files:
         path_rows = json.loads(path_file.read_text(encoding="utf-8"))
-        policy_rows = apply_tail_path_cleanup_policy(path_rows, policy_name=policy_name, threshold=threshold)
+        policy_rows = apply_tail_path_cleanup_policy(
+            path_rows, policy_name=policy_name, threshold=threshold
+        )
         execution = run_event_driven_policy_backtest(
             policy_rows,
             threshold=threshold,
@@ -1371,11 +1767,20 @@ def _evaluate_tail_cleanup_cpcv(
             total_pnl_r = 0.0
             sharpe_r = None
             trade_count = 0
-            attribution = {"subtype_breakdown": [], "threshold_distribution": [], "largest_loss_cluster_r": 0.0}
+            attribution = {
+                "subtype_breakdown": [],
+                "threshold_distribution": [],
+                "largest_loss_cluster_r": 0.0,
+            }
         else:
             total_pnl_r = float(execution.get("total_pnl_r", 0.0) or 0.0)
             trade_count = int(execution.get("trade_count", 0) or 0)
-            sharpe_r = compute_sharpe_ratio([float(item.get("executed_pnl_r", 0.0) or 0.0) for item in execution.get("equity_curve", [])])
+            sharpe_r = compute_sharpe_ratio(
+                [
+                    float(item.get("executed_pnl_r", 0.0) or 0.0)
+                    for item in execution.get("equity_curve", [])
+                ]
+            )
             attribution = _tail_cleanup_path_attribution(policy_rows, execution)
         if total_pnl_r <= 0:
             negative_paths += 1
@@ -1386,9 +1791,21 @@ def _evaluate_tail_cleanup_cpcv(
                 "rows_artifact": str(path_file),
                 "trade_count": trade_count,
                 "total_pnl_r": total_pnl_r,
-                "avg_trade_r": float(execution.get("avg_trade_r", 0.0) or 0.0) if execution.get("status") == "complete" else 0.0,
-                "win_rate": float(execution.get("win_rate", 0.0) or 0.0) if execution.get("status") == "complete" else 0.0,
-                "max_drawdown_r": float(execution.get("max_drawdown_r", 0.0) or 0.0) if execution.get("status") == "complete" else 0.0,
+                "avg_trade_r": (
+                    float(execution.get("avg_trade_r", 0.0) or 0.0)
+                    if execution.get("status") == "complete"
+                    else 0.0
+                ),
+                "win_rate": (
+                    float(execution.get("win_rate", 0.0) or 0.0)
+                    if execution.get("status") == "complete"
+                    else 0.0
+                ),
+                "max_drawdown_r": (
+                    float(execution.get("max_drawdown_r", 0.0) or 0.0)
+                    if execution.get("status") == "complete"
+                    else 0.0
+                ),
                 "sharpe_r": sharpe_r,
                 **attribution,
             }
@@ -1401,7 +1818,15 @@ def _evaluate_tail_cleanup_cpcv(
     positive_rate = sum(1 for value in path_pnls if value > 0) / len(path_pnls)
     pbo = negative_paths / len(path_pnls)
     ranked = sorted(rows, key=lambda row: row["total_pnl_r"])
-    status = "pass" if pbo <= 0.25 and mean_pnl > 0 and median_pnl > 0 and positive_rate >= 0.60 and min_pnl > -5.0 else "fail"
+    status = (
+        "pass"
+        if pbo <= 0.25
+        and mean_pnl > 0
+        and median_pnl > 0
+        and positive_rate >= 0.60
+        and min_pnl > -5.0
+        else "fail"
+    )
     return {
         "status": status,
         "pbo": pbo,
@@ -1416,15 +1841,21 @@ def _evaluate_tail_cleanup_cpcv(
     }
 
 
-def _tail_cleanup_path_attribution(records: list[dict[str, Any]], execution: dict[str, Any]) -> dict[str, Any]:
-    executed = {str(row.get("candidate_id")): row for row in execution.get("equity_curve", [])}
+def _tail_cleanup_path_attribution(
+    records: list[dict[str, Any]], execution: dict[str, Any]
+) -> dict[str, Any]:
+    executed = {
+        str(row.get("candidate_id")): row for row in execution.get("equity_curve", [])
+    }
     merged = []
     for row in records:
         cid = str(row.get("candidate_id"))
         if cid not in executed:
             continue
         joined = dict(row)
-        joined["executed_pnl_r"] = float(executed[cid].get("executed_pnl_r", 0.0) or 0.0)
+        joined["executed_pnl_r"] = float(
+            executed[cid].get("executed_pnl_r", 0.0) or 0.0
+        )
         merged.append(joined)
     return {
         "largest_loss_cluster_r": _largest_loss_cluster_from_rows(merged),
@@ -1450,7 +1881,9 @@ def _simple_group_rows(rows: list[dict[str, Any]], column: str) -> list[dict[str
     groups: dict[str, dict[str, Any]] = {}
     for row in rows:
         key = str(row.get(column, "unknown"))
-        bucket = groups.setdefault(key, {"key": key, "trade_count": 0, "total_pnl_r": 0.0})
+        bucket = groups.setdefault(
+            key, {"key": key, "trade_count": 0, "total_pnl_r": 0.0}
+        )
         bucket["trade_count"] += 1
         bucket["total_pnl_r"] += float(row.get("executed_pnl_r", 0.0) or 0.0)
     return sorted(groups.values(), key=lambda item: item["trade_count"], reverse=True)
@@ -1479,7 +1912,9 @@ def _tail_path_distribution(sorted_pnls: list[float]) -> dict[str, float]:
     def pct(level: float) -> float:
         if not sorted_pnls:
             return 0.0
-        idx = min(len(sorted_pnls) - 1, max(0, int(round((len(sorted_pnls) - 1) * level))))
+        idx = min(
+            len(sorted_pnls) - 1, max(0, int(round((len(sorted_pnls) - 1) * level)))
+        )
         return float(sorted_pnls[idx])
 
     negative_tail = [value for value in sorted_pnls if value < 0]
@@ -1492,7 +1927,9 @@ def _tail_path_distribution(sorted_pnls: list[float]) -> dict[str, float]:
     }
 
 
-def _deep_retrace_improved(source_diagnostic: dict[str, Any], trial_cpcv: dict[str, Any]) -> bool:
+def _deep_retrace_improved(
+    source_diagnostic: dict[str, Any], trial_cpcv: dict[str, Any]
+) -> bool:
     source_worst = list(source_diagnostic.get("worst_paths", []) or [])
     baseline_loss = None
     if source_worst:
@@ -1528,13 +1965,21 @@ def _dominant_loss_bucket(cpcv_summary: dict[str, Any]) -> str | None:
 
 
 def _attach_tail_cleanup_dsr(rows: list[dict[str, Any]]) -> None:
-    observed = [float(row.get("observed_sharpe", 0.0) or 0.0) for row in rows if row.get("observed_sharpe") is not None]
+    observed = [
+        float(row.get("observed_sharpe", 0.0) or 0.0)
+        for row in rows
+        if row.get("observed_sharpe") is not None
+    ]
     sr_std = _tail_sample_std(observed) if len(observed) >= 2 else 0.0
     trial_count = max(len(rows), 1)
     for row in rows:
         observed_sr = row.get("observed_sharpe")
         if observed_sr is None or sr_std <= 0 or int(row.get("n_obs", 0) or 0) <= 1:
-            row["deflated_sharpe"] = {"status": "pending", "probability": 0.0, "n_trials": trial_count}
+            row["deflated_sharpe"] = {
+                "status": "pending",
+                "probability": 0.0,
+                "n_trials": trial_count,
+            }
             continue
         probability = deflated_sharpe_probability(
             observed_sr=float(observed_sr),
@@ -1545,7 +1990,9 @@ def _attach_tail_cleanup_dsr(rows: list[dict[str, Any]]) -> None:
             kurtosis=3.0,
         )
         row["deflated_sharpe"] = {
-            "status": "pass" if probability >= 0.95 and float(observed_sr) > 0 else "fail",
+            "status": (
+                "pass" if probability >= 0.95 and float(observed_sr) > 0 else "fail"
+            ),
             "probability": probability,
             "n_trials": trial_count,
         }
@@ -1573,13 +2020,19 @@ def _decide_tail_cleanup_trial(row: dict[str, Any]) -> str:
     return "accept"
 
 
-def _record_tail_cleanup_trial(row: dict[str, Any], base_config: dict[str, Any]) -> None:
+def _record_tail_cleanup_trial(
+    row: dict[str, Any], base_config: dict[str, Any]
+) -> None:
     append_experiment_record(
         ExperimentRecord(
             experiment_id=f"{row['parent_benchmark_id']}-{row['trial_id']}",
             hypothesis="Target CPCV tail-path failure axes without broad threshold/model search.",
             config_ref=str(row["parent_benchmark_id"]),
-            data_slice={"source_path": base_config["source_path"], "symbol": base_config["symbol"], "timeframe": base_config["timeframe"]},
+            data_slice={
+                "source_path": base_config["source_path"],
+                "symbol": base_config["symbol"],
+                "timeframe": base_config["timeframe"],
+            },
             result={
                 "overrides": row["overrides"],
                 "utility_score": row.get("utility_score"),
@@ -1610,4 +2063,4 @@ def _tail_sample_std(values: list[float]) -> float:
         return 0.0
     mean = sum(values) / len(values)
     variance = sum((value - mean) ** 2 for value in values) / max(len(values) - 1, 1)
-    return variance ** 0.5
+    return variance**0.5

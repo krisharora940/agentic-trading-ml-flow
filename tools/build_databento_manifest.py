@@ -25,8 +25,12 @@ def infer_timeframe(path: Path) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build a real Databento manifest from MNQ Parquet files.")
-    parser.add_argument("--output", default="data/manifests/databento_mnq_manifest.json")
+    parser = argparse.ArgumentParser(
+        description="Build a real Databento manifest from MNQ Parquet files."
+    )
+    parser.add_argument(
+        "--output", default="data/manifests/databento_mnq_manifest.json"
+    )
     parser.add_argument("--source", action="append", dest="sources")
     parser.add_argument("--symbol", default="MNQ")
     parser.add_argument("--timezone", default="America/New_York")
@@ -36,7 +40,9 @@ def main() -> None:
     for source in args.sources or DEFAULT_SOURCES:
         path = Path(source)
         timeframe = infer_timeframe(path)
-        bars = load_ohlcv_file(path, symbol=args.symbol, timeframe=timeframe, timezone=args.timezone)
+        bars = load_ohlcv_file(
+            path, symbol=args.symbol, timeframe=timeframe, timezone=args.timezone
+        )
         quality = build_data_quality_report(
             bars,
             source_path=path,

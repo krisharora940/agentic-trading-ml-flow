@@ -38,7 +38,9 @@ class ModelingAndTranslationTests(unittest.TestCase):
             self.assertIn("session_rows", execution)
             self.assertIn("overlap_skips", execution)
             self.assertIn("fill_assumptions", execution)
-            self.assertIn(execution["fill_assumptions"]["profile"], {"base", "stressed"})
+            self.assertIn(
+                execution["fill_assumptions"]["profile"], {"base", "stressed"}
+            )
             self.assertIn("sizing_policy", execution["fill_assumptions"])
             self.assertIn("regime_throttle_policy", execution["fill_assumptions"])
 

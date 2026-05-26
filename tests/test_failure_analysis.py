@@ -20,11 +20,23 @@ class FailureAnalysisTests(unittest.TestCase):
                 }
             ],
             "labels_records": [
-                {"candidate_id": "a", "label": 0, "outcome": "stop", "pnl_r": -1.0, "bars_held": 3}
+                {
+                    "candidate_id": "a",
+                    "label": 0,
+                    "outcome": "stop",
+                    "pnl_r": -1.0,
+                    "bars_held": 3,
+                }
             ],
         }
         stitched = [
-            {"candidate_id": "a", "session_date": "2026-01-05", "probability": 0.6, "label": 0, "pnl_r": -1.0}
+            {
+                "candidate_id": "a",
+                "session_date": "2026-01-05",
+                "probability": 0.6,
+                "label": 0,
+                "pnl_r": -1.0,
+            }
         ]
         execution = {"equity_curve": [{"candidate_id": "a"}]}
         result = build_failure_map(stage2_result, stitched, execution)

@@ -53,10 +53,14 @@ def apply_break_quality_policy(
         in_scope = not scoped_subtypes or subtype in scoped_subtypes
         if in_scope:
             if "min_break_efficiency_ratio" in policy:
-                if float(merged.get("break_efficiency_ratio", 0.0) or 0.0) < float(policy["min_break_efficiency_ratio"]):
+                if float(merged.get("break_efficiency_ratio", 0.0) or 0.0) < float(
+                    policy["min_break_efficiency_ratio"]
+                ):
                     continue
             if "min_break_body_fraction" in policy:
-                if float(merged.get("break_body_fraction", 0.0) or 0.0) < float(policy["min_break_body_fraction"]):
+                if float(merged.get("break_body_fraction", 0.0) or 0.0) < float(
+                    policy["min_break_body_fraction"]
+                ):
                     continue
         selected.append(merged)
     return selected

@@ -22,7 +22,9 @@ def build_model_diagnostics_lab(
 
     bucket_count = min(5, max(2, int(len(frame) ** 0.5)))
     ranked = frame.sort_values("probability").reset_index(drop=True)
-    ranked["bucket"] = pd.qcut(ranked.index, q=bucket_count, labels=False, duplicates="drop")
+    ranked["bucket"] = pd.qcut(
+        ranked.index, q=bucket_count, labels=False, duplicates="drop"
+    )
 
     bucket_rows = []
     for bucket, group in ranked.groupby("bucket"):
@@ -39,7 +41,9 @@ def build_model_diagnostics_lab(
     monotonic = _is_monotonic(bucket_rows)
     uncertainty = {
         "probability_mean": float(frame["probability"].mean()),
-        "probability_std": float(frame["probability"].std(ddof=0)) if len(frame) > 1 else 0.0,
+        "probability_std": (
+            float(frame["probability"].std(ddof=0)) if len(frame) > 1 else 0.0
+        ),
         "high_confidence_share": float((frame["probability"] >= 0.7).mean()),
         "low_confidence_share": float((frame["probability"] <= 0.3).mean()),
     }
@@ -50,15 +54,23 @@ def build_model_diagnostics_lab(
         "bucket_monotonicity": monotonic,
         "uncertainty_review": uncertainty,
         "calibration_review": calibration,
-        "shap_analysis": _build_shap_analysis(feature_records or [], labels_records or [], model_family=model_family),
+        "shap_analysis": _build_shap_analysis(
+            feature_records or [], labels_records or [], model_family=model_family
+        ),
     }
 
 
 def _is_monotonic(bucket_rows: list[dict[str, Any]]) -> bool:
     if len(bucket_rows) < 2:
         return False
-    positives = [row["positive_rate"] for row in sorted(bucket_rows, key=lambda row: row["probability_mean"])]
-    return all(later >= earlier for earlier, later in zip(positives, positives[1:], strict=False))
+    positives = [
+        row["positive_rate"]
+        for row in sorted(bucket_rows, key=lambda row: row["probability_mean"])
+    ]
+    return all(
+        later >= earlier
+        for earlier, later in zip(positives, positives[1:], strict=False)
+    )
 
 
 def _build_calibration_review(frame: Any) -> dict[str, Any]:
@@ -128,14 +140,34 @@ def _build_shap_analysis(
 
     features = pd.DataFrame(feature_records)
     labels = pd.DataFrame(labels_records)
-    merged = features.merge(labels, on="candidate_id", how="inner").sort_values("session_date").reset_index(drop=True)
+    merged = (
+        features.merge(labels, on="candidate_id", how="inner")
+        .sort_values("session_date")
+        .reset_index(drop=True)
+    )
     if len(merged) < 20 or merged["label"].nunique() < 2:
         return {"status": "pending", "reason": "insufficient_rows"}
 
     feature_cols = [
         col
         for col in merged.columns
-        if col not in {"candidate_id", "session_date", "label", "outcome", "entry_time", "exit_time", "entry_price", "stop_price", "target_price", "exit_price", "bars_held", "mfe", "mae", "pnl_r"}
+        if col
+        not in {
+            "candidate_id",
+            "session_date",
+            "label",
+            "outcome",
+            "entry_time",
+            "exit_time",
+            "entry_price",
+            "stop_price",
+            "target_price",
+            "exit_price",
+            "bars_held",
+            "mfe",
+            "mae",
+            "pnl_r",
+        }
         and pd.api.types.is_numeric_dtype(merged[col])
         and not merged[col].isna().all()
     ]
@@ -156,16 +188,23 @@ def _build_shap_analysis(
     sample = imputer.transform(test[feature_cols].head(25))
     feature_names = feature_cols
 
-    predict_fn = lambda x: model.predict_proba(pd.DataFrame(x, columns=feature_names))[:, 1]
+    def predict_fn(x: Any) -> Any:
+        return model.predict_proba(pd.DataFrame(x, columns=feature_names))[:, 1]
+
     try:
-        explainer = shap.Explainer(predict_fn, background[:25], feature_names=feature_names)
+        explainer = shap.Explainer(
+            predict_fn, background[:25], feature_names=feature_names
+        )
         shap_values = explainer(sample)
         values = getattr(shap_values, "values", None)
         if values is None:
             return {"status": "pending", "reason": "invalid_shap_output"}
         abs_mean = abs(values).mean(axis=0)
         ranked = sorted(
-            [{"feature": feature_names[idx], "mean_abs_shap": float(score)} for idx, score in enumerate(abs_mean)],
+            [
+                {"feature": feature_names[idx], "mean_abs_shap": float(score)}
+                for idx, score in enumerate(abs_mean)
+            ],
             key=lambda row: row["mean_abs_shap"],
             reverse=True,
         )
@@ -175,14 +214,22 @@ def _build_shap_analysis(
         worst_rows = []
         for row_idx, (_, trade) in enumerate(worst.iterrows()):
             contributions = worst_shap.values[row_idx]
-            top_idx = sorted(range(len(feature_names)), key=lambda idx: abs(contributions[idx]), reverse=True)[:3]
+            top_idx = sorted(
+                range(len(feature_names)),
+                key=lambda idx: abs(contributions[idx]),
+                reverse=True,
+            )[:3]
             worst_rows.append(
                 {
                     "candidate_id": str(trade["candidate_id"]),
                     "session_date": str(trade["session_date"]),
                     "pnl_r": float(trade.get("pnl_r", 0.0) or 0.0),
                     "top_contributors": [
-                        {"feature": feature_names[idx], "shap_value": float(contributions[idx])} for idx in top_idx
+                        {
+                            "feature": feature_names[idx],
+                            "shap_value": float(contributions[idx]),
+                        }
+                        for idx in top_idx
                     ],
                 }
             )

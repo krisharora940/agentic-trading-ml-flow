@@ -55,6 +55,7 @@ class AgentLoopState(TypedDict, total=False):
     executed_family_cycle: int
     search_batch_status: str
     execution_mode: Literal["diagnostic_only", "cheap_search", "full_validation"]
+    execute_research_actions: bool
     compute_budgets: dict[str, Any]
     budget_usage: dict[str, Any]
     route_decisions: list[dict[str, Any]]
@@ -74,9 +75,16 @@ class AgentLoopState(TypedDict, total=False):
     active_hypothesis: dict[str, Any]
     bnr_attempts: list[dict[str, Any]]
     failure_clusters: list[dict[str, Any]]
+    responsibility_boundaries: dict[str, Any]
+    state_ontology: dict[str, Any]
+    research_branch_status: list[dict[str, Any]]
     price_action_expert: dict[str, Any]
     desk_summary: dict[str, Any]
     desk_proposals: list[dict[str, Any]]
+    research_action_plan: dict[str, Any]
+    red_team_review: dict[str, Any]
+    research_action_result: dict[str, Any]
+    marginal_evidence: dict[str, Any]
     desk_memory: list[dict[str, Any]]
     failure_memory: list[dict[str, Any]]
     research_action_history: list[dict[str, Any]]

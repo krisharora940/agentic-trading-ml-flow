@@ -22,11 +22,21 @@ def build_validation_audit(
     labels = list(stage2_result.get("labels_records", []))
     walk_forward = _walk_forward_check(features, labels)
     cpcv = build_cpcv_audit(stage2_result, artifact_context=artifact_context)
-    deflated_sharpe = build_deflated_sharpe_audit(stage2_result, walk_forward, cpcv, search_results, controller_state=controller_state)
+    deflated_sharpe = build_deflated_sharpe_audit(
+        stage2_result,
+        walk_forward,
+        cpcv,
+        search_results,
+        controller_state=controller_state,
+    )
     purging = _purging_check(labels)
     multiple_testing = _multiple_testing_check(search_results)
-    random_signal_plumbing = _random_signal_plumbing_check(walk_forward, search_results, controller_state=controller_state)
-    overfitting = _overfitting_check(walk_forward, cpcv, multiple_testing, deflated_sharpe)
+    random_signal_plumbing = _random_signal_plumbing_check(
+        walk_forward, search_results, controller_state=controller_state
+    )
+    overfitting = _overfitting_check(
+        walk_forward, cpcv, multiple_testing, deflated_sharpe
+    )
     return {
         "walk_forward": walk_forward,
         "cpcv": cpcv,
@@ -38,7 +48,9 @@ def build_validation_audit(
     }
 
 
-def _walk_forward_check(features: list[dict[str, Any]], labels: list[dict[str, Any]]) -> dict[str, Any]:
+def _walk_forward_check(
+    features: list[dict[str, Any]], labels: list[dict[str, Any]]
+) -> dict[str, Any]:
     try:
         import pandas as pd
         from sklearn.impute import SimpleImputer
@@ -67,12 +79,33 @@ def _walk_forward_check(features: list[dict[str, Any]], labels: list[dict[str, A
     feature_cols = [
         col
         for col in merged.columns
-        if col not in {"candidate_id", "session_date", "label", "outcome", "entry_time", "exit_time", "entry_price", "stop_price", "target_price", "exit_price", "bars_held", "mfe", "mae", "pnl_r"}
+        if col
+        not in {
+            "candidate_id",
+            "session_date",
+            "label",
+            "outcome",
+            "entry_time",
+            "exit_time",
+            "entry_price",
+            "stop_price",
+            "target_price",
+            "exit_price",
+            "bars_held",
+            "mfe",
+            "mae",
+            "pnl_r",
+        }
         and pd.api.types.is_numeric_dtype(merged[col])
         and not merged[col].isna().all()
     ]
     for train, test, fold_meta in folds_input:
-        if train.empty or test.empty or train["label"].nunique() < 2 or test["label"].nunique() < 2:
+        if (
+            train.empty
+            or test.empty
+            or train["label"].nunique() < 2
+            or test["label"].nunique() < 2
+        ):
             continue
         model = make_pipeline(
             SimpleImputer(strategy="median"),
@@ -107,12 +140,19 @@ def _walk_forward_check(features: list[dict[str, Any]], labels: list[dict[str, A
             {
                 **fold_meta.to_dict(),
                 "roc_auc": float(roc_auc_score(test["label"], probabilities)),
-                "precision": float(precision_score(test["label"], predictions, zero_division=0)),
+                "precision": float(
+                    precision_score(test["label"], predictions, zero_division=0)
+                ),
             }
         )
 
     if len(folds) < 2:
-        return {"status": "pending", "reason": "insufficient_valid_folds", "fold_count": len(folds), **metadata}
+        return {
+            "status": "pending",
+            "reason": "insufficient_valid_folds",
+            "fold_count": len(folds),
+            **metadata,
+        }
 
     mean_roc_auc = sum(item["roc_auc"] for item in folds) / len(folds)
     status = "pass" if mean_roc_auc >= 0.55 else "fail"
@@ -141,9 +181,17 @@ def _purging_check(labels: list[dict[str, Any]]) -> dict[str, Any]:
 
     global_config = load_global_config()
     purging_bars = int(global_config["validation"].get("purging_bars", 0))
-    labels_df["entry_time"] = pd.to_datetime(labels_df["entry_time"], errors="coerce", utc=True)
-    labels_df["exit_time"] = pd.to_datetime(labels_df["exit_time"], errors="coerce", utc=True)
-    labels_df = labels_df.dropna(subset=["entry_time", "exit_time"]).sort_values("entry_time").reset_index(drop=True)
+    labels_df["entry_time"] = pd.to_datetime(
+        labels_df["entry_time"], errors="coerce", utc=True
+    )
+    labels_df["exit_time"] = pd.to_datetime(
+        labels_df["exit_time"], errors="coerce", utc=True
+    )
+    labels_df = (
+        labels_df.dropna(subset=["entry_time", "exit_time"])
+        .sort_values("entry_time")
+        .reset_index(drop=True)
+    )
     if len(labels_df) < 2:
         return {"status": "pass", "overlap_ratio": 0.0, "overlapping_pairs": 0}
 
@@ -153,9 +201,18 @@ def _purging_check(labels: list[dict[str, Any]]) -> dict[str, Any]:
             overlapping_pairs += 1
     overlap_ratio = overlapping_pairs / max(len(labels_df) - 1, 1)
     if overlapping_pairs == 0:
-        return {"status": "pass", "overlap_ratio": overlap_ratio, "overlapping_pairs": overlapping_pairs}
+        return {
+            "status": "pass",
+            "overlap_ratio": overlap_ratio,
+            "overlapping_pairs": overlapping_pairs,
+        }
     if purging_bars > 0:
-        return {"status": "pass", "overlap_ratio": overlap_ratio, "overlapping_pairs": overlapping_pairs, "purging_bars": purging_bars}
+        return {
+            "status": "pass",
+            "overlap_ratio": overlap_ratio,
+            "overlapping_pairs": overlapping_pairs,
+            "purging_bars": purging_bars,
+        }
     return {
         "status": "fail",
         "overlap_ratio": overlap_ratio,
@@ -170,7 +227,11 @@ def _multiple_testing_check(search_results: dict[str, Any]) -> dict[str, Any]:
     if trial_count <= 0:
         return {"status": "pending", "reason": "no_trials"}
     if not accepted:
-        return {"status": "fail", "trial_count": trial_count, "reason": "no_trial_cleared_controller"}
+        return {
+            "status": "fail",
+            "trial_count": trial_count,
+            "reason": "no_trial_cleared_controller",
+        }
 
     ranked_trials = list(search_results.get("ranked_trials", []) or [])
     net_delta = float(accepted.get("net_delta_vs_baseline", 0.0) or 0.0)
@@ -222,7 +283,18 @@ def _random_signal_plumbing_check(
         return {"status": "pending", "reason": "missing_dependencies"}
 
     frame = pd.DataFrame(records)
-    required = {"candidate_id", "direction", "probability", "entry_time", "exit_time", "entry_price", "exit_price", "stop_price", "pnl_r", "session_date"}
+    required = {
+        "candidate_id",
+        "direction",
+        "probability",
+        "entry_time",
+        "exit_time",
+        "entry_price",
+        "exit_price",
+        "stop_price",
+        "pnl_r",
+        "session_date",
+    }
     if frame.empty or not required.issubset(frame.columns):
         return {"status": "pending", "reason": "execution_fields_unavailable"}
 
@@ -230,10 +302,49 @@ def _random_signal_plumbing_check(
     controller = dict(controller_state or {})
     accepted = dict(search_results.get("accepted_trial", {}) or {})
     overrides = dict(accepted.get("overrides", {}) or {})
-    threshold = float(overrides.get("decision_threshold", controller.get("frozen_threshold", bnr_config.get("frozen_benchmark", {}).get("threshold", 0.45))) or 0.45)
-    sizing_policy = str(overrides.get("sizing_policy", controller.get("benchmark_sizing_policy", bnr_config.get("frozen_benchmark", {}).get("sizing_policy", "binary_threshold_v1"))))
-    regime_throttle_policy = str(overrides.get("regime_throttle_policy", controller.get("benchmark_regime_throttle_policy", bnr_config.get("frozen_benchmark", {}).get("regime_throttle_policy", "none"))))
-    regime_size_policy = str(overrides.get("regime_size_policy", controller.get("benchmark_regime_size_policy", bnr_config.get("frozen_benchmark", {}).get("regime_size_policy", "none"))))
+    threshold = float(
+        overrides.get(
+            "decision_threshold",
+            controller.get(
+                "frozen_threshold",
+                bnr_config.get("frozen_benchmark", {}).get("threshold", 0.45),
+            ),
+        )
+        or 0.45
+    )
+    sizing_policy = str(
+        overrides.get(
+            "sizing_policy",
+            controller.get(
+                "benchmark_sizing_policy",
+                bnr_config.get("frozen_benchmark", {}).get(
+                    "sizing_policy", "binary_threshold_v1"
+                ),
+            ),
+        )
+    )
+    regime_throttle_policy = str(
+        overrides.get(
+            "regime_throttle_policy",
+            controller.get(
+                "benchmark_regime_throttle_policy",
+                bnr_config.get("frozen_benchmark", {}).get(
+                    "regime_throttle_policy", "none"
+                ),
+            ),
+        )
+    )
+    regime_size_policy = str(
+        overrides.get(
+            "regime_size_policy",
+            controller.get(
+                "benchmark_regime_size_policy",
+                bnr_config.get("frozen_benchmark", {}).get(
+                    "regime_size_policy", "none"
+                ),
+            ),
+        )
+    )
 
     actual = run_event_driven_policy_backtest(
         frame.to_dict(orient="records"),
@@ -243,7 +354,11 @@ def _random_signal_plumbing_check(
         regime_size_policy=regime_size_policy,
     )
     if actual.get("status") != "complete":
-        return {"status": "pending", "reason": "actual_execution_unavailable", "execution_status": actual.get("status")}
+        return {
+            "status": "pending",
+            "reason": "actual_execution_unavailable",
+            "execution_status": actual.get("status"),
+        }
 
     rng = random.Random(42)
     shuffled = frame.copy()
@@ -276,7 +391,12 @@ def _random_signal_plumbing_check(
         if actual_utility_score is not None and random_utility_score is not None
         else None
     )
-    status = "pass" if actual_total_pnl > random_total_pnl and (utility_delta is None or utility_delta > 0) else "fail"
+    status = (
+        "pass"
+        if actual_total_pnl > random_total_pnl
+        and (utility_delta is None or utility_delta > 0)
+        else "fail"
+    )
     return {
         "status": status,
         "method": "probability_shuffle_control",
@@ -291,10 +411,25 @@ def _random_signal_plumbing_check(
     }
 
 
-def _overfitting_check(walk_forward: dict[str, Any], cpcv: dict[str, Any], multiple_testing: dict[str, Any], deflated_sharpe: dict[str, Any]) -> str:
-    if walk_forward.get("status") == "fail" or cpcv.get("status") == "fail" or multiple_testing.get("status") == "fail" or deflated_sharpe.get("status") == "fail":
+def _overfitting_check(
+    walk_forward: dict[str, Any],
+    cpcv: dict[str, Any],
+    multiple_testing: dict[str, Any],
+    deflated_sharpe: dict[str, Any],
+) -> str:
+    if (
+        walk_forward.get("status") == "fail"
+        or cpcv.get("status") == "fail"
+        or multiple_testing.get("status") == "fail"
+        or deflated_sharpe.get("status") == "fail"
+    ):
         return "fail"
-    if walk_forward.get("status") == "pass" and cpcv.get("status") == "pass" and multiple_testing.get("status") == "pass" and deflated_sharpe.get("status") == "pass":
+    if (
+        walk_forward.get("status") == "pass"
+        and cpcv.get("status") == "pass"
+        and multiple_testing.get("status") == "pass"
+        and deflated_sharpe.get("status") == "pass"
+    ):
         return "pass"
     return "pending"
 
@@ -306,7 +441,9 @@ def _centered_trial_deltas(trial_deltas: list[float]) -> list[float]:
     return [delta - mean_delta for delta in trial_deltas]
 
 
-def _familywise_max_pvalue(centered_deltas: list[float], *, observed_best: float, bootstrap_samples: int = 2000) -> float:
+def _familywise_max_pvalue(
+    centered_deltas: list[float], *, observed_best: float, bootstrap_samples: int = 2000
+) -> float:
     if observed_best <= 0:
         return 1.0
     if not centered_deltas:

@@ -10,9 +10,13 @@ from trading_ml.stage2_data import build_data_quality_report, load_ohlcv_file
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Register a normalized OHLCV source in the MNQ manifest.")
+    parser = argparse.ArgumentParser(
+        description="Register a normalized OHLCV source in the MNQ manifest."
+    )
     parser.add_argument("--source", required=True)
-    parser.add_argument("--manifest", default="data/manifests/databento_mnq_manifest.json")
+    parser.add_argument(
+        "--manifest", default="data/manifests/databento_mnq_manifest.json"
+    )
     parser.add_argument("--symbol", default="MNQ")
     parser.add_argument("--timeframe", default="30s")
     parser.add_argument("--timezone", default="America/New_York")
@@ -24,17 +28,21 @@ def main() -> None:
 
     source = Path(args.source)
     manifest_path = Path(args.manifest)
-    manifest = load_databento_manifest(manifest_path.name) if manifest_path.exists() else {
-        "dataset_name": "databento_mnq_bnr",
-        "provider": args.provider,
-        "symbol": args.symbol,
-        "asset_class": "futures",
-        "primary_setup": "BNR",
-        "zone_window": "09:30:00-09:30:59 America/New_York",
-        "decision_available_at": "09:31:00 America/New_York",
-        "timezone": args.timezone,
-        "files": [],
-    }
+    manifest = (
+        load_databento_manifest(manifest_path.name)
+        if manifest_path.exists()
+        else {
+            "dataset_name": "databento_mnq_bnr",
+            "provider": args.provider,
+            "symbol": args.symbol,
+            "asset_class": "futures",
+            "primary_setup": "BNR",
+            "zone_window": "09:30:00-09:30:59 America/New_York",
+            "decision_available_at": "09:31:00 America/New_York",
+            "timezone": args.timezone,
+            "files": [],
+        }
+    )
 
     bars = load_ohlcv_file(
         source,
@@ -71,14 +79,26 @@ def main() -> None:
         "latest_session_end": quality.latest_session_end,
     }
 
-    files = [item for item in manifest.get("files", []) if item.get("source_path") != str(source)]
+    files = [
+        item
+        for item in manifest.get("files", [])
+        if item.get("source_path") != str(source)
+    ]
     files.append(entry)
-    files.sort(key=lambda item: (item.get("timeframe") != "30s", -(item.get("sessions", 0)), -(item.get("rows", 0))))
+    files.sort(
+        key=lambda item: (
+            item.get("timeframe") != "30s",
+            -(item.get("sessions", 0)),
+            -(item.get("rows", 0)),
+        )
+    )
     manifest["files"] = files
     manifest["generated_at"] = utc_now_iso()
 
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+    )
     print(f"updated {manifest_path}")
     print(json.dumps(entry, indent=2, sort_keys=True))
 

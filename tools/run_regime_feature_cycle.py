@@ -15,7 +15,12 @@ def main() -> None:
     state = build_agent_loop_state()
     bnr_config = load_bnr_config()
     threshold = float(bnr_config["frozen_benchmark"]["threshold"])
-    feature_families = ["context_plus_reclaim", "context_plus_geometry", "context_plus_regime", "reclaim_plus_regime"]
+    feature_families = [
+        "context_plus_reclaim",
+        "context_plus_geometry",
+        "context_plus_regime",
+        "reclaim_plus_regime",
+    ]
     output = Path("reports/regime_feature_cycle.json")
 
     rows = []
@@ -24,14 +29,22 @@ def main() -> None:
         config["feature_family"] = family
         result = run_stage2_research_engine(Stage2Config(**config))
         validation = build_validation_audit(result, {})
-        stitched = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []))
+        stitched = list(
+            validation.get("walk_forward", {}).get("stitched_prediction_records", [])
+        )
         execution = run_event_driven_policy_backtest(stitched, threshold=threshold)
-        utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+        utility = (
+            compute_execution_utility(execution)
+            if execution.get("status") == "complete"
+            else {"score": None}
+        )
         rows.append(
             {
                 "feature_family": family,
                 "walk_forward_status": validation.get("walk_forward", {}).get("status"),
-                "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get("mean_roc_auc"),
+                "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get(
+                    "mean_roc_auc"
+                ),
                 "feature_validation": result.get("feature_validation", {}),
                 "trade_count": int(execution.get("trade_count", 0) or 0),
                 "total_pnl_r": float(execution.get("total_pnl_r", 0.0) or 0.0),
@@ -63,7 +76,12 @@ def main() -> None:
         ),
         reverse=True,
     )
-    payload = {"source": "regime_feature_cycle", "threshold": threshold, "ranked_rows": ranked, "best_row": ranked[0] if ranked else None}
+    payload = {
+        "source": "regime_feature_cycle",
+        "threshold": threshold,
+        "ranked_rows": ranked,
+        "best_row": ranked[0] if ranked else None,
+    }
     output.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     print(json.dumps(payload, indent=2, default=str))
 

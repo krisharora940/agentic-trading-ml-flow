@@ -37,5 +37,7 @@ def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def load_databento_manifest(name: str = "databento_mnq_manifest.json") -> dict[str, Any]:
+def load_databento_manifest(
+    name: str = "databento_mnq_manifest.json",
+) -> dict[str, Any]:
     return load_json(MANIFESTS_DIR / name)

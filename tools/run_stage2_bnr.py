@@ -3,14 +3,20 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from trading_ml.stage2_pipeline import Stage2Config, run_stage2_research_engine, write_stage2_report
+from trading_ml.stage2_pipeline import (
+    Stage2Config,
+    run_stage2_research_engine,
+    write_stage2_report,
+)
 
 
 DEFAULT_SOURCE = "/Users/radhikaarora/Documents/Trading ML/ML V2/data/mnq_30s_2026-01-01_to_2026-02-28.parquet"
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the Stage 2 BNR research engine on MNQ 30s data.")
+    parser = argparse.ArgumentParser(
+        description="Run the Stage 2 BNR research engine on MNQ 30s data."
+    )
     parser.add_argument("--source", default=DEFAULT_SOURCE)
     parser.add_argument("--symbol", default="MNQ")
     parser.add_argument("--timeframe", default="30s")

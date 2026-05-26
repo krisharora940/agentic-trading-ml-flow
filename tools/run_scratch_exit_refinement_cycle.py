@@ -16,7 +16,9 @@ def main() -> None:
                 "run_artifact_path": result.get("run_artifact_path"),
                 "batch_decision": result.get("batch_decision"),
                 "best_policy": _policy_summary(result.get("best_policy")),
-                "policies": [_policy_summary(row) for row in result.get("ranked_policies", [])],
+                "policies": [
+                    _policy_summary(row) for row in result.get("ranked_policies", [])
+                ],
             },
             indent=2,
             default=str,

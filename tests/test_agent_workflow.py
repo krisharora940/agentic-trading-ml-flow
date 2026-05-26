@@ -1,10 +1,25 @@
 import unittest
 from unittest import mock
 
-from trading_ml.agent_nodes import audit_agent_node, diagnosis_agent_node, feature_agent_node, iteration_controller_node, search_controller_agent_node, setup_redesign_agent_node, translation_checkpoint_node
+from trading_ml.agent_nodes import (
+    audit_agent_node,
+    diagnosis_agent_node,
+    feature_agent_node,
+    iteration_controller_node,
+    search_controller_agent_node,
+    setup_redesign_agent_node,
+    translation_checkpoint_node,
+)
 from trading_ml.agent_state import LoopLimits
-from trading_ml.agent_workflow import build_agent_loop_state, pending_human_checkpoints, run_linear_stage3_pass
-from trading_ml.langgraph_integration import route_after_data_steward_state, route_after_program_director_state
+from trading_ml.agent_workflow import (
+    build_agent_loop_state,
+    pending_human_checkpoints,
+    run_linear_stage3_pass,
+)
+from trading_ml.langgraph_integration import (
+    route_after_data_steward_state,
+    route_after_program_director_state,
+)
 
 
 class AgentWorkflowTests(unittest.TestCase):
@@ -23,15 +38,22 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertIn("failure_memory", state)
         self.assertEqual(state["search_batch_status"], "pending")
 
-    def test_initial_agent_loop_state_can_preapprove_bounded_cycle_checkpoints(self) -> None:
-        state = build_agent_loop_state(preapproved_checkpoints=["label_approval", "search_space_approval"], runtime_profile="bounded_autonomous")
+    def test_initial_agent_loop_state_can_preapprove_bounded_cycle_checkpoints(
+        self,
+    ) -> None:
+        state = build_agent_loop_state(
+            preapproved_checkpoints=["label_approval", "search_space_approval"],
+            runtime_profile="bounded_autonomous",
+        )
         self.assertFalse(state["approvals"]["bnr_spec_approval"])
         self.assertTrue(state["approvals"]["label_approval"])
         self.assertTrue(state["approvals"]["search_space_approval"])
         self.assertEqual(state["runtime_profile"], "bounded_autonomous")
 
     def test_initial_agent_loop_state_can_run_unattended(self) -> None:
-        state = build_agent_loop_state(runtime_profile="unattended", auto_accept_robust=True)
+        state = build_agent_loop_state(
+            runtime_profile="unattended", auto_accept_robust=True
+        )
         self.assertEqual(state["runtime_profile"], "unattended")
         self.assertTrue(state["auto_accept_robust"])
 
@@ -71,7 +93,9 @@ class AgentWorkflowTests(unittest.TestCase):
         state["executed_family_cycle"] = state["research_cycle"]
         state["search_batch_status"] = "complete"
         state["search_results"] = {"family": "subtype", "trial_count": 2}
-        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
+        limits = LoopLimits(
+            max_trials=50, max_feature_changes=12, max_threshold_changes=10
+        )
         with mock.patch("trading_ml.agent_nodes.run_governed_search") as run_search:
             result = search_controller_agent_node(state, limits)
         run_search.assert_not_called()
@@ -83,10 +107,21 @@ class AgentWorkflowTests(unittest.TestCase):
         state["next_step_plan"] = {
             "benchmark_status": "exhausted_or_structurally_fragile",
             "why_selected": "same CPCV tail persisted",
-            "rationale": {"persistent_tail_paths": ["cpcv_010"], "families_failed": ["model", "label", "sample_expansion"]},
+            "rationale": {
+                "persistent_tail_paths": ["cpcv_010"],
+                "families_failed": ["model", "label", "sample_expansion"],
+            },
         }
-        diagnostic = {"status": "complete", "family": "market_state_setup_quality", "search_executed": False, "models_trained": 0}
-        with mock.patch("trading_ml.agent_nodes.build_market_state_setup_quality_diagnostic", return_value=diagnostic):
+        diagnostic = {
+            "status": "complete",
+            "family": "market_state_setup_quality",
+            "search_executed": False,
+            "models_trained": 0,
+        }
+        with mock.patch(
+            "trading_ml.agent_nodes.build_market_state_setup_quality_diagnostic",
+            return_value=diagnostic,
+        ):
             result = setup_redesign_agent_node(state)
         plan = result["setup_redesign_plan"]
         self.assertEqual(result["execution_mode"], "diagnostic_only")
@@ -95,24 +130,49 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertEqual(plan["status"], "ready_for_setup_redesign")
         self.assertEqual(plan["bounded_search_budget"]["max_trials"], 4)
         self.assertEqual(plan["approval_checkpoint"], "setup_redesign_mandate_approval")
-        self.assertEqual(plan["research_focus"]["new_abstraction"], "BNR geometry plus evolving intraday auction state and setup-quality interpretation")
-        self.assertIn("market_state_quality_classifier", [row["name"] for row in plan["candidate_setup_hypotheses"]])
-        self.assertIn("intraday_auction_state", [row["family"] for row in plan["latent_feature_families"]])
+        self.assertEqual(
+            plan["research_focus"]["new_abstraction"],
+            "BNR geometry plus evolving intraday auction state and setup-quality interpretation",
+        )
+        self.assertIn(
+            "market_state_quality_classifier",
+            [row["name"] for row in plan["candidate_setup_hypotheses"]],
+        )
+        self.assertIn(
+            "intraday_auction_state",
+            [row["family"] for row in plan["latent_feature_families"]],
+        )
         family = plan["new_research_family"]
         self.assertEqual(family["family"], "market_state_setup_quality")
-        self.assertEqual(family["priority_hypothesis"], "market_state_quality_classifier")
+        self.assertEqual(
+            family["priority_hypothesis"], "market_state_quality_classifier"
+        )
         self.assertEqual(family["holdout_status"], "locked")
         self.assertIn("candle_speed_volatility", family["candidate_features"])
         self.assertIn("setup_quality_label", family["candidate_labels"])
-        self.assertIn("balanced_chop", [row["state"] for row in family["quality_states"]])
-        self.assertIn("purged CPCV with changed worst-path signature", family["validation_plan"]["required_gates"])
-        self.assertIn("reopening parked BNR benchmark geometry", family["bounded_search_budget"]["disallowed_knobs"])
+        self.assertIn(
+            "balanced_chop", [row["state"] for row in family["quality_states"]]
+        )
+        self.assertIn(
+            "purged CPCV with changed worst-path signature",
+            family["validation_plan"]["required_gates"],
+        )
+        self.assertIn(
+            "reopening parked BNR benchmark geometry",
+            family["bounded_search_budget"]["disallowed_knobs"],
+        )
 
-    def test_iteration_controller_continues_to_new_hypothesis_after_freeze(self) -> None:
+    def test_iteration_controller_continues_to_new_hypothesis_after_freeze(
+        self,
+    ) -> None:
         state = build_agent_loop_state()
         state["research_backlog"] = [
             {"hypothesis_id": "H-00001", "family": "setup", "priority": 0.82},
-            {"hypothesis_id": "H-00002", "family": "candidate_universe_expansion", "priority": 0.79},
+            {
+                "hypothesis_id": "H-00002",
+                "family": "candidate_universe_expansion",
+                "priority": 0.79,
+            },
         ]
         state["failure_memory"] = [
             {
@@ -139,9 +199,15 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertEqual(result["translation_summary"], {})
 
     def test_iteration_controller_stops_after_auto_accept(self) -> None:
-        state = build_agent_loop_state(runtime_profile="unattended", auto_accept_robust=True)
+        state = build_agent_loop_state(
+            runtime_profile="unattended", auto_accept_robust=True
+        )
         state["promotion_decision"] = "accept"
-        state["search_results"] = {"family": "feature", "trial_count": 2, "accepted_trial": {"trial_id": "T-1"}}
+        state["search_results"] = {
+            "family": "feature",
+            "trial_count": 2,
+            "accepted_trial": {"trial_id": "T-1"},
+        }
         state["audit_summary"] = {
             "cpcv": {"status": "pass"},
             "deflated_sharpe": {"status": "pass"},
@@ -152,17 +218,32 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertEqual(result["current_node"], "iteration_controller")
         self.assertNotIn("research_cycle", result)
 
-    def test_unattended_iteration_controller_continues_after_reject_with_viable_hypotheses(self) -> None:
-        state = build_agent_loop_state(runtime_profile="unattended", auto_accept_robust=True)
+    def test_unattended_iteration_controller_continues_after_reject_with_viable_hypotheses(
+        self,
+    ) -> None:
+        state = build_agent_loop_state(
+            runtime_profile="unattended", auto_accept_robust=True
+        )
         state["research_backlog"] = [
-            {"hypothesis_id": "H-00002", "family": "candidate_universe_expansion", "priority": 0.79},
-            {"hypothesis_id": "H-00003", "family": "exit_behavior_research", "priority": 0.76},
+            {
+                "hypothesis_id": "H-00002",
+                "family": "candidate_universe_expansion",
+                "priority": 0.79,
+            },
+            {
+                "hypothesis_id": "H-00003",
+                "family": "exit_behavior_research",
+                "priority": 0.76,
+            },
         ]
         state["promotion_decision"] = "reject"
         state["research_cycle"] = 1
         state["max_research_cycles"] = 3
         state["blocking_issues"] = []
-        state["search_results"] = {"family": "candidate_universe_expansion", "trial_count": 1}
+        state["search_results"] = {
+            "family": "candidate_universe_expansion",
+            "trial_count": 1,
+        }
         result = iteration_controller_node(state)
         self.assertEqual(result["research_cycle"], 2)
         self.assertEqual(result["search_batch_status"], "pending")
@@ -178,13 +259,28 @@ class AgentWorkflowTests(unittest.TestCase):
             "controller_override": {"active_family": "setup"},
         }
         state["stage2_config"]["source_path"] = "dummy"
-        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
-        with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "research_diagnostics", "trial_count": 0, "batch_decision": "inform", "status": "complete"}) as run_action:
-            with mock.patch("trading_ml.agent_nodes.append_action_history_entry") as append_action:
+        limits = LoopLimits(
+            max_trials=50, max_feature_changes=12, max_threshold_changes=10
+        )
+        with mock.patch(
+            "trading_ml.agent_nodes.execute_research_action",
+            return_value={
+                "family": "research_diagnostics",
+                "trial_count": 0,
+                "batch_decision": "inform",
+                "status": "complete",
+            },
+        ) as run_action:
+            with mock.patch(
+                "trading_ml.agent_nodes.append_action_history_entry"
+            ) as append_action:
                 result = search_controller_agent_node(state, limits)
         run_action.assert_called_once()
         append_action.assert_called_once()
-        self.assertEqual(result["research_action_history"][-1]["action_id"], "validation_failure_analysis")
+        self.assertEqual(
+            result["research_action_history"][-1]["action_id"],
+            "validation_failure_analysis",
+        )
 
     def test_bounded_autonomous_profile_caps_governed_search_trials(self) -> None:
         state = build_agent_loop_state(runtime_profile="bounded_autonomous")
@@ -196,14 +292,26 @@ class AgentWorkflowTests(unittest.TestCase):
             "controller_override": {"active_family": "setup"},
         }
         state["stage2_config"]["source_path"] = "dummy"
-        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
-        with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "setup", "trial_count": 2, "batch_decision": "revise", "status": "complete"}) as run_action:
+        limits = LoopLimits(
+            max_trials=50, max_feature_changes=12, max_threshold_changes=10
+        )
+        with mock.patch(
+            "trading_ml.agent_nodes.execute_research_action",
+            return_value={
+                "family": "setup",
+                "trial_count": 2,
+                "batch_decision": "revise",
+                "status": "complete",
+            },
+        ) as run_action:
             search_controller_agent_node(state, limits)
         controller = run_action.call_args.kwargs["controller_state"]
         self.assertEqual(controller["max_batch_trials"], 2)
 
     def test_unattended_profile_caps_governed_search_trials(self) -> None:
-        state = build_agent_loop_state(runtime_profile="unattended", auto_accept_robust=True)
+        state = build_agent_loop_state(
+            runtime_profile="unattended", auto_accept_robust=True
+        )
         state["approvals"]["search_space_approval"] = True
         state["next_step_plan"] = {
             "selected_family": "setup",
@@ -212,8 +320,18 @@ class AgentWorkflowTests(unittest.TestCase):
             "controller_override": {"active_family": "setup"},
         }
         state["stage2_config"]["source_path"] = "dummy"
-        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
-        with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "setup", "trial_count": 2, "batch_decision": "revise", "status": "complete"}) as run_action:
+        limits = LoopLimits(
+            max_trials=50, max_feature_changes=12, max_threshold_changes=10
+        )
+        with mock.patch(
+            "trading_ml.agent_nodes.execute_research_action",
+            return_value={
+                "family": "setup",
+                "trial_count": 2,
+                "batch_decision": "revise",
+                "status": "complete",
+            },
+        ) as run_action:
             search_controller_agent_node(state, limits)
         controller = run_action.call_args.kwargs["controller_state"]
         self.assertEqual(controller["max_batch_trials"], 2)
@@ -230,12 +348,25 @@ class AgentWorkflowTests(unittest.TestCase):
             "desk_handoff": {"proposal_id": "DPROP-1", "first_governed_batch": True},
         }
         state["stage2_config"]["source_path"] = "dummy"
-        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
-        with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "candidate_universe_expansion", "trial_count": 1, "batch_decision": "revise", "status": "complete"}) as run_action:
+        limits = LoopLimits(
+            max_trials=50, max_feature_changes=12, max_threshold_changes=10
+        )
+        with mock.patch(
+            "trading_ml.agent_nodes.execute_research_action",
+            return_value={
+                "family": "candidate_universe_expansion",
+                "trial_count": 1,
+                "batch_decision": "revise",
+                "status": "complete",
+            },
+        ) as run_action:
             search_controller_agent_node(state, limits)
         controller = run_action.call_args.kwargs["controller_state"]
         self.assertEqual(controller["max_batch_trials"], 1)
-        self.assertEqual(controller["fast_variant_names"][:2], ["first_reclaim_only_baseline", "allow_delayed_reclaim"])
+        self.assertEqual(
+            controller["fast_variant_names"][:2],
+            ["first_reclaim_only_baseline", "allow_delayed_reclaim"],
+        )
         self.assertEqual(controller["max_sessions"], 96)
 
     def test_desk_handoff_routes_to_governor_before_setup_redesign(self) -> None:
@@ -250,13 +381,17 @@ class AgentWorkflowTests(unittest.TestCase):
         }
         self.assertEqual(route_after_program_director_state(state), "governor_agent")
 
-    def test_desk_handoff_structural_family_skips_to_search_after_data_steward(self) -> None:
+    def test_desk_handoff_structural_family_skips_to_search_after_data_steward(
+        self,
+    ) -> None:
         state = build_agent_loop_state()
         state["next_step_plan"] = {
             "assigned_research_action": "candidate_universe_expansion",
             "desk_handoff": {"proposal_id": "DPROP-1", "first_governed_batch": True},
         }
-        self.assertEqual(route_after_data_steward_state(state), "search_controller_agent")
+        self.assertEqual(
+            route_after_data_steward_state(state), "search_controller_agent"
+        )
 
     def test_desk_handoff_setup_family_skips_to_search_after_data_steward(self) -> None:
         state = build_agent_loop_state()
@@ -264,7 +399,9 @@ class AgentWorkflowTests(unittest.TestCase):
             "assigned_research_action": "market_state_setup_quality",
             "desk_handoff": {"proposal_id": "DPROP-1", "first_governed_batch": True},
         }
-        self.assertEqual(route_after_data_steward_state(state), "search_controller_agent")
+        self.assertEqual(
+            route_after_data_steward_state(state), "search_controller_agent"
+        )
 
     def test_desk_handoff_setup_maps_to_tiny_setup_quality_batch(self) -> None:
         state = build_agent_loop_state()
@@ -278,52 +415,125 @@ class AgentWorkflowTests(unittest.TestCase):
             "desk_handoff": {"proposal_id": "DPROP-1", "first_governed_batch": True},
         }
         state["stage2_config"]["source_path"] = "dummy"
-        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
-        with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "market_state_setup_quality", "trial_count": 1, "batch_decision": "revise", "status": "complete"}) as run_action:
+        limits = LoopLimits(
+            max_trials=50, max_feature_changes=12, max_threshold_changes=10
+        )
+        with mock.patch(
+            "trading_ml.agent_nodes.execute_research_action",
+            return_value={
+                "family": "market_state_setup_quality",
+                "trial_count": 1,
+                "batch_decision": "revise",
+                "status": "complete",
+            },
+        ) as run_action:
             search_controller_agent_node(state, limits)
         controller = run_action.call_args.kwargs["controller_state"]
         self.assertEqual(controller["active_family"], "market_state_setup_quality")
         self.assertEqual(controller["max_batch_trials"], 1)
+        self.assertEqual(controller["market_state_max_cpcv_paths"], 3)
 
-    def test_structural_family_skips_to_search_after_data_steward_without_desk_handoff(self) -> None:
+    def test_structural_family_skips_to_search_after_data_steward_without_desk_handoff(
+        self,
+    ) -> None:
         state = build_agent_loop_state()
         state["next_step_plan"] = {
             "assigned_research_action": "candidate_universe_expansion",
         }
-        self.assertEqual(route_after_data_steward_state(state), "search_controller_agent")
+        self.assertEqual(
+            route_after_data_steward_state(state), "search_controller_agent"
+        )
 
     def test_diagnostic_action_skips_full_audit_budget_consumption(self) -> None:
         state = build_agent_loop_state()
-        state["budget_usage"] = {"runtime_seconds": 0, "trials": 6, "full_validations": 2, "cpcv_runs": 2, "model_trains": 6}
+        state["budget_usage"] = {
+            "runtime_seconds": 0,
+            "trials": 6,
+            "full_validations": 2,
+            "cpcv_runs": 2,
+            "model_trains": 6,
+        }
         state["search_results"] = {
-            "action": {"action_id": "cpcv_attribution", "callable_kind": "stateful_diagnostic_action"},
+            "action": {
+                "action_id": "cpcv_attribution",
+                "callable_kind": "stateful_diagnostic_action",
+            },
         }
         result = audit_agent_node(state)
         self.assertEqual(result["budget_usage"]["full_validations"], 2)
         self.assertEqual(result["budget_usage"]["cpcv_runs"], 2)
-        self.assertEqual(result["audit_summary"]["research_diagnostics"]["action_id"], "cpcv_attribution")
+        self.assertEqual(
+            result["audit_summary"]["research_diagnostics"]["action_id"],
+            "cpcv_attribution",
+        )
 
-    def test_structural_governed_action_skips_full_audit_budget_consumption(self) -> None:
+    def test_structural_governed_action_skips_full_audit_budget_consumption(
+        self,
+    ) -> None:
         state = build_agent_loop_state()
-        state["budget_usage"] = {"runtime_seconds": 0, "trials": 6, "full_validations": 2, "cpcv_runs": 2, "model_trains": 6}
+        state["budget_usage"] = {
+            "runtime_seconds": 0,
+            "trials": 6,
+            "full_validations": 2,
+            "cpcv_runs": 2,
+            "model_trains": 6,
+        }
         state["search_results"] = {
             "family": "candidate_universe_expansion",
             "governance": {"promotion_blocked": True, "models_trained": 0},
-            "action": {"action_id": "candidate_universe_expansion", "callable_kind": "governed_research_cycle"},
+            "action": {
+                "action_id": "candidate_universe_expansion",
+                "callable_kind": "governed_research_cycle",
+            },
         }
         result = audit_agent_node(state)
         self.assertEqual(result["budget_usage"]["full_validations"], 2)
         self.assertEqual(result["budget_usage"]["cpcv_runs"], 2)
-        self.assertEqual(result["audit_summary"]["structural_research"]["family"], "candidate_universe_expansion")
+        self.assertEqual(
+            result["audit_summary"]["structural_research"]["family"],
+            "candidate_universe_expansion",
+        )
+
+    def test_market_state_setup_quality_skips_full_audit_when_promotion_blocked(
+        self,
+    ) -> None:
+        state = build_agent_loop_state()
+        state["budget_usage"] = {
+            "runtime_seconds": 0,
+            "trials": 1,
+            "full_validations": 0,
+            "cpcv_runs": 0,
+            "model_trains": 1,
+        }
+        state["search_results"] = {
+            "family": "market_state_setup_quality",
+            "governance": {"promotion_blocked": True, "models_trained": 0},
+            "action": {
+                "action_id": "market_state_setup_quality",
+                "callable_kind": "governed_research_cycle",
+            },
+        }
+        result = audit_agent_node(state)
+        self.assertEqual(
+            result["audit_summary"]["structural_research"]["family"],
+            "market_state_setup_quality",
+        )
+        self.assertEqual(result["budget_usage"]["full_validations"], 0)
 
     def test_diagnostic_action_skips_translation_analysis(self) -> None:
         state = build_agent_loop_state()
         state["search_results"] = {
-            "action": {"action_id": "validation_failure_analysis", "callable_kind": "stateful_diagnostic_action"},
+            "action": {
+                "action_id": "validation_failure_analysis",
+                "callable_kind": "stateful_diagnostic_action",
+            },
         }
         result = translation_checkpoint_node(state)
         self.assertEqual(result["translation_summary"]["status"], "inform")
-        self.assertEqual(result["translation_summary"]["diagnostic_action"], "validation_failure_analysis")
+        self.assertEqual(
+            result["translation_summary"]["diagnostic_action"],
+            "validation_failure_analysis",
+        )
 
     def test_feature_agent_exposes_catalog_candidates(self) -> None:
         state = build_agent_loop_state()
@@ -340,10 +550,14 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertIn("feature_catalog", result)
         self.assertIn("feature_catalog_groups", result["feature_spec"])
         self.assertEqual(result["feature_spec"]["target_setup_state"], "repair")
-        self.assertEqual(result["feature_spec"]["target_environment_state"], "volatile_chop")
+        self.assertEqual(
+            result["feature_spec"]["target_environment_state"], "volatile_chop"
+        )
         self.assertEqual(result["feature_spec"]["target_path_class"], "failure")
 
-    def test_search_controller_passes_bnr_state_focus_into_governed_action(self) -> None:
+    def test_search_controller_passes_bnr_state_focus_into_governed_action(
+        self,
+    ) -> None:
         state = build_agent_loop_state()
         state["approvals"]["search_space_approval"] = True
         state["next_step_plan"] = {
@@ -363,25 +577,43 @@ class AgentWorkflowTests(unittest.TestCase):
             },
         }
         state["stage2_config"]["source_path"] = "dummy"
-        limits = LoopLimits(max_trials=50, max_feature_changes=12, max_threshold_changes=10)
-        with mock.patch("trading_ml.agent_nodes.execute_research_action", return_value={"family": "feature", "trial_count": 1, "batch_decision": "accept", "status": "complete"}) as run_action:
+        limits = LoopLimits(
+            max_trials=50, max_feature_changes=12, max_threshold_changes=10
+        )
+        with mock.patch(
+            "trading_ml.agent_nodes.execute_research_action",
+            return_value={
+                "family": "feature",
+                "trial_count": 1,
+                "batch_decision": "accept",
+                "status": "complete",
+            },
+        ) as run_action:
             result = search_controller_agent_node(state, limits)
         controller = run_action.call_args.kwargs["controller_state"]
         self.assertEqual(controller["focus_setup_state"], "repair")
         self.assertEqual(controller["focus_environment_state"], "volatile_chop")
         self.assertEqual(controller["focus_path_class"], "failure")
-        self.assertEqual(result["search_results"]["focus_slice"]["setup_state"], "repair")
+        self.assertEqual(
+            result["search_results"]["focus_slice"]["setup_state"], "repair"
+        )
 
     def test_structural_governed_action_skips_translation_analysis(self) -> None:
         state = build_agent_loop_state()
         state["search_results"] = {
             "family": "candidate_universe_expansion",
             "governance": {"promotion_blocked": True, "models_trained": 0},
-            "action": {"action_id": "candidate_universe_expansion", "callable_kind": "governed_research_cycle"},
+            "action": {
+                "action_id": "candidate_universe_expansion",
+                "callable_kind": "governed_research_cycle",
+            },
         }
         result = translation_checkpoint_node(state)
         self.assertEqual(result["translation_summary"]["status"], "inform")
-        self.assertEqual(result["translation_summary"]["structural_action"], "candidate_universe_expansion")
+        self.assertEqual(
+            result["translation_summary"]["structural_action"],
+            "candidate_universe_expansion",
+        )
 
     def test_diagnosis_agent_builds_attempts_and_failure_clusters(self) -> None:
         state = build_agent_loop_state()
@@ -422,9 +654,27 @@ class AgentWorkflowTests(unittest.TestCase):
                 },
             ],
             "labels_records": [
-                {"candidate_id": "c1", "label": 0, "outcome": "stop", "pnl_r": -1.0, "bars_held": 3},
-                {"candidate_id": "c2", "label": 0, "outcome": "stop", "pnl_r": -0.8, "bars_held": 2},
-                {"candidate_id": "c3", "label": 0, "outcome": "stop", "pnl_r": -0.7, "bars_held": 2},
+                {
+                    "candidate_id": "c1",
+                    "label": 0,
+                    "outcome": "stop",
+                    "pnl_r": -1.0,
+                    "bars_held": 3,
+                },
+                {
+                    "candidate_id": "c2",
+                    "label": 0,
+                    "outcome": "stop",
+                    "pnl_r": -0.8,
+                    "bars_held": 2,
+                },
+                {
+                    "candidate_id": "c3",
+                    "label": 0,
+                    "outcome": "stop",
+                    "pnl_r": -0.7,
+                    "bars_held": 2,
+                },
             ],
         }
         state["audit_summary"] = {
@@ -432,14 +682,31 @@ class AgentWorkflowTests(unittest.TestCase):
             "walk_forward": {
                 "status": "pass",
                 "stitched_prediction_records": [
-                    {"candidate_id": "c1", "session_date": "2026-01-02", "probability": 0.61, "prediction": 1},
-                    {"candidate_id": "c2", "session_date": "2026-01-02", "probability": 0.59, "prediction": 1},
-                    {"candidate_id": "c3", "session_date": "2026-01-03", "probability": 0.58, "prediction": 1},
+                    {
+                        "candidate_id": "c1",
+                        "session_date": "2026-01-02",
+                        "probability": 0.61,
+                        "prediction": 1,
+                    },
+                    {
+                        "candidate_id": "c2",
+                        "session_date": "2026-01-02",
+                        "probability": 0.59,
+                        "prediction": 1,
+                    },
+                    {
+                        "candidate_id": "c3",
+                        "session_date": "2026-01-03",
+                        "probability": 0.58,
+                        "prediction": 1,
+                    },
                 ],
             },
         }
         state["translation_summary"] = {"status": "pass"}
-        with mock.patch("trading_ml.agent_nodes.append_failure_memory_entry") as append_failure:
+        with mock.patch(
+            "trading_ml.agent_nodes.append_failure_memory_entry"
+        ) as append_failure:
             result = diagnosis_agent_node(state)
         append_failure.assert_called_once()
         self.assertEqual(len(result["bnr_attempts"]), 3)

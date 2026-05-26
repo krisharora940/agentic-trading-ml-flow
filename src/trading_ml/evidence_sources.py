@@ -12,7 +12,9 @@ def select_manifest_source_path(
     files = manifest.get("files", [])
     candidates = [entry for entry in files if entry.get("timeframe") == timeframe]
     if boundary_role:
-        scoped = [entry for entry in candidates if entry.get("boundary_role") == boundary_role]
+        scoped = [
+            entry for entry in candidates if entry.get("boundary_role") == boundary_role
+        ]
         if scoped:
             candidates = scoped
     if not candidates:

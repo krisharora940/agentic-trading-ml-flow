@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 import json
-from pathlib import Path
 from statistics import mean, median
 from typing import Any
 from uuid import uuid4
@@ -14,7 +13,10 @@ from trading_ml.exit_engine import (
     _evaluate_exit_policy,
     _frozen_v1_entries,
 )
-from trading_ml.market_state_quality import _diagnostic_config, build_market_state_setup_quality_diagnostic
+from trading_ml.market_state_quality import (
+    _diagnostic_config,
+    build_market_state_setup_quality_diagnostic,
+)
 from trading_ml.paths import REPORTS_DIR
 from trading_ml.stage2_data import load_ohlcv_file, regular_session
 
@@ -44,14 +46,24 @@ def build_exit_behavior_research_space() -> dict[str, Any]:
         ],
         "candidate_exit_families": EXIT_BEHAVIOR_FAMILIES,
         "bounded_replay_variants": list(EXIT_VARIANTS),
-        "disallowed_knobs": ["entry_filter", "setup_filter", "model_training", "holdout", "path_specific_exit"],
+        "disallowed_knobs": [
+            "entry_filter",
+            "setup_filter",
+            "model_training",
+            "holdout",
+            "path_specific_exit",
+        ],
     }
 
 
 def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
     diagnostic = build_market_state_setup_quality_diagnostic(state)
     if diagnostic.get("status") != "complete":
-        return {"status": "pending", "reason": "diagnostic_unavailable", "diagnostic": diagnostic}
+        return {
+            "status": "pending",
+            "reason": "diagnostic_unavailable",
+            "diagnostic": diagnostic,
+        }
 
     controller_state = dict(state.get("controller_state", {}) or {})
     focus_slice = {
@@ -59,7 +71,11 @@ def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
         "environment_state": controller_state.get("focus_environment_state"),
         "path_class": controller_state.get("focus_path_class"),
     }
-    focus_slice = {key: value for key, value in focus_slice.items() if value not in {None, "", "unknown"}}
+    focus_slice = {
+        key: value
+        for key, value in focus_slice.items()
+        if value not in {None, "", "unknown"}
+    }
     config = _diagnostic_config(state, str(diagnostic["source_path"]))
     bars = regular_session(
         load_ohlcv_file(
@@ -70,12 +86,20 @@ def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
         )
     )
     entries = _frozen_v1_entries(diagnostic)
-    path_rows = [_trade_path_diagnostics(row, bars, config.horizon_bars) for row in entries]
+    path_rows = [
+        _trade_path_diagnostics(row, bars, config.horizon_bars) for row in entries
+    ]
     archetypes = _archetype_summary(path_rows)
     exit_families = _candidate_exit_families(archetypes)
-    replay_rows = [_evaluate_exit_policy(name, entries, bars, config.horizon_bars) for name in EXIT_VARIANTS]
+    replay_rows = [
+        _evaluate_exit_policy(name, entries, bars, config.horizon_bars)
+        for name in EXIT_VARIANTS
+    ]
     _attach_dsr_psr(replay_rows)
-    baseline = next((row for row in replay_rows if row["variant"] == "fixed_1_5r_tp_sl_baseline"), replay_rows[0])
+    baseline = next(
+        (row for row in replay_rows if row["variant"] == "fixed_1_5r_tp_sl_baseline"),
+        replay_rows[0],
+    )
     for row in replay_rows:
         row["exit_family"] = _variant_family(row["variant"])
         row["governance_decision"] = _replay_decision(row, baseline)
@@ -88,7 +112,11 @@ def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
         ),
         reverse=True,
     )
-    shortlisted = [row for row in ranked if row["governance_decision"] == "shortlist_for_full_validation"]
+    shortlisted = [
+        row
+        for row in ranked
+        if row["governance_decision"] == "shortlist_for_full_validation"
+    ]
     payload = {
         "status": "complete",
         "family": "exit_behavior_research",
@@ -111,7 +139,9 @@ def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
             },
         },
         "stage_1_trade_path_diagnostics": _path_diagnostic_summary(path_rows),
-        "focused_trade_path_diagnostics": _focused_path_diagnostic_summary(path_rows, focus_slice),
+        "focused_trade_path_diagnostics": _focused_path_diagnostic_summary(
+            path_rows, focus_slice
+        ),
         "stage_2_archetypes": archetypes,
         "stage_3_candidate_exit_families": exit_families,
         "stage_4_bounded_replay": [_strip(row) for row in ranked],
@@ -134,7 +164,9 @@ def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
     run_id = f"exit-behavior-{uuid4().hex[:12]}"
     output_dir = REPORTS_DIR / "runs" / run_id / "exit_behavior_research"
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "summary.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    (output_dir / "summary.json").write_text(
+        json.dumps(payload, indent=2, default=str), encoding="utf-8"
+    )
     artifact = REPORTS_DIR / "exit_behavior_research_market_state_v1.json"
     artifact.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     payload["artifact_path"] = str(artifact)
@@ -145,7 +177,11 @@ def run_exit_behavior_research_cycle(state: dict[str, Any]) -> dict[str, Any]:
 def run_structure_partial_exit_replay_cycle(state: dict[str, Any]) -> dict[str, Any]:
     diagnostic = build_market_state_setup_quality_diagnostic(state)
     if diagnostic.get("status") != "complete":
-        return {"status": "pending", "reason": "diagnostic_unavailable", "diagnostic": diagnostic}
+        return {
+            "status": "pending",
+            "reason": "diagnostic_unavailable",
+            "diagnostic": diagnostic,
+        }
 
     config = _diagnostic_config(state, str(diagnostic["source_path"]))
     bars = regular_session(
@@ -157,15 +193,22 @@ def run_structure_partial_exit_replay_cycle(state: dict[str, Any]) -> dict[str, 
         )
     )
     entries = _frozen_v1_entries(diagnostic)
-    rows = [_evaluate_exit_policy(name, entries, bars, config.horizon_bars) for name in STRUCTURE_PARTIAL_REPLAY_VARIANTS]
+    rows = [
+        _evaluate_exit_policy(name, entries, bars, config.horizon_bars)
+        for name in STRUCTURE_PARTIAL_REPLAY_VARIANTS
+    ]
     _attach_dsr_psr(rows)
-    baseline = next(row for row in rows if row["variant"] == "fixed_1_5r_tp_sl_baseline")
+    baseline = next(
+        row for row in rows if row["variant"] == "fixed_1_5r_tp_sl_baseline"
+    )
     baseline_tail = _right_tail_r(baseline["trade_results"])
     for row in rows:
         row["exit_family"] = _variant_family(row["variant"])
         row["right_tail_p90_r"] = _right_tail_r(row["trade_results"])
         row["gate_results"] = _structure_partial_gates(row, baseline, baseline_tail)
-        row["decision"] = "advance_candidate" if all(row["gate_results"].values()) else "reject"
+        row["decision"] = (
+            "advance_candidate" if all(row["gate_results"].values()) else "reject"
+        )
 
     ranked = sorted(
         rows,
@@ -177,7 +220,9 @@ def run_structure_partial_exit_replay_cycle(state: dict[str, Any]) -> dict[str, 
         ),
         reverse=True,
     )
-    accepted = next((row for row in ranked if row["decision"] == "advance_candidate"), None)
+    accepted = next(
+        (row for row in ranked if row["decision"] == "advance_candidate"), None
+    )
     payload = {
         "status": "complete",
         "family": "exit_behavior_research",
@@ -195,7 +240,12 @@ def run_structure_partial_exit_replay_cycle(state: dict[str, Any]) -> dict[str, 
             "search_budget": {
                 "max_trials": len(STRUCTURE_PARTIAL_REPLAY_VARIANTS),
                 "allowed_families": ["partial_profit_runner", "structure_trailing"],
-                "disallowed_knobs": ["entry changes", "setup filters", "model training", "holdout"],
+                "disallowed_knobs": [
+                    "entry changes",
+                    "setup filters",
+                    "model training",
+                    "holdout",
+                ],
             },
         },
         "strict_requirements": {
@@ -215,15 +265,21 @@ def run_structure_partial_exit_replay_cycle(state: dict[str, Any]) -> dict[str, 
     run_id = f"exit-structure-partial-{uuid4().hex[:12]}"
     output_dir = REPORTS_DIR / "runs" / run_id / "exit_behavior_research"
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "summary.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
-    artifact = REPORTS_DIR / "exit_behavior_structure_partial_replay_market_state_v1.json"
+    (output_dir / "summary.json").write_text(
+        json.dumps(payload, indent=2, default=str), encoding="utf-8"
+    )
+    artifact = (
+        REPORTS_DIR / "exit_behavior_structure_partial_replay_market_state_v1.json"
+    )
     artifact.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     payload["artifact_path"] = str(artifact)
     payload["run_artifact_path"] = str(output_dir / "summary.json")
     return payload
 
 
-def _trade_path_diagnostics(row: dict[str, Any], bars: Any, horizon_bars: int) -> dict[str, Any]:
+def _trade_path_diagnostics(
+    row: dict[str, Any], bars: Any, horizon_bars: int
+) -> dict[str, Any]:
     pd = _require_pandas()
     entry_time = pd.Timestamp(row["entry_time"])
     future = bars[bars.index >= entry_time].head(horizon_bars)
@@ -242,8 +298,12 @@ def _trade_path_diagnostics(row: dict[str, Any], bars: Any, horizon_bars: int) -
         low = float(bar["low"])
         open_ = float(bar["open"])
         close = float(bar["close"])
-        favorable.append((high - entry) / risk if direction == "long" else (entry - low) / risk)
-        adverse.append((low - entry) / risk if direction == "long" else (entry - high) / risk)
+        favorable.append(
+            (high - entry) / risk if direction == "long" else (entry - low) / risk
+        )
+        adverse.append(
+            (low - entry) / risk if direction == "long" else (entry - high) / risk
+        )
         closes.append(close)
         ranges.append(max(high - low, 0.0))
         bodies.append(abs(close - open_))
@@ -257,21 +317,38 @@ def _trade_path_diagnostics(row: dict[str, Any], bars: Any, horizon_bars: int) -
     first_window = max(1, min(6, len(closes)))
     first_closes = closes[:first_window]
     favorable_closes = [
-        close for close in first_closes if (close > entry if direction == "long" else close < entry)
+        close
+        for close in first_closes
+        if (close > entry if direction == "long" else close < entry)
     ]
     follow_through = len(favorable_closes) / first_window if first_window else 0.0
-    first_body = mean(bodies[:3]) if len(bodies) >= 3 else (mean(bodies) if bodies else 0.0)
+    first_body = (
+        mean(bodies[:3]) if len(bodies) >= 3 else (mean(bodies) if bodies else 0.0)
+    )
     late_body = mean(bodies[-3:]) if len(bodies) >= 3 else first_body
     tempo_decay = 1.0 - min(late_body / max(first_body, 1e-9), 1.0) if bodies else 0.0
-    first_range = mean(ranges[:3]) if len(ranges) >= 3 else (mean(ranges) if ranges else 0.0)
+    first_range = (
+        mean(ranges[:3]) if len(ranges) >= 3 else (mean(ranges) if ranges else 0.0)
+    )
     late_range = mean(ranges[-3:]) if len(ranges) >= 3 else first_range
-    volatility_collapse = 1.0 - min(late_range / max(first_range, 1e-9), 1.0) if ranges else 0.0
+    volatility_collapse = (
+        1.0 - min(late_range / max(first_range, 1e-9), 1.0) if ranges else 0.0
+    )
     giveback = max(0.0, mfe_r - pnl_r)
     reversal = giveback / max(mfe_r, 1e-9) if mfe_r > 0 else 0.0
-    alternating = sum(1 for left, right in zip(signs[:-1], signs[1:]) if left and right and left != right)
+    alternating = sum(
+        1
+        for left, right in zip(signs[:-1], signs[1:])
+        if left and right and left != right
+    )
     alternating_ratio = alternating / max(len(signs) - 1, 1) if signs else 0.0
-    liquidity_rejection = float(row.get("distance_to_recent_high_low", 1.0) or 1.0) <= 0.25 and float(row.get("wick_rejection_ratio_recent", 0.0) or 0.0) >= 0.55
-    continuation_quality = max(0.0, min(1.0, (follow_through + max(mfe_r, 0.0) / 1.5 + (1.0 - reversal)) / 3.0))
+    liquidity_rejection = (
+        float(row.get("distance_to_recent_high_low", 1.0) or 1.0) <= 0.25
+        and float(row.get("wick_rejection_ratio_recent", 0.0) or 0.0) >= 0.55
+    )
+    continuation_quality = max(
+        0.0, min(1.0, (follow_through + max(mfe_r, 0.0) / 1.5 + (1.0 - reversal)) / 3.0)
+    )
     taxonomy = _outcome_taxonomy(
         mfe_r=mfe_r,
         mae_r=mae_r,
@@ -307,7 +384,9 @@ def _trade_path_diagnostics(row: dict[str, Any], bars: Any, horizon_bars: int) -
     }
 
 
-def _focused_path_diagnostic_summary(path_rows: list[dict[str, Any]], focus_slice: dict[str, Any]) -> dict[str, Any]:
+def _focused_path_diagnostic_summary(
+    path_rows: list[dict[str, Any]], focus_slice: dict[str, Any]
+) -> dict[str, Any]:
     if not focus_slice:
         return {"status": "unfocused", "rows": len(path_rows)}
     target_path = str(focus_slice.get("path_class", "") or "")
@@ -320,7 +399,11 @@ def _focused_path_diagnostic_summary(path_rows: list[dict[str, Any]], focus_slic
     allowed = taxonomy_map.get(target_path, set())
     if not allowed:
         return {"status": "focused", "rows": 0, "focus_slice": focus_slice}
-    focused = [row for row in path_rows if str(row.get("trade_outcome_taxonomy", "")) in allowed]
+    focused = [
+        row
+        for row in path_rows
+        if str(row.get("trade_outcome_taxonomy", "")) in allowed
+    ]
     summary = _path_diagnostic_summary(focused) if focused else {}
     return {
         "status": "focused",
@@ -346,7 +429,11 @@ def _outcome_taxonomy(**metrics: Any) -> str:
         return "fake_breakout"
     if pnl < 0 and abs(mae) < 0.75 and float(metrics["time_to_mae"]) > 3:
         return "slow_bleed"
-    if float(metrics["alternating_ratio"]) >= 0.45 or float(metrics["tempo_decay"]) >= 0.55 or float(metrics["volatility_collapse"]) >= 0.55:
+    if (
+        float(metrics["alternating_ratio"]) >= 0.45
+        or float(metrics["tempo_decay"]) >= 0.55
+        or float(metrics["volatility_collapse"]) >= 0.55
+    ):
         return "chop_decay"
     return "strong_continuation" if pnl > 0 else "slow_bleed"
 
@@ -368,10 +455,18 @@ def _archetype_summary(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "median_pnl_r": float(median(pnls)) if pnls else 0.0,
                 "avg_mfe_r": float(mean(float(row["mfe_r"]) for row in group)),
                 "avg_mae_r": float(mean(float(row["mae_r"]) for row in group)),
-                "avg_follow_through_persistence": float(mean(float(row["follow_through_persistence"]) for row in group)),
-                "avg_tempo_decay": float(mean(float(row["tempo_decay"]) for row in group)),
-                "avg_volatility_collapse": float(mean(float(row["volatility_collapse"]) for row in group)),
-                "liquidity_rejection_count": sum(1 for row in group if row["liquidity_rejection"]),
+                "avg_follow_through_persistence": float(
+                    mean(float(row["follow_through_persistence"]) for row in group)
+                ),
+                "avg_tempo_decay": float(
+                    mean(float(row["tempo_decay"]) for row in group)
+                ),
+                "avg_volatility_collapse": float(
+                    mean(float(row["volatility_collapse"]) for row in group)
+                ),
+                "liquidity_rejection_count": sum(
+                    1 for row in group if row["liquidity_rejection"]
+                ),
             }
         )
     return sorted(summary, key=lambda row: (row["total_pnl_r"], -row["trade_count"]))
@@ -385,30 +480,79 @@ def _path_diagnostic_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "total_pnl_r": float(sum(pnls)),
         "avg_mfe_r": float(mean(float(row["mfe_r"]) for row in rows)) if rows else 0.0,
         "avg_mae_r": float(mean(float(row["mae_r"]) for row in rows)) if rows else 0.0,
-        "avg_time_to_mfe_bars": float(mean(float(row["time_to_mfe_bars"]) for row in rows)) if rows else 0.0,
-        "avg_time_to_mae_bars": float(mean(float(row["time_to_mae_bars"]) for row in rows)) if rows else 0.0,
-        "avg_follow_through_persistence": float(mean(float(row["follow_through_persistence"]) for row in rows)) if rows else 0.0,
-        "avg_tempo_decay": float(mean(float(row["tempo_decay"]) for row in rows)) if rows else 0.0,
-        "avg_volatility_collapse": float(mean(float(row["volatility_collapse"]) for row in rows)) if rows else 0.0,
-        "taxonomy_counts": dict(Counter(str(row["trade_outcome_taxonomy"]) for row in rows)),
+        "avg_time_to_mfe_bars": (
+            float(mean(float(row["time_to_mfe_bars"]) for row in rows)) if rows else 0.0
+        ),
+        "avg_time_to_mae_bars": (
+            float(mean(float(row["time_to_mae_bars"]) for row in rows)) if rows else 0.0
+        ),
+        "avg_follow_through_persistence": (
+            float(mean(float(row["follow_through_persistence"]) for row in rows))
+            if rows
+            else 0.0
+        ),
+        "avg_tempo_decay": (
+            float(mean(float(row["tempo_decay"]) for row in rows)) if rows else 0.0
+        ),
+        "avg_volatility_collapse": (
+            float(mean(float(row["volatility_collapse"]) for row in rows))
+            if rows
+            else 0.0
+        ),
+        "taxonomy_counts": dict(
+            Counter(str(row["trade_outcome_taxonomy"]) for row in rows)
+        ),
     }
 
 
 def _candidate_exit_families(archetypes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     by_name = {row["archetype"]: row for row in archetypes}
     specs = [
-        ("scratch_exits", ["fast_failure", "fake_breakout"], "Early failure/fakeout support."),
-        ("structure_trailing", ["late_reversal", "runner"], "Protects favorable path giveback while allowing continuation."),
-        ("partial_profit_runner", ["runner", "late_reversal"], "Tests whether runners pay for late reversals."),
-        ("time_stop", ["slow_bleed", "chop_decay"], "Targets low-progress holding periods."),
-        ("break_even_policy", ["late_reversal"], "Targets post-MFE giveback without changing entries."),
-        ("volatility_based_exit", ["chop_decay", "slow_bleed"], "Targets post-entry volatility collapse and decay."),
-        ("liquidity_rejection_exit", ["fake_breakout"], "Targets rejection near recent high/low context."),
+        (
+            "scratch_exits",
+            ["fast_failure", "fake_breakout"],
+            "Early failure/fakeout support.",
+        ),
+        (
+            "structure_trailing",
+            ["late_reversal", "runner"],
+            "Protects favorable path giveback while allowing continuation.",
+        ),
+        (
+            "partial_profit_runner",
+            ["runner", "late_reversal"],
+            "Tests whether runners pay for late reversals.",
+        ),
+        (
+            "time_stop",
+            ["slow_bleed", "chop_decay"],
+            "Targets low-progress holding periods.",
+        ),
+        (
+            "break_even_policy",
+            ["late_reversal"],
+            "Targets post-MFE giveback without changing entries.",
+        ),
+        (
+            "volatility_based_exit",
+            ["chop_decay", "slow_bleed"],
+            "Targets post-entry volatility collapse and decay.",
+        ),
+        (
+            "liquidity_rejection_exit",
+            ["fake_breakout"],
+            "Targets rejection near recent high/low context.",
+        ),
     ]
     rows = []
     for family, triggers, reason in specs:
-        support = sum(int(by_name.get(name, {}).get("trade_count", 0) or 0) for name in triggers)
-        loss = sum(float(by_name.get(name, {}).get("total_pnl_r", 0.0) or 0.0) for name in triggers)
+        support = sum(
+            int(by_name.get(name, {}).get("trade_count", 0) or 0) for name in triggers
+        )
+        loss = sum(
+            float(by_name.get(name, {}).get("total_pnl_r", 0.0) or 0.0)
+            for name in triggers
+        )
         rows.append(
             {
                 "family": family,
@@ -416,7 +560,11 @@ def _candidate_exit_families(archetypes: list[dict[str, Any]]) -> list[dict[str,
                 "supported_archetypes": triggers,
                 "supported_archetype_pnl_r": loss,
                 "rationale": reason,
-                "initial_status": "eligible_for_bounded_replay" if support >= 10 else "diagnostic_only_low_support",
+                "initial_status": (
+                    "eligible_for_bounded_replay"
+                    if support >= 10
+                    else "diagnostic_only_low_support"
+                ),
             }
         )
     return rows
@@ -426,7 +574,10 @@ def _replay_decision(row: dict[str, Any], baseline: dict[str, Any]) -> str:
     pbo = float(row.get("pbo", 1.0) or 1.0)
     dd = float(row.get("max_drawdown_r", 0.0) or 0.0)
     mean_path = float(row.get("mean_cpcv_path_pnl_r", 0.0) or 0.0)
-    worst = min(float(path.get("total_pnl_r", 0.0) or 0.0) for path in row.get("worst_3_cpcv_paths", []) or [{"total_pnl_r": 0.0}])
+    worst = min(
+        float(path.get("total_pnl_r", 0.0) or 0.0)
+        for path in row.get("worst_3_cpcv_paths", []) or [{"total_pnl_r": 0.0}]
+    )
     if (
         row.get("dsr_psr", {}).get("status") == "pass"
         and pbo <= min(0.25, float(baseline.get("pbo", 1.0) or 1.0))
@@ -438,14 +589,18 @@ def _replay_decision(row: dict[str, Any], baseline: dict[str, Any]) -> str:
     return "reject_or_diagnostic_only"
 
 
-def _structure_partial_gates(row: dict[str, Any], baseline: dict[str, Any], baseline_tail: float) -> dict[str, bool]:
+def _structure_partial_gates(
+    row: dict[str, Any], baseline: dict[str, Any], baseline_tail: float
+) -> dict[str, bool]:
     worst_path = min(
         float(path.get("total_pnl_r", 0.0) or 0.0)
         for path in row.get("worst_3_cpcv_paths", []) or [{"total_pnl_r": 0.0}]
     )
     return {
-        "lower_drawdown": float(row.get("max_drawdown_r", 0.0) or 0.0) > float(baseline.get("max_drawdown_r", 0.0) or 0.0),
-        "better_right_tail": float(row.get("right_tail_p90_r", 0.0) or 0.0) > baseline_tail,
+        "lower_drawdown": float(row.get("max_drawdown_r", 0.0) or 0.0)
+        > float(baseline.get("max_drawdown_r", 0.0) or 0.0),
+        "better_right_tail": float(row.get("right_tail_p90_r", 0.0) or 0.0)
+        > baseline_tail,
         "cpcv_pbo_lte_0_25": float(row.get("pbo", 1.0) or 1.0) <= 0.25,
         "worst_path_gt_minus_5r": worst_path > -5.0,
         "dsr_psr_pass": row.get("dsr_psr", {}).get("status") == "pass",
@@ -481,10 +636,16 @@ def _variant_family(variant: str) -> str:
     return "fixed_tp_sl_baseline"
 
 
-def _failure_attribution(path_rows: list[dict[str, Any]], replay_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _failure_attribution(
+    path_rows: list[dict[str, Any]], replay_rows: list[dict[str, Any]]
+) -> dict[str, Any]:
     losing = [row for row in path_rows if float(row["pnl_r"]) <= 0]
     taxonomy_counts = Counter(str(row["trade_outcome_taxonomy"]) for row in losing)
-    rejected = [row for row in replay_rows if row.get("governance_decision") != "shortlist_for_full_validation"]
+    rejected = [
+        row
+        for row in replay_rows
+        if row.get("governance_decision") != "shortlist_for_full_validation"
+    ]
     return {
         "dominant_losing_archetypes": dict(taxonomy_counts.most_common(5)),
         "rejected_families": [

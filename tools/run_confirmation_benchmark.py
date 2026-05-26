@@ -14,7 +14,9 @@ from trading_ml.validation_audit import build_validation_audit
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run fixed-protocol confirmation for the frozen or overridden benchmark.")
+    parser = argparse.ArgumentParser(
+        description="Run fixed-protocol confirmation for the frozen or overridden benchmark."
+    )
     parser.add_argument("--feature-family", default=None)
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--benchmark-name", default=None)
@@ -28,18 +30,34 @@ def main() -> None:
         state["stage2_config"]["feature_family"] = args.feature_family
     if args.threshold is not None:
         benchmark["threshold"] = float(args.threshold)
-    benchmark_name = args.benchmark_name or str(bnr_config.get("controller", {}).get("benchmark_name", "bnr_benchmark"))
+    benchmark_name = args.benchmark_name or str(
+        bnr_config.get("controller", {}).get("benchmark_name", "bnr_benchmark")
+    )
 
     result = run_stage2_research_engine(Stage2Config(**state["stage2_config"]))
     validation = build_validation_audit(result, {})
-    stitched_records = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []))
-    translation = build_translation_analysis(result, prediction_records=stitched_records)
-    execution_backtest = run_event_driven_policy_backtest(stitched_records, threshold=float(benchmark.get("threshold", 0.5)))
-    utility = compute_execution_utility(execution_backtest) if execution_backtest.get("status") == "complete" else {"score": None}
+    stitched_records = list(
+        validation.get("walk_forward", {}).get("stitched_prediction_records", [])
+    )
+    translation = build_translation_analysis(
+        result, prediction_records=stitched_records
+    )
+    execution_backtest = run_event_driven_policy_backtest(
+        stitched_records, threshold=float(benchmark.get("threshold", 0.5))
+    )
+    utility = (
+        compute_execution_utility(execution_backtest)
+        if execution_backtest.get("status") == "complete"
+        else {"score": None}
+    )
 
     applied_threshold = float(benchmark.get("threshold", 0.5))
     threshold_row = next(
-        (row for row in translation.get("rows", []) if float(row.get("threshold", -1.0)) == applied_threshold),
+        (
+            row
+            for row in translation.get("rows", [])
+            if float(row.get("threshold", -1.0)) == applied_threshold
+        ),
         None,
     )
 
@@ -64,7 +82,9 @@ def main() -> None:
         },
         "execution_backtest": execution_backtest,
         "utility": utility,
-        "confirmation_status": _confirmation_status(validation, threshold_row, execution_backtest),
+        "confirmation_status": _confirmation_status(
+            validation, threshold_row, execution_backtest
+        ),
     }
 
     output_path = Path("reports") / f"{benchmark_name}_confirmation.json"
@@ -73,7 +93,9 @@ def main() -> None:
     print(payload)
 
 
-def _confirmation_status(validation: dict, threshold_row: dict | None, execution_backtest: dict) -> str:
+def _confirmation_status(
+    validation: dict, threshold_row: dict | None, execution_backtest: dict
+) -> str:
     walk_forward = dict(validation.get("walk_forward", {}))
     purging = dict(validation.get("purging", {}))
     if walk_forward.get("status") != "pass":

@@ -24,7 +24,16 @@ def _write_window_cache(df, *, symbol: str, timeframe: str, role: str) -> Path:
     return output
 
 
-def _manifest_entry(*, path: Path, bars, symbol: str, timeframe: str, timezone: str, role: str, priority: int) -> dict:
+def _manifest_entry(
+    *,
+    path: Path,
+    bars,
+    symbol: str,
+    timeframe: str,
+    timezone: str,
+    role: str,
+    priority: int,
+) -> dict:
     quality = build_data_quality_report(
         bars,
         source_path=path,
@@ -56,7 +65,9 @@ def _manifest_entry(*, path: Path, bars, symbol: str, timeframe: str, timezone: 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build exploration/validation caches from the opening-hours MNQ source.")
+    parser = argparse.ArgumentParser(
+        description="Build exploration/validation caches from the opening-hours MNQ source."
+    )
     parser.add_argument("--manifest", default="databento_mnq_manifest.json")
     parser.add_argument("--symbol", default="MNQ")
     parser.add_argument("--timeframe", default="30s")
@@ -69,7 +80,12 @@ def main() -> None:
     if not source_path:
         raise RuntimeError("No source_path available for boundary cache build.")
 
-    bars = load_ohlcv_file(source_path, symbol=args.symbol, timeframe=args.timeframe, timezone=args.timezone)
+    bars = load_ohlcv_file(
+        source_path,
+        symbol=args.symbol,
+        timeframe=args.timeframe,
+        timezone=args.timezone,
+    )
     exploration_bars = _filter_window(
         bars,
         start=boundary["exploration"]["start"],
@@ -81,8 +97,15 @@ def main() -> None:
         end=boundary["validation"]["end"],
     )
 
-    exploration_path = _write_window_cache(exploration_bars, symbol=args.symbol, timeframe=args.timeframe, role="exploration")
-    validation_path = _write_window_cache(validation_bars, symbol=args.symbol, timeframe=args.timeframe, role="validation")
+    exploration_path = _write_window_cache(
+        exploration_bars,
+        symbol=args.symbol,
+        timeframe=args.timeframe,
+        role="exploration",
+    )
+    validation_path = _write_window_cache(
+        validation_bars, symbol=args.symbol, timeframe=args.timeframe, role="validation"
+    )
 
     entries = [
         _manifest_entry(
@@ -113,13 +136,16 @@ def main() -> None:
     manifest["files"] = [
         file_entry
         for file_entry in manifest.get("files", [])
-        if str(file_entry.get("source_path", "")) not in {str(exploration_path), str(validation_path)}
+        if str(file_entry.get("source_path", ""))
+        not in {str(exploration_path), str(validation_path)}
     ] + entries
     manifest["generated_at"] = utc_now_iso()
     manifest["files"].sort(
         key=lambda item: (
             item.get("timeframe") != "30s",
-            {"exploration": 0, "validation": 1, "holdout": 2}.get(item.get("boundary_role", ""), 3),
+            {"exploration": 0, "validation": 1, "holdout": 2}.get(
+                item.get("boundary_role", ""), 3
+            ),
             -(item.get("stage2_priority", 0)),
             -(item.get("sessions", 0)),
             -(item.get("rows", 0)),
@@ -127,14 +153,20 @@ def main() -> None:
     )
 
     manifest_path = MANIFESTS_DIR / args.manifest
-    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+    )
     payload = {
         "source_path": source_path,
         "exploration_path": str(exploration_path),
         "validation_path": str(validation_path),
         "exploration_sessions": entries[0]["sessions"],
         "validation_sessions": entries[1]["sessions"],
-        "holdout_marked_paths": [item["source_path"] for item in manifest["files"] if item.get("boundary_role") == "holdout"],
+        "holdout_marked_paths": [
+            item["source_path"]
+            for item in manifest["files"]
+            if item.get("boundary_role") == "holdout"
+        ],
     }
     print(json.dumps(payload, indent=2))
 

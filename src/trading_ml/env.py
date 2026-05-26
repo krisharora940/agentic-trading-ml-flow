@@ -6,7 +6,9 @@ from pathlib import Path
 from trading_ml.paths import ROOT
 
 
-def load_env_file(path: Path | None = None, *, override: bool = False) -> dict[str, str]:
+def load_env_file(
+    path: Path | None = None, *, override: bool = False
+) -> dict[str, str]:
     env_path = path or (ROOT / ".env")
     loaded: dict[str, str] = {}
     if not env_path.exists():

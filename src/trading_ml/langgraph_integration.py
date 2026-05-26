@@ -39,10 +39,17 @@ from trading_ml.bnr_research_desk import (
     exit_research_agent_node,
     failure_analyst_node,
     feature_engineer_node,
+    action_executor_node,
+    branch_exhaustion_node,
+    marginal_evidence_evaluator_node,
     path_modeler_node,
     price_action_expert_node,
+    proposal_compiler_node,
+    proposal_red_team_node,
+    responsibility_boundary_node,
     route_after_desk_director,
     setup_spec_agent_node,
+    state_ontology_node,
 )
 
 
@@ -59,15 +66,23 @@ def require_langgraph() -> tuple[Any, Any, Any, Any]:
     return StateGraph, START, END, (InMemorySaver, Command, interrupt)
 
 
-def _interrupt_for_review(state: AgentLoopState, checkpoint_name: str) -> dict[str, Any]:
+def _interrupt_for_review(
+    state: AgentLoopState, checkpoint_name: str
+) -> dict[str, Any]:
     approvals = dict(state.get("approvals", {}))
     if approvals.get(checkpoint_name, False):
-        pending = [name for name in state.get("checkpoints_pending", []) if name != checkpoint_name]
+        pending = [
+            name
+            for name in state.get("checkpoints_pending", [])
+            if name != checkpoint_name
+        ]
         return {"approvals": approvals, "checkpoints_pending": pending}
     _, _, _, (_, _, interrupt) = require_langgraph()
     decision = interrupt(asdict(checkpoint_payload(checkpoint_name, state)))
     approvals[checkpoint_name] = bool(decision)
-    pending = [name for name in state.get("checkpoints_pending", []) if name != checkpoint_name]
+    pending = [
+        name for name in state.get("checkpoints_pending", []) if name != checkpoint_name
+    ]
     return {"approvals": approvals, "checkpoints_pending": pending}
 
 
@@ -99,8 +114,12 @@ def _llm_note(llm: Any, system_prompt: str, user_prompt: str) -> str:
 def route_after_program_director_state(state: AgentLoopState) -> str:
     plan = dict(state.get("next_step_plan", {}) or {})
     desk_handoff = dict(plan.get("desk_handoff", {}) or {})
-    planned_family = dict(plan.get("controller_override", {}) or {}).get("active_family")
-    executed_family = state.get("executed_research_family") or dict(state.get("search_results", {}) or {}).get("family")
+    planned_family = dict(plan.get("controller_override", {}) or {}).get(
+        "active_family"
+    )
+    executed_family = state.get("executed_research_family") or dict(
+        state.get("search_results", {}) or {}
+    ).get("family")
     executed_cycle = int(state.get("executed_family_cycle", 0) or 0)
     current_cycle = int(state.get("research_cycle", 1) or 1)
     already_executed = (
@@ -108,13 +127,21 @@ def route_after_program_director_state(state: AgentLoopState) -> str:
         and executed_family == planned_family
         and executed_cycle == current_cycle
     )
-    if desk_handoff.get("first_governed_batch") and planned_family and not already_executed:
+    if (
+        desk_handoff.get("first_governed_batch")
+        and planned_family
+        and not already_executed
+    ):
         return "governor_agent"
     if plan.get("benchmark_status") == "exhausted_or_structurally_fragile":
         return "setup_redesign_agent"
     if already_executed:
         return "audit_agent"
-    if plan.get("approval_required") == "search_space_approval" and planned_family and not state.get("translation_summary"):
+    if (
+        plan.get("approval_required") == "search_space_approval"
+        and planned_family
+        and not state.get("translation_summary")
+    ):
         return "governor_agent"
     if state.get("translation_summary"):
         return "review_frozen_spec"
@@ -125,14 +152,27 @@ def route_after_data_steward_state(state: AgentLoopState) -> str:
     plan = dict(state.get("next_step_plan", {}) or {})
     desk_handoff = dict(plan.get("desk_handoff", {}) or {})
     action_id = str(plan.get("assigned_research_action", "") or "")
-    if action_id in {"candidate_universe_expansion", "exit_behavior_research", "validation_failure_analysis", "cpcv_attribution", "market_state_setup_quality"}:
+    if action_id in {
+        "candidate_universe_expansion",
+        "exit_behavior_research",
+        "validation_failure_analysis",
+        "cpcv_attribution",
+        "market_state_setup_quality",
+    }:
         return "search_controller_agent"
-    if desk_handoff.get("first_governed_batch") and action_id in {"setup", "candidate_universe_expansion", "exit_behavior_research", "market_state_setup_quality"}:
+    if desk_handoff.get("first_governed_batch") and action_id in {
+        "setup",
+        "candidate_universe_expansion",
+        "exit_behavior_research",
+        "market_state_setup_quality",
+    }:
         return "search_controller_agent"
     return "bnr_research_agent"
 
 
-def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = None, *, use_llm: bool = True) -> Any:
+def compile_bnr_langgraph(
+    checkpointer: Any | None = None, llm: Any | None = None, *, use_llm: bool = True
+) -> Any:
     StateGraph, START, END, (InMemorySaver, Command, _) = require_langgraph()
     limits = build_loop_limits()
     load_runtime_env()
@@ -318,7 +358,9 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
 
     graph.add_edge(START, "strategy_intake_agent")
     graph.add_edge("strategy_intake_agent", "research_director_agent")
-    graph.add_conditional_edges("research_director_agent", route_after_research_director)
+    graph.add_conditional_edges(
+        "research_director_agent", route_after_research_director
+    )
     graph.add_edge("domain_research_agent", "program_director")
     graph.add_conditional_edges("program_director", route_after_program_director)
     graph.add_edge("setup_redesign_agent", END)
@@ -354,7 +396,9 @@ def compile_bnr_langgraph(checkpointer: Any | None = None, llm: Any | None = Non
     return graph.compile(checkpointer=saver)
 
 
-def compile_bnr_research_desk_graph(checkpointer: Any | None = None, llm: Any | None = None, *, use_llm: bool = True) -> Any:
+def compile_bnr_research_desk_graph(
+    checkpointer: Any | None = None, llm: Any | None = None, *, use_llm: bool = True
+) -> Any:
     StateGraph, START, END, (InMemorySaver, _, _) = require_langgraph()
     load_runtime_env()
     llm_client = llm
@@ -365,7 +409,10 @@ def compile_bnr_research_desk_graph(checkpointer: Any | None = None, llm: Any | 
     graph.add_node("desk_data_steward", desk_data_steward_node)
     graph.add_node("event_librarian", event_librarian_node)
     graph.add_node("failure_analyst", failure_analyst_node)
-    graph.add_node("price_action_expert", lambda state: price_action_expert_node(state, llm=llm_client))
+    graph.add_node(
+        "price_action_expert",
+        lambda state: price_action_expert_node(state, llm=llm_client),
+    )
     graph.add_node("desk_director", desk_director_node)
     graph.add_node("feature_engineer", feature_engineer_node)
     graph.add_node("setup_spec_agent", setup_spec_agent_node)
@@ -393,6 +440,49 @@ def compile_bnr_research_desk_graph(checkpointer: Any | None = None, llm: Any | 
     return graph.compile(checkpointer=saver)
 
 
+def compile_bnr_research_desk_v2_graph(checkpointer: Any | None = None) -> Any:
+    StateGraph, START, END, (InMemorySaver, _, _) = require_langgraph()
+
+    graph = StateGraph(AgentLoopState)
+    graph.add_node("responsibility_boundary", responsibility_boundary_node)
+    graph.add_node("event_librarian", event_librarian_node)
+    graph.add_node("failure_analyst", failure_analyst_node)
+    graph.add_node("state_ontology", state_ontology_node)
+    graph.add_node("branch_exhaustion", branch_exhaustion_node)
+    graph.add_node("desk_director", desk_director_node)
+    graph.add_node("feature_engineer", feature_engineer_node)
+    graph.add_node("setup_spec_agent", setup_spec_agent_node)
+    graph.add_node("eligibility_modeler", eligibility_modeler_node)
+    graph.add_node("path_modeler", path_modeler_node)
+    graph.add_node("exit_research_agent", exit_research_agent_node)
+    graph.add_node("proposal_compiler", proposal_compiler_node)
+    graph.add_node("proposal_red_team", proposal_red_team_node)
+    graph.add_node("action_executor", action_executor_node)
+    graph.add_node("marginal_evidence", marginal_evidence_evaluator_node)
+    graph.add_node("desk_memory_update", desk_memory_update_node)
+
+    graph.add_edge(START, "responsibility_boundary")
+    graph.add_edge("responsibility_boundary", "event_librarian")
+    graph.add_edge("event_librarian", "failure_analyst")
+    graph.add_edge("failure_analyst", "state_ontology")
+    graph.add_edge("state_ontology", "branch_exhaustion")
+    graph.add_edge("branch_exhaustion", "desk_director")
+    graph.add_conditional_edges("desk_director", route_after_desk_director)
+    graph.add_edge("feature_engineer", "proposal_compiler")
+    graph.add_edge("setup_spec_agent", "proposal_compiler")
+    graph.add_edge("eligibility_modeler", "proposal_compiler")
+    graph.add_edge("path_modeler", "proposal_compiler")
+    graph.add_edge("exit_research_agent", "proposal_compiler")
+    graph.add_edge("proposal_compiler", "proposal_red_team")
+    graph.add_edge("proposal_red_team", "action_executor")
+    graph.add_edge("action_executor", "marginal_evidence")
+    graph.add_edge("marginal_evidence", "desk_memory_update")
+    graph.add_edge("desk_memory_update", END)
+
+    saver = checkpointer or InMemorySaver()
+    return graph.compile(checkpointer=saver)
+
+
 def build_langgraph_initial_input(
     *,
     preapproved_checkpoints: list[str] | None = None,
@@ -410,7 +500,12 @@ def build_langgraph_initial_input(
 
 def build_bnr_research_desk_initial_input() -> AgentLoopState:
     return build_bnr_research_desk_initial_input_with_profile(
-        preapproved_checkpoints=["bnr_spec_approval", "label_approval", "search_space_approval", "frozen_spec_approval"],
+        preapproved_checkpoints=[
+            "bnr_spec_approval",
+            "label_approval",
+            "search_space_approval",
+            "frozen_spec_approval",
+        ],
         max_research_cycles=1,
         compute_budget_overrides={
             "max_trials": 1,
@@ -455,7 +550,12 @@ def build_governor_state_from_desk_handoff(
     }
     budget_overrides.update(dict(compute_budget_overrides or {}))
     state = build_agent_loop_state(
-        preapproved_checkpoints=["bnr_spec_approval", "label_approval", "search_space_approval", "frozen_spec_approval"],
+        preapproved_checkpoints=[
+            "bnr_spec_approval",
+            "label_approval",
+            "search_space_approval",
+            "frozen_spec_approval",
+        ],
         max_research_cycles=max_research_cycles or 1,
         compute_budget_overrides=budget_overrides,
         runtime_profile=runtime_profile,
@@ -464,6 +564,13 @@ def build_governor_state_from_desk_handoff(
     state["stage2_result"] = dict(desk_state.get("stage2_result", {}) or {})
     state["bnr_attempts"] = list(desk_state.get("bnr_attempts", []) or [])
     state["failure_clusters"] = list(desk_state.get("failure_clusters", []) or [])
+    state["responsibility_boundaries"] = dict(
+        desk_state.get("responsibility_boundaries", {}) or {}
+    )
+    state["state_ontology"] = dict(desk_state.get("state_ontology", {}) or {})
+    state["research_branch_status"] = list(
+        desk_state.get("research_branch_status", []) or []
+    )
     state["price_action_expert"] = dict(desk_state.get("price_action_expert", {}) or {})
     state["desk_summary"] = dict(desk_state.get("desk_summary", {}) or {})
     state["desk_proposals"] = list(desk_state.get("desk_proposals", []) or [])

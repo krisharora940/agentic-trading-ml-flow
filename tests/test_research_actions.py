@@ -1,7 +1,14 @@
 import unittest
 from unittest import mock
 
-from trading_ml.research_actions import available_research_actions, execute_research_action
+from trading_ml.research_actions import (
+    available_research_actions,
+    execute_research_action,
+)
+from trading_ml.research_action_registry import (
+    build_research_action_plan,
+    execute_research_action_plan,
+)
 
 
 class ResearchActionTests(unittest.TestCase):
@@ -14,10 +21,18 @@ class ResearchActionTests(unittest.TestCase):
         self.assertIn("validation_failure_analysis", registry)
         self.assertIn("cpcv_attribution", registry)
         self.assertIn("domain_prior_ingestion", registry)
-        self.assertEqual(registry["candidate_universe_expansion"].callable_kind, "governed_research_cycle")
+        self.assertEqual(
+            registry["candidate_universe_expansion"].callable_kind,
+            "governed_research_cycle",
+        )
 
-    def test_execute_research_action_wraps_governed_cycle_with_action_metadata(self) -> None:
-        with mock.patch("trading_ml.research_actions.run_governed_research_cycle", return_value={"family": "candidate_universe_expansion", "trial_count": 1}) as run_cycle:
+    def test_execute_research_action_wraps_governed_cycle_with_action_metadata(
+        self,
+    ) -> None:
+        with mock.patch(
+            "trading_ml.research_actions.run_governed_research_cycle",
+            return_value={"family": "candidate_universe_expansion", "trial_count": 1},
+        ) as run_cycle:
             result = execute_research_action(
                 "candidate_universe_expansion",
                 base_config={"source_path": "x", "symbol": "MNQ", "timeframe": "30s"},
@@ -37,6 +52,46 @@ class ResearchActionTests(unittest.TestCase):
         self.assertEqual(result["action"]["action_id"], "domain_prior_ingestion")
         self.assertTrue(result["domain_priors"])
         self.assertTrue(result["research_backlog"])
+
+    def test_v2_action_registry_wraps_existing_research_actions(self) -> None:
+        proposal = {
+            "proposal_id": "DPROP-1",
+            "family": "path_modeling",
+            "claim": "Measure continuation decay by auction state.",
+        }
+        plan = build_research_action_plan(proposal, {"stage2_config_overrides": {}})
+        self.assertEqual(plan["action_id"], "exit_behavior_research")
+        self.assertTrue(plan["requires_governor_validation"])
+        self.assertEqual(
+            plan["expected_metric_delta"]["primary"],
+            "auction_state_continuation_validity",
+        )
+        self.assertTrue(plan["allowable_knobs"])
+        self.assertIn("holdout_access", plan["forbidden_knobs"])
+        self.assertTrue(plan["support_requirements"])
+        self.assertTrue(plan["falsification_rule"])
+        self.assertTrue(plan["kill_criteria"])
+        with mock.patch(
+            "trading_ml.research_action_registry.execute_research_action",
+            return_value={
+                "family": "exit_behavior_research",
+                "status": "complete",
+                "trial_count": 1,
+                "batch_decision": "inform",
+            },
+        ):
+            result = execute_research_action_plan(
+                plan,
+                {
+                    "stage2_config": {
+                        "source_path": "x",
+                        "symbol": "MNQ",
+                        "timeframe": "30s",
+                    }
+                },
+            )
+        self.assertEqual(result["action_id"], "exit_behavior_research")
+        self.assertEqual(result["status"], "complete")
 
 
 if __name__ == "__main__":

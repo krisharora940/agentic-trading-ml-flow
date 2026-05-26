@@ -138,6 +138,222 @@ class FailureCluster:
 
 
 @dataclass(slots=True)
+class StateTransition:
+    from_state: str
+    to_state: str
+    trigger: str
+    sample_size: int = 0
+    transition_probability: float | None = None
+    persistence_bars: float | None = None
+    evidence: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class ContinuationProfile:
+    state: str
+    sample_size: int
+    continuation_rate: float
+    failure_rate: float
+    avg_pnl_r: float | None = None
+    median_persistence_bars: float | None = None
+    evidence: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class FailureProfile:
+    failure_family: str
+    state: str
+    sample_size: int
+    avg_pnl_r: float | None = None
+    dominant_path_class: str = "unknown"
+    dominant_repair_state: str = "unknown"
+    evidence: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class StateOntology:
+    ontology_id: str
+    version: int
+    primary_modeling_target: str
+    bnr_role: str
+    state_definitions: dict[str, dict[str, Any]] = field(default_factory=dict)
+    transitions: list[dict[str, Any]] = field(default_factory=list)
+    continuation_profiles: list[dict[str, Any]] = field(default_factory=list)
+    failure_profiles: list[dict[str, Any]] = field(default_factory=list)
+    persistence_statistics: dict[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=utc_now_iso)
+    schema_version: int = 1
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class DeskProposal:
+    proposal_id: str
+    node: str
+    family: str
+    claim: str
+    hypothesis: str = ""
+    action_id: str = ""
+    target_failure_cluster: str | None = None
+    target_market_state: str | None = None
+    target_setup_state: str | None = None
+    target_environment_state: str | None = None
+    target_path_class: str | None = None
+    proposed_features: list[str] = field(default_factory=list)
+    parameter_knobs: list[str] = field(default_factory=list)
+    expected_metric_delta: dict[str, Any] = field(default_factory=dict)
+    allowable_knobs: list[str] = field(default_factory=list)
+    forbidden_knobs: list[str] = field(default_factory=list)
+    support_requirements: list[str] = field(default_factory=list)
+    falsification_rule: str = ""
+    expected_target_metrics: list[str] = field(default_factory=list)
+    kill_criteria: list[str] = field(default_factory=list)
+    evidence_refs: list[str] = field(default_factory=list)
+    created_at: str = field(default_factory=utc_now_iso)
+    schema_version: int = 1
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class ResearchActionPlan:
+    plan_id: str
+    proposal_id: str
+    action_id: str
+    family: str
+    objective: str
+    target_failure_cluster: str | None = None
+    expected_metric_delta: dict[str, Any] = field(default_factory=dict)
+    allowable_knobs: list[str] = field(default_factory=list)
+    forbidden_knobs: list[str] = field(default_factory=list)
+    support_requirements: list[str] = field(default_factory=list)
+    falsification_rule: str = ""
+    kill_criteria: list[str] = field(default_factory=list)
+    controller_state: dict[str, Any] = field(default_factory=dict)
+    base_config_overrides: dict[str, Any] = field(default_factory=dict)
+    validation_scope: str = "governor_only"
+    requires_governor_validation: bool = True
+    created_at: str = field(default_factory=utc_now_iso)
+    schema_version: int = 1
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class ResearchActionResult:
+    result_id: str
+    action_id: str
+    proposal_id: str
+    status: str
+    family: str = ""
+    trial_count: int = 0
+    batch_decision: str = ""
+    metrics: dict[str, Any] = field(default_factory=dict)
+    artifacts: dict[str, Any] = field(default_factory=dict)
+    raw_summary: dict[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=utc_now_iso)
+    schema_version: int = 1
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class MarginalEvidence:
+    proposal_id: str
+    action_id: str
+    status: str
+    decision: str = "inform"
+    net_delta_vs_baseline: float | None = None
+    robustness_delta: float | None = None
+    cpcv_delta: float | None = None
+    dsr_delta: float | None = None
+    calibration_delta: float | None = None
+    worst_path_loss_delta: float | None = None
+    sample_delta: int | None = None
+    notes: list[str] = field(default_factory=list)
+    created_at: str = field(default_factory=utc_now_iso)
+    schema_version: int = 1
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class FamilyExhaustionRecord:
+    family: str
+    status: str
+    reason: str = ""
+    consecutive_cycles: int = 0
+    accepted_without_robustness: int = 0
+    last_proposal_id: str | None = None
+    created_at: str = field(default_factory=utc_now_iso)
+    schema_version: int = 1
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class MarginalImprovementTracker:
+    family: str
+    proposal_id: str
+    action_id: str
+    metric_deltas: dict[str, Any] = field(default_factory=dict)
+    has_robustness_improvement: bool = False
+    decision: str = "inform"
+    created_at: str = field(default_factory=utc_now_iso)
+    schema_version: int = 1
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class ResearchBranchStatus:
+    family: str
+    status: str
+    exhaustion: dict[str, Any] = field(default_factory=dict)
+    marginal_improvement: dict[str, Any] = field(default_factory=dict)
+    next_allowed_action: str = ""
+    notes: list[str] = field(default_factory=list)
+    created_at: str = field(default_factory=utc_now_iso)
+    schema_version: int = 1
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class RedTeamReview:
+    proposal_id: str
+    status: str
+    blocked_reasons: list[str] = field(default_factory=list)
+    critiques: list[str] = field(default_factory=list)
+    required_revisions: list[str] = field(default_factory=list)
+    boundary_check: str = "not-run"
+    created_at: str = field(default_factory=utc_now_iso)
+    schema_version: int = 1
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
 class ExperimentRecord:
     experiment_id: str
     hypothesis: str

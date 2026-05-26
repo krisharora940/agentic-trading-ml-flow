@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from statistics import mean, median
 from typing import Any
 
 from trading_ml.agent_workflow import build_agent_loop_state
 from trading_ml.config import load_bnr_config
-from trading_ml.deflated_sharpe_analysis import compute_sharpe_ratio, deflated_sharpe_probability
+from trading_ml.deflated_sharpe_analysis import (
+    compute_sharpe_ratio,
+    deflated_sharpe_probability,
+)
 from trading_ml.event_driven_backtest import run_event_driven_policy_backtest
 from trading_ml.market_state_quality import (
     _followthrough_gate_decision,
@@ -32,11 +34,21 @@ def main() -> None:
         raise RuntimeError(f"diagnostic unavailable: {diagnostic.get('reason')}")
 
     stage2 = run_stage2_research_engine(Stage2Config(**stage2_config))
-    validation = build_validation_audit(stage2, {"trial_count": N_RECENT_POLICY_TRIALS}, artifact_context={"run_id": run_id})
-    feature_by_id = {str(row["candidate_id"]): row for row in diagnostic["_labeled_rows"]}
-    stitched = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []) or [])
+    validation = build_validation_audit(
+        stage2,
+        {"trial_count": N_RECENT_POLICY_TRIALS},
+        artifact_context={"run_id": run_id},
+    )
+    feature_by_id = {
+        str(row["candidate_id"]): row for row in diagnostic["_labeled_rows"]
+    }
+    stitched = list(
+        validation.get("walk_forward", {}).get("stitched_prediction_records", []) or []
+    )
     policy_records = _apply_market_state_v1(stitched, feature_by_id)
-    threshold = float(load_bnr_config().get("frozen_benchmark", {}).get("threshold", 0.45) or 0.45)
+    threshold = float(
+        load_bnr_config().get("frozen_benchmark", {}).get("threshold", 0.45) or 0.45
+    )
     execution = run_event_driven_policy_backtest(policy_records, threshold=threshold)
     translation = build_translation_analysis(stage2, policy_records)
     cpcv = _candidate_cpcv(diagnostic)
@@ -72,28 +84,41 @@ def main() -> None:
             "daily_session_pnl": execution.get("session_rows", []),
             "slippage_commission_assumptions": execution.get("fill_assumptions", {}),
             "leakage_audit": {
-                "status": "pass"
-                if diagnostic.get("leakage_audit", {}).get("status") == "pass"
-                and diagnostic.get("followthrough_confirmation_policy_gate", {}).get("leakage_audit", {}).get("status") == "pass"
-                else "fail",
+                "status": (
+                    "pass"
+                    if diagnostic.get("leakage_audit", {}).get("status") == "pass"
+                    and diagnostic.get("followthrough_confirmation_policy_gate", {})
+                    .get("leakage_audit", {})
+                    .get("status")
+                    == "pass"
+                    else "fail"
+                ),
                 "diagnostic_leakage": diagnostic.get("leakage_audit", {}),
-                "policy_gate_leakage": diagnostic.get("followthrough_confirmation_policy_gate", {}).get("leakage_audit", {}),
+                "policy_gate_leakage": diagnostic.get(
+                    "followthrough_confirmation_policy_gate", {}
+                ).get("leakage_audit", {}),
             },
         },
         "pass_fail": gates,
-        "promotion_decision": "advance_to_holdout_request" if all(gates.values()) else "blocked",
+        "promotion_decision": (
+            "advance_to_holdout_request" if all(gates.values()) else "blocked"
+        ),
     }
     output = REPORTS_DIR / "market_state_setup_quality_v1_validation.json"
     output.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
     print(json.dumps(_console_summary(report, output), indent=2, default=str))
 
 
-def _apply_market_state_v1(records: list[dict[str, Any]], feature_by_id: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+def _apply_market_state_v1(
+    records: list[dict[str, Any]], feature_by_id: dict[str, dict[str, Any]]
+) -> list[dict[str, Any]]:
     filtered = []
     for row in records:
         joined = dict(row)
         joined.update(feature_by_id.get(str(row.get("candidate_id")), {}))
-        keep, fill_impact, pit_valid = _followthrough_gate_decision(joined, "breakout_quality")
+        keep, fill_impact, pit_valid = _followthrough_gate_decision(
+            joined, "breakout_quality"
+        )
         if keep <= 0 or not pit_valid:
             continue
         if fill_impact:
@@ -103,8 +128,18 @@ def _apply_market_state_v1(records: list[dict[str, Any]], feature_by_id: dict[st
 
 
 def _candidate_cpcv(diagnostic: dict[str, Any]) -> dict[str, Any]:
-    variants = list(diagnostic.get("followthrough_confirmation_policy_gate", {}).get("policy_variants", []) or [])
-    row = next(item for item in variants if item["variant"] == "exclude_weak_or_grindy_plus_pre_entry_breakout_quality_gate")
+    variants = list(
+        diagnostic.get("followthrough_confirmation_policy_gate", {}).get(
+            "policy_variants", []
+        )
+        or []
+    )
+    row = next(
+        item
+        for item in variants
+        if item["variant"]
+        == "exclude_weak_or_grindy_plus_pre_entry_breakout_quality_gate"
+    )
     paths = list(row.get("cpcv_paths", []) or [])
     pnls = sorted(float(path.get("total_pnl_r", 0.0) or 0.0) for path in paths)
     pbo = sum(1 for pnl in pnls if pnl <= 0) / len(pnls) if pnls else 1.0
@@ -131,30 +166,56 @@ def _candidate_cpcv(diagnostic: dict[str, Any]) -> dict[str, Any]:
 
 
 def _dsr_psr(execution: dict[str, Any], diagnostic: dict[str, Any]) -> dict[str, Any]:
-    returns = [float(row.get("executed_pnl_r", 0.0) or 0.0) for row in execution.get("equity_curve", [])]
+    returns = [
+        float(row.get("executed_pnl_r", 0.0) or 0.0)
+        for row in execution.get("equity_curve", [])
+    ]
     observed = compute_sharpe_ratio(returns)
     trial_srs = []
-    for section in ["cheap_state_policy_simulation", "followthrough_confirmation_policy_gate"]:
+    for section in [
+        "cheap_state_policy_simulation",
+        "followthrough_confirmation_policy_gate",
+    ]:
         for row in diagnostic.get(section, {}).get("policy_variants", []):
-            pnls = [float(path.get("total_pnl_r", 0.0) or 0.0) for path in row.get("cpcv_paths", [])]
+            pnls = [
+                float(path.get("total_pnl_r", 0.0) or 0.0)
+                for path in row.get("cpcv_paths", [])
+            ]
             sr = compute_sharpe_ratio(pnls)
             if sr is not None:
                 trial_srs.append(sr)
     sr_std = _sample_std(trial_srs)
     dsr_probability = (
-        deflated_sharpe_probability(observed_sr=observed, n_trials=N_RECENT_POLICY_TRIALS, sr_std=sr_std, n_obs=len(returns))
+        deflated_sharpe_probability(
+            observed_sr=observed,
+            n_trials=N_RECENT_POLICY_TRIALS,
+            sr_std=sr_std,
+            n_obs=len(returns),
+        )
         if observed is not None and sr_std > 0
         else 0.0
     )
     psr_probability = (
-        deflated_sharpe_probability(observed_sr=observed, n_trials=1, sr_std=1.0, n_obs=len(returns))
+        deflated_sharpe_probability(
+            observed_sr=observed, n_trials=1, sr_std=1.0, n_obs=len(returns)
+        )
         if observed is not None
         else 0.0
     )
     return {
-        "status": "pass" if dsr_probability >= 0.95 and psr_probability >= 0.95 and (observed or 0.0) > 0 else "fail",
-        "dsr_status": "pass" if dsr_probability >= 0.95 and (observed or 0.0) > 0 else "fail",
-        "psr_status": "pass" if psr_probability >= 0.95 and (observed or 0.0) > 0 else "fail",
+        "status": (
+            "pass"
+            if dsr_probability >= 0.95
+            and psr_probability >= 0.95
+            and (observed or 0.0) > 0
+            else "fail"
+        ),
+        "dsr_status": (
+            "pass" if dsr_probability >= 0.95 and (observed or 0.0) > 0 else "fail"
+        ),
+        "psr_status": (
+            "pass" if psr_probability >= 0.95 and (observed or 0.0) > 0 else "fail"
+        ),
         "dsr_probability": dsr_probability,
         "psr_probability": psr_probability,
         "observed_sharpe": observed,
@@ -186,11 +247,19 @@ def _calibration_by_state(records: list[dict[str, Any]]) -> list[dict[str, Any]]
     return sorted(rows, key=lambda item: item["count"], reverse=True)
 
 
-def _state_contribution(execution: dict[str, Any], feature_by_id: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+def _state_contribution(
+    execution: dict[str, Any], feature_by_id: dict[str, dict[str, Any]]
+) -> list[dict[str, Any]]:
     groups: dict[str, dict[str, Any]] = {}
     for row in execution.get("equity_curve", []):
-        state = str(feature_by_id.get(str(row.get("candidate_id")), {}).get("market_state", "unknown"))
-        bucket = groups.setdefault(state, {"market_state": state, "trade_count": 0, "total_pnl_r": 0.0})
+        state = str(
+            feature_by_id.get(str(row.get("candidate_id")), {}).get(
+                "market_state", "unknown"
+            )
+        )
+        bucket = groups.setdefault(
+            state, {"market_state": state, "trade_count": 0, "total_pnl_r": 0.0}
+        )
         bucket["trade_count"] += 1
         bucket["total_pnl_r"] += float(row.get("executed_pnl_r", 0.0) or 0.0)
     return sorted(groups.values(), key=lambda item: item["trade_count"], reverse=True)
@@ -211,7 +280,8 @@ def _pass_fail(
         "dsr_psr_pass": dsr_psr.get("status") == "pass",
         "trade_count_acceptable": int(execution.get("trade_count", 0) or 0) >= 100,
         "translation_pass": translation.get("status") == "pass",
-        "drawdown_tolerable": float(execution.get("max_drawdown_r", 0.0) or 0.0) > -12.0,
+        "drawdown_tolerable": float(execution.get("max_drawdown_r", 0.0) or 0.0)
+        > -12.0,
         "no_leakage": diagnostic.get("leakage_audit", {}).get("status") == "pass",
     }
 
@@ -238,7 +308,9 @@ def _console_summary(report: dict[str, Any], output: Path) -> dict[str, Any]:
             "min_path": cpcv["min_path_pnl_r"],
             "positive_path_rate": cpcv["path_positive_rate"],
             "pbo": cpcv["pbo"],
-            "worst_paths": [(row["path_id"], row["total_pnl_r"]) for row in cpcv["worst_paths"]],
+            "worst_paths": [
+                (row["path_id"], row["total_pnl_r"]) for row in cpcv["worst_paths"]
+            ],
         },
         "dsr_psr": report["validation"]["dsr_psr"],
         "execution": {

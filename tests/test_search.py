@@ -24,7 +24,9 @@ class SearchTests(unittest.TestCase):
             controller_override={"active_family": "model"},
         )
         self.assertEqual(len(trials), 2)
-        self.assertEqual({trial["model_family"] for trial in trials}, {"linear_baseline", "gbm"})
+        self.assertEqual(
+            {trial["model_family"] for trial in trials}, {"linear_baseline", "gbm"}
+        )
 
     def test_generate_feature_family_trials_is_bounded(self) -> None:
         state = build_agent_loop_state()
@@ -62,7 +64,10 @@ class SearchTests(unittest.TestCase):
             controller_override={"active_family": "threshold"},
         )
         self.assertEqual(len(trials), 5)
-        self.assertEqual({trial["decision_threshold"] for trial in trials}, {0.45, 0.5, 0.55, 0.6, 0.65})
+        self.assertEqual(
+            {trial["decision_threshold"] for trial in trials},
+            {0.45, 0.5, 0.55, 0.6, 0.65},
+        )
 
     def test_generate_feature_threshold_trials_is_bounded(self) -> None:
         state = build_agent_loop_state()

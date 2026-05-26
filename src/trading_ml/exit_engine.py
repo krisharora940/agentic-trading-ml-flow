@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from statistics import mean, median
 from typing import Any
 from uuid import uuid4
 
 from trading_ml.config import load_global_config
-from trading_ml.deflated_sharpe_analysis import compute_sharpe_ratio, deflated_sharpe_probability
+from trading_ml.deflated_sharpe_analysis import (
+    compute_sharpe_ratio,
+    deflated_sharpe_probability,
+)
 from trading_ml.market_state_quality import (
     _available_cpcv_path_rows,
     _diagnostic_config,
@@ -51,7 +53,11 @@ STRUCTURE_PARTIAL_REPLAY_VARIANTS = [
 def run_exit_engine_cycle(state: dict[str, Any]) -> dict[str, Any]:
     diagnostic = build_market_state_setup_quality_diagnostic(state)
     if diagnostic.get("status") != "complete":
-        return {"status": "pending", "reason": "diagnostic_unavailable", "diagnostic": diagnostic}
+        return {
+            "status": "pending",
+            "reason": "diagnostic_unavailable",
+            "diagnostic": diagnostic,
+        }
     config = _diagnostic_config(state, str(diagnostic["source_path"]))
     bars = regular_session(
         load_ohlcv_file(
@@ -62,14 +68,31 @@ def run_exit_engine_cycle(state: dict[str, Any]) -> dict[str, Any]:
         )
     )
     frozen_entries = _frozen_v1_entries(diagnostic)
-    rows = [_evaluate_exit_policy(name, frozen_entries, bars, config.horizon_bars) for name in EXIT_VARIANTS]
+    rows = [
+        _evaluate_exit_policy(name, frozen_entries, bars, config.horizon_bars)
+        for name in EXIT_VARIANTS
+    ]
     _attach_dsr_psr(rows)
-    baseline = next(row for row in rows if row["variant"] == "fixed_1_5r_tp_sl_baseline")
+    baseline = next(
+        row for row in rows if row["variant"] == "fixed_1_5r_tp_sl_baseline"
+    )
     for row in rows:
-        row["improvement_attribution"] = _improvement_attribution(baseline["trade_results"], row["trade_results"])
+        row["improvement_attribution"] = _improvement_attribution(
+            baseline["trade_results"], row["trade_results"]
+        )
         row["decision"] = "advance_candidate" if _passes_exit_gates(row) else "reject"
-    ranked = sorted(rows, key=lambda row: (row["decision"] == "advance_candidate", row["mean_cpcv_path_pnl_r"], row["total_pnl_r"]), reverse=True)
-    accepted = next((row for row in ranked if row["decision"] == "advance_candidate"), None)
+    ranked = sorted(
+        rows,
+        key=lambda row: (
+            row["decision"] == "advance_candidate",
+            row["mean_cpcv_path_pnl_r"],
+            row["total_pnl_r"],
+        ),
+        reverse=True,
+    )
+    accepted = next(
+        (row for row in ranked if row["decision"] == "advance_candidate"), None
+    )
     payload = {
         "status": "complete",
         "family": "exit_engine",
@@ -94,8 +117,12 @@ def run_exit_engine_cycle(state: dict[str, Any]) -> dict[str, Any]:
     run_id = f"exit-engine-{uuid4().hex[:12]}"
     output_dir = REPORTS_DIR / "runs" / run_id / "exit_engine"
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "summary.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
-    (REPORTS_DIR / "exit_engine_market_state_v1.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    (output_dir / "summary.json").write_text(
+        json.dumps(payload, indent=2, default=str), encoding="utf-8"
+    )
+    (REPORTS_DIR / "exit_engine_market_state_v1.json").write_text(
+        json.dumps(payload, indent=2, default=str), encoding="utf-8"
+    )
     payload["artifact_path"] = str(REPORTS_DIR / "exit_engine_market_state_v1.json")
     payload["run_artifact_path"] = str(output_dir / "summary.json")
     return payload
@@ -104,7 +131,11 @@ def run_exit_engine_cycle(state: dict[str, Any]) -> dict[str, Any]:
 def run_scratch_exit_refinement_cycle(state: dict[str, Any]) -> dict[str, Any]:
     diagnostic = build_market_state_setup_quality_diagnostic(state)
     if diagnostic.get("status") != "complete":
-        return {"status": "pending", "reason": "diagnostic_unavailable", "diagnostic": diagnostic}
+        return {
+            "status": "pending",
+            "reason": "diagnostic_unavailable",
+            "diagnostic": diagnostic,
+        }
     config = _diagnostic_config(state, str(diagnostic["source_path"]))
     bars = regular_session(
         load_ohlcv_file(
@@ -115,14 +146,31 @@ def run_scratch_exit_refinement_cycle(state: dict[str, Any]) -> dict[str, Any]:
         )
     )
     frozen_entries = _frozen_v1_entries(diagnostic)
-    rows = [_evaluate_exit_policy(name, frozen_entries, bars, config.horizon_bars) for name in SCRATCH_REFINEMENT_VARIANTS]
+    rows = [
+        _evaluate_exit_policy(name, frozen_entries, bars, config.horizon_bars)
+        for name in SCRATCH_REFINEMENT_VARIANTS
+    ]
     _attach_dsr_psr(rows)
-    baseline = next(row for row in rows if row["variant"] == "scratch_no_followthrough_after_3_bars")
+    baseline = next(
+        row for row in rows if row["variant"] == "scratch_no_followthrough_after_3_bars"
+    )
     for row in rows:
-        row["improvement_attribution"] = _improvement_attribution(baseline["trade_results"], row["trade_results"])
+        row["improvement_attribution"] = _improvement_attribution(
+            baseline["trade_results"], row["trade_results"]
+        )
         row["decision"] = "advance_candidate" if _passes_exit_gates(row) else "reject"
-    ranked = sorted(rows, key=lambda row: (row["decision"] == "advance_candidate", row["mean_cpcv_path_pnl_r"], row["total_pnl_r"]), reverse=True)
-    accepted = next((row for row in ranked if row["decision"] == "advance_candidate"), None)
+    ranked = sorted(
+        rows,
+        key=lambda row: (
+            row["decision"] == "advance_candidate",
+            row["mean_cpcv_path_pnl_r"],
+            row["total_pnl_r"],
+        ),
+        reverse=True,
+    )
+    accepted = next(
+        (row for row in ranked if row["decision"] == "advance_candidate"), None
+    )
     payload = {
         "status": "complete",
         "family": "exit_engine_scratch_refinement",
@@ -147,9 +195,15 @@ def run_scratch_exit_refinement_cycle(state: dict[str, Any]) -> dict[str, Any]:
     run_id = f"exit-scratch-refine-{uuid4().hex[:12]}"
     output_dir = REPORTS_DIR / "runs" / run_id / "exit_engine"
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "summary.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
-    (REPORTS_DIR / "exit_engine_scratch_refinement_market_state_v1.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
-    payload["artifact_path"] = str(REPORTS_DIR / "exit_engine_scratch_refinement_market_state_v1.json")
+    (output_dir / "summary.json").write_text(
+        json.dumps(payload, indent=2, default=str), encoding="utf-8"
+    )
+    (REPORTS_DIR / "exit_engine_scratch_refinement_market_state_v1.json").write_text(
+        json.dumps(payload, indent=2, default=str), encoding="utf-8"
+    )
+    payload["artifact_path"] = str(
+        REPORTS_DIR / "exit_engine_scratch_refinement_market_state_v1.json"
+    )
     payload["run_artifact_path"] = str(output_dir / "summary.json")
     return payload
 
@@ -163,8 +217,12 @@ def _frozen_v1_entries(diagnostic: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
-def _evaluate_exit_policy(policy: str, entries: list[dict[str, Any]], bars: Any, horizon_bars: int) -> dict[str, Any]:
-    trade_results = [_simulate_trade_exit(row, bars, horizon_bars, policy) for row in entries]
+def _evaluate_exit_policy(
+    policy: str, entries: list[dict[str, Any]], bars: Any, horizon_bars: int
+) -> dict[str, Any]:
+    trade_results = [
+        _simulate_trade_exit(row, bars, horizon_bars, policy) for row in entries
+    ]
     if policy == "scratch_3_bars_plus_session_drawdown_stop_3r":
         trade_results = _apply_session_drawdown_stop(trade_results, limit_r=-3.0)
     pnls = [row["pnl_r"] for row in trade_results]
@@ -175,7 +233,9 @@ def _evaluate_exit_policy(policy: str, entries: list[dict[str, Any]], bars: Any,
         "total_pnl_r": float(sum(pnls)),
         "avg_trade_r": float(mean(pnls)) if pnls else 0.0,
         "median_trade_r": float(median(pnls)) if pnls else 0.0,
-        "win_rate": float(sum(1 for pnl in pnls if pnl > 0) / len(pnls)) if pnls else 0.0,
+        "win_rate": (
+            float(sum(1 for pnl in pnls if pnl > 0) / len(pnls)) if pnls else 0.0
+        ),
         "payoff_ratio": _payoff_ratio(pnls),
         "max_drawdown_r": _max_drawdown(pnls),
         "mean_cpcv_path_pnl_r": cpcv["mean_total_pnl_r"],
@@ -183,12 +243,18 @@ def _evaluate_exit_policy(policy: str, entries: list[dict[str, Any]], bars: Any,
         "pbo": cpcv["pbo"],
         "worst_3_cpcv_paths": cpcv["worst_paths"],
         "cpcv_summary": cpcv,
-        "leakage_audit": {"status": "pass", "point_in_time_exit": True, "uses_path_specific_filter": False},
+        "leakage_audit": {
+            "status": "pass",
+            "point_in_time_exit": True,
+            "uses_path_specific_filter": False,
+        },
         "trade_results": trade_results,
     }
 
 
-def _apply_session_drawdown_stop(trades: list[dict[str, Any]], limit_r: float) -> list[dict[str, Any]]:
+def _apply_session_drawdown_stop(
+    trades: list[dict[str, Any]], limit_r: float
+) -> list[dict[str, Any]]:
     kept: list[dict[str, Any]] = []
     stopped_sessions: set[str] = set()
     session_pnl: dict[str, float] = {}
@@ -204,7 +270,9 @@ def _apply_session_drawdown_stop(trades: list[dict[str, Any]], limit_r: float) -
     return kept
 
 
-def _simulate_trade_exit(row: dict[str, Any], bars: Any, horizon_bars: int, policy: str) -> dict[str, Any]:
+def _simulate_trade_exit(
+    row: dict[str, Any], bars: Any, horizon_bars: int, policy: str
+) -> dict[str, Any]:
     pd = _require_pandas()
     entry_time = pd.Timestamp(row["entry_time"])
     future = bars[bars.index >= entry_time].head(horizon_bars)
@@ -216,9 +284,15 @@ def _simulate_trade_exit(row: dict[str, Any], bars: Any, horizon_bars: int, poli
     active_stop = stop
     partial_taken = False
     partial_pnl = 0.0
-    recent_target_r = max(0.5, min(float(row.get("distance_to_recent_high_low", 1.5) or 1.5), 1.5))
+    recent_target_r = max(
+        0.5, min(float(row.get("distance_to_recent_high_low", 1.5) or 1.5), 1.5)
+    )
     if policy == "opposing_recent_high_low_target_or_exit":
-        target = entry + recent_target_r * risk if direction == "long" else entry - recent_target_r * risk
+        target = (
+            entry + recent_target_r * risk
+            if direction == "long"
+            else entry - recent_target_r * risk
+        )
     elif policy == "partial_1r_runner_fixed_2r":
         target = entry + 2.0 * risk if direction == "long" else entry - 2.0 * risk
     elif policy == "partial_1r_runner_fixed_3r":
@@ -241,19 +315,36 @@ def _simulate_trade_exit(row: dict[str, Any], bars: Any, horizon_bars: int, poli
         open_ = float(bar["open"])
         closes.append(close)
         opens.append(open_)
-        favorable = (high - entry) / risk if direction == "long" else (entry - low) / risk
+        favorable = (
+            (high - entry) / risk if direction == "long" else (entry - low) / risk
+        )
         mfe_r = max(mfe_r, favorable)
 
-        if policy in {"breakeven_after_0_75r_mfe", "scratch_3_bars_plus_breakeven_after_0_75r_mfe"} and mfe_r >= 0.75:
-            active_stop = max(active_stop, entry) if direction == "long" else min(active_stop, entry)
-        if _structure_trail_active(policy, mfe_r, idx, opens, closes, direction) or (policy == "partial_1r_runner_structure_trail" and partial_taken and idx >= 3):
+        if (
+            policy
+            in {
+                "breakeven_after_0_75r_mfe",
+                "scratch_3_bars_plus_breakeven_after_0_75r_mfe",
+            }
+            and mfe_r >= 0.75
+        ):
+            active_stop = (
+                max(active_stop, entry)
+                if direction == "long"
+                else min(active_stop, entry)
+            )
+        if _structure_trail_active(policy, mfe_r, idx, opens, closes, direction) or (
+            policy == "partial_1r_runner_structure_trail" and partial_taken and idx >= 3
+        ):
             recent = future.iloc[max(0, idx - 3) : idx]
             if direction == "long":
                 active_stop = max(active_stop, float(recent["low"].min()))
             else:
                 active_stop = min(active_stop, float(recent["high"].max()))
         if _partial_1r_policy(policy) and not partial_taken:
-            one_r_hit = high >= entry + risk if direction == "long" else low <= entry - risk
+            one_r_hit = (
+                high >= entry + risk if direction == "long" else low <= entry - risk
+            )
             if one_r_hit:
                 partial_taken = True
                 partial_pnl = 0.5
@@ -278,7 +369,9 @@ def _simulate_trade_exit(row: dict[str, Any], bars: Any, horizon_bars: int, poli
             exit_time = ts
             break
 
-        adverse_r = (entry - low) / risk if direction == "long" else (high - entry) / risk
+        adverse_r = (
+            (entry - low) / risk if direction == "long" else (high - entry) / risk
+        )
         if policy == "scratch_3_bars_plus_mae_cut_0_65r" and adverse_r >= 0.65:
             outcome = "mae_cut"
             exit_price = close
@@ -296,7 +389,11 @@ def _simulate_trade_exit(row: dict[str, Any], bars: Any, horizon_bars: int, poli
             exit_price = close
             exit_time = ts
             break
-        if policy == "tempo_deterioration_exit" and idx >= 4 and _tempo_deteriorated(opens, closes):
+        if (
+            policy == "tempo_deterioration_exit"
+            and idx >= 4
+            and _tempo_deteriorated(opens, closes)
+        ):
             outcome = "tempo_deterioration"
             exit_price = close
             exit_time = ts
@@ -349,16 +446,30 @@ def _partial_1r_policy(policy: str) -> bool:
     }
 
 
-def _structure_trail_active(policy: str, mfe_r: float, idx: int, opens: list[float], closes: list[float], direction: str) -> bool:
+def _structure_trail_active(
+    policy: str,
+    mfe_r: float,
+    idx: int,
+    opens: list[float],
+    closes: list[float],
+    direction: str,
+) -> bool:
     if idx < 3:
         return False
     if policy == "structure_trailing_stop":
         return mfe_r >= 0.50
     if policy == "structure_trail_after_1r":
         return mfe_r >= 1.0
-    if policy != "structure_trail_after_breakout_continuation" or mfe_r < 0.50 or len(closes) < 3:
+    if (
+        policy != "structure_trail_after_breakout_continuation"
+        or mfe_r < 0.50
+        or len(closes) < 3
+    ):
         return False
-    recent_signs = [1 if close > open_ else -1 if close < open_ else 0 for open_, close in zip(opens[-3:], closes[-3:])]
+    recent_signs = [
+        1 if close > open_ else -1 if close < open_ else 0
+        for open_, close in zip(opens[-3:], closes[-3:])
+    ]
     nonzero = [sign for sign in recent_signs if sign != 0]
     wanted = 1 if direction == "long" else -1
     return len(nonzero) >= 2 and sum(sign == wanted for sign in nonzero) >= 2
@@ -368,7 +479,11 @@ def _exit_cpcv(policy: str, trade_results: list[dict[str, Any]]) -> dict[str, An
     result_by_id = {row["candidate_id"]: row for row in trade_results}
     rows = []
     for path in _available_cpcv_path_rows():
-        pnls = [result_by_id[str(row.get("candidate_id"))]["pnl_r"] for row in path["rows"] if str(row.get("candidate_id")) in result_by_id]
+        pnls = [
+            result_by_id[str(row.get("candidate_id"))]["pnl_r"]
+            for row in path["rows"]
+            if str(row.get("candidate_id")) in result_by_id
+        ]
         total = float(sum(pnls))
         rows.append(
             {
@@ -379,17 +494,22 @@ def _exit_cpcv(policy: str, trade_results: list[dict[str, Any]]) -> dict[str, An
             }
         )
     path_pnls = [row["total_pnl_r"] for row in rows]
-    sorted_pnls = sorted(path_pnls)
     return {
-        "status": "pass"
-        if rows
-        and sum(1 for pnl in path_pnls if pnl <= 0) / len(path_pnls) <= 0.25
-        and mean(path_pnls) > 0
-        and median(path_pnls) > 0
-        and min(path_pnls) > -5.0
-        else "fail",
+        "status": (
+            "pass"
+            if rows
+            and sum(1 for pnl in path_pnls if pnl <= 0) / len(path_pnls) <= 0.25
+            and mean(path_pnls) > 0
+            and median(path_pnls) > 0
+            and min(path_pnls) > -5.0
+            else "fail"
+        ),
         "policy": policy,
-        "pbo": float(sum(1 for pnl in path_pnls if pnl <= 0) / len(path_pnls)) if path_pnls else 1.0,
+        "pbo": (
+            float(sum(1 for pnl in path_pnls if pnl <= 0) / len(path_pnls))
+            if path_pnls
+            else 1.0
+        ),
         "mean_total_pnl_r": float(mean(path_pnls)) if path_pnls else 0.0,
         "median_total_pnl_r": float(median(path_pnls)) if path_pnls else 0.0,
         "min_path_pnl_r": min(path_pnls) if path_pnls else 0.0,
@@ -410,10 +530,24 @@ def _attach_dsr_psr(rows: list[dict[str, Any]]) -> None:
     for row in rows:
         sr = row.get("observed_sharpe")
         n_obs = len(row["trade_results"])
-        dsr = deflated_sharpe_probability(observed_sr=sr, n_trials=n_trials, sr_std=sr_std, n_obs=n_obs) if sr is not None and sr_std > 0 else 0.0
-        psr = deflated_sharpe_probability(observed_sr=sr, n_trials=1, sr_std=1.0, n_obs=n_obs) if sr is not None else 0.0
+        dsr = (
+            deflated_sharpe_probability(
+                observed_sr=sr, n_trials=n_trials, sr_std=sr_std, n_obs=n_obs
+            )
+            if sr is not None and sr_std > 0
+            else 0.0
+        )
+        psr = (
+            deflated_sharpe_probability(
+                observed_sr=sr, n_trials=1, sr_std=1.0, n_obs=n_obs
+            )
+            if sr is not None
+            else 0.0
+        )
         row["dsr_psr"] = {
-            "status": "pass" if dsr >= 0.95 and psr >= 0.95 and (sr or 0.0) > 0 else "fail",
+            "status": (
+                "pass" if dsr >= 0.95 and psr >= 0.95 and (sr or 0.0) > 0 else "fail"
+            ),
             "dsr_probability": dsr,
             "psr_probability": psr,
             "n_trials": n_trials,
@@ -423,7 +557,9 @@ def _attach_dsr_psr(rows: list[dict[str, Any]]) -> None:
         }
 
 
-def _improvement_attribution(baseline: list[dict[str, Any]], trial: list[dict[str, Any]]) -> dict[str, Any]:
+def _improvement_attribution(
+    baseline: list[dict[str, Any]], trial: list[dict[str, Any]]
+) -> dict[str, Any]:
     base_by_id = {row["candidate_id"]: row for row in baseline}
     loser_cut = 0.0
     winner_expansion = 0.0
@@ -446,11 +582,11 @@ def _improvement_attribution(baseline: list[dict[str, Any]], trial: list[dict[st
         "expanding_winners_r": winner_expansion,
         "winner_giveback_r": winner_giveback,
         "worsened_losers_r": new_loser,
-        "primary_source": "cutting_losers"
-        if loser_cut >= max(winner_expansion, abs(winner_giveback), abs(new_loser))
-        else "expanding_winners"
-        if winner_expansion > 0
-        else "mixed_or_negative",
+        "primary_source": (
+            "cutting_losers"
+            if loser_cut >= max(winner_expansion, abs(winner_giveback), abs(new_loser))
+            else "expanding_winners" if winner_expansion > 0 else "mixed_or_negative"
+        ),
     }
 
 
@@ -471,7 +607,11 @@ def _net_pnl_r(entry: float, exit_price: float, direction: str, risk: float) -> 
     slip = ticks * tick_size
     filled_entry = entry + slip if direction == "long" else entry - slip
     filled_exit = exit_price - slip if direction == "long" else exit_price + slip
-    pnl_points = filled_exit - filled_entry if direction == "long" else filled_entry - filled_exit
+    pnl_points = (
+        filled_exit - filled_entry
+        if direction == "long"
+        else filled_entry - filled_exit
+    )
     return pnl_points / risk
 
 
@@ -481,8 +621,12 @@ def _tempo_deteriorated(opens: list[float], closes: list[float]) -> bool:
     if len(recent_closes) < 4:
         return False
     bodies = [abs(c - o) for o, c in zip(recent_opens, recent_closes)]
-    signs = [1 if c > o else -1 if c < o else 0 for o, c in zip(recent_opens, recent_closes)]
-    alternating = sum(1 for a, b in zip(signs[:-1], signs[1:]) if a and b and a != b) >= 2
+    signs = [
+        1 if c > o else -1 if c < o else 0 for o, c in zip(recent_opens, recent_closes)
+    ]
+    alternating = (
+        sum(1 for a, b in zip(signs[:-1], signs[1:]) if a and b and a != b) >= 2
+    )
     compressing = bodies[-1] <= max(bodies[0], 1e-9) * 0.5
     return alternating or compressing
 
@@ -517,7 +661,9 @@ def _fill_assumptions() -> dict[str, Any]:
 
 
 def _leakage_audit(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    issues = [row["variant"] for row in rows if row["leakage_audit"]["status"] != "pass"]
+    issues = [
+        row["variant"] for row in rows if row["leakage_audit"]["status"] != "pass"
+    ]
     return {
         "status": "pass" if not issues else "fail",
         "issues": issues,

@@ -8,7 +8,10 @@ class ResearchProgramTests(unittest.TestCase):
     def test_program_director_prefers_robustness_rebuild_when_cpcv_fails(self) -> None:
         state = {
             "program_state": build_program_state(),
-            "stage2_config": {"source_path": "data/cache/exploration.parquet", "feature_family": "bnr_plus_context"},
+            "stage2_config": {
+                "source_path": "data/cache/exploration.parquet",
+                "feature_family": "bnr_plus_context",
+            },
             "bnr_spec": {
                 "frozen_benchmark": {
                     "feature_family": "bnr_plus_context",
@@ -40,7 +43,10 @@ class ResearchProgramTests(unittest.TestCase):
             "controller_state": {"active_family": "model"},
         }
         with (
-            mock.patch("trading_ml.research_program._load_cpcv_failure_attribution", return_value={}),
+            mock.patch(
+                "trading_ml.research_program._load_cpcv_failure_attribution",
+                return_value={},
+            ),
             mock.patch(
                 "trading_ml.research_program._build_multi_cycle_memory",
                 return_value={
@@ -58,10 +64,15 @@ class ResearchProgramTests(unittest.TestCase):
         self.assertEqual(plan["lane"], "robustness_rebuild")
         self.assertEqual(plan["selected_family"], "policy_meta")
 
-    def test_program_director_prefers_subtype_when_cpcv_attribution_points_to_structural_failure(self) -> None:
+    def test_program_director_prefers_subtype_when_cpcv_attribution_points_to_structural_failure(
+        self,
+    ) -> None:
         state = {
             "program_state": build_program_state(),
-            "stage2_config": {"source_path": "data/cache/exploration.parquet", "feature_family": "bnr_plus_context"},
+            "stage2_config": {
+                "source_path": "data/cache/exploration.parquet",
+                "feature_family": "bnr_plus_context",
+            },
             "bnr_spec": {
                 "frozen_benchmark": {
                     "feature_family": "bnr_plus_context",
@@ -72,7 +83,9 @@ class ResearchProgramTests(unittest.TestCase):
                 }
             },
             "data_manifest_loaded": True,
-            "stage2_result": {"model_diagnostics": {"shap_analysis": {"top_features": []}}},
+            "stage2_result": {
+                "model_diagnostics": {"shap_analysis": {"top_features": []}}
+            },
             "audit_summary": {
                 "walk_forward": {"status": "pass"},
                 "cpcv": {"status": "fail"},
@@ -86,14 +99,29 @@ class ResearchProgramTests(unittest.TestCase):
         attribution = {
             "status": "complete",
             "dominant_failure_axes": {
-                "subtype": {"key": "deep_retrace_repair", "trade_count": 23, "total_pnl_r": -23.0},
-                "time_of_day": {"key": "14:32", "trade_count": 12, "total_pnl_r": -10.0},
-                "probability_bucket": {"key": "[0.65,1.00]", "trade_count": 29, "total_pnl_r": -25.0},
+                "subtype": {
+                    "key": "deep_retrace_repair",
+                    "trade_count": 23,
+                    "total_pnl_r": -23.0,
+                },
+                "time_of_day": {
+                    "key": "14:32",
+                    "trade_count": 12,
+                    "total_pnl_r": -10.0,
+                },
+                "probability_bucket": {
+                    "key": "[0.65,1.00]",
+                    "trade_count": 29,
+                    "total_pnl_r": -25.0,
+                },
             },
             "failure_summary": {"failure_type": "tail_path_fragility"},
         }
         with (
-            mock.patch("trading_ml.research_program._load_cpcv_failure_attribution", return_value=attribution),
+            mock.patch(
+                "trading_ml.research_program._load_cpcv_failure_attribution",
+                return_value=attribution,
+            ),
             mock.patch(
                 "trading_ml.research_program._build_multi_cycle_memory",
                 return_value={
@@ -114,12 +142,19 @@ class ResearchProgramTests(unittest.TestCase):
         self.assertEqual(plan["approval_required"], "search_space_approval")
         self.assertIn("setup_subtype", plan["search_budget"]["allowed_knobs"])
         self.assertIn("threshold", plan["families_rejected"])
-        self.assertEqual(plan["evidence_used"]["current_blocker"], "cpcv_tail_path_fragility")
+        self.assertEqual(
+            plan["evidence_used"]["current_blocker"], "cpcv_tail_path_fragility"
+        )
 
-    def test_program_director_blocks_validation_window_and_skips_exhausted_families_while_cpcv_fails(self) -> None:
+    def test_program_director_blocks_validation_window_and_skips_exhausted_families_while_cpcv_fails(
+        self,
+    ) -> None:
         state = {
             "program_state": build_program_state(),
-            "stage2_config": {"source_path": "data/cache/exploration.parquet", "feature_family": "bnr_plus_context"},
+            "stage2_config": {
+                "source_path": "data/cache/exploration.parquet",
+                "feature_family": "bnr_plus_context",
+            },
             "bnr_spec": {
                 "frozen_benchmark": {
                     "feature_family": "bnr_plus_context",
@@ -151,13 +186,24 @@ class ResearchProgramTests(unittest.TestCase):
         attribution = {
             "status": "complete",
             "dominant_failure_axes": {
-                "subtype": {"key": "deep_retrace_repair", "trade_count": 23, "total_pnl_r": -23.0},
-                "probability_bucket": {"key": "[0.65,1.00]", "trade_count": 29, "total_pnl_r": -25.0},
+                "subtype": {
+                    "key": "deep_retrace_repair",
+                    "trade_count": 23,
+                    "total_pnl_r": -23.0,
+                },
+                "probability_bucket": {
+                    "key": "[0.65,1.00]",
+                    "trade_count": 29,
+                    "total_pnl_r": -25.0,
+                },
             },
             "failure_summary": {"failure_type": "tail_path_fragility"},
         }
         with (
-            mock.patch("trading_ml.research_program._load_cpcv_failure_attribution", return_value=attribution),
+            mock.patch(
+                "trading_ml.research_program._load_cpcv_failure_attribution",
+                return_value=attribution,
+            ),
             mock.patch(
                 "trading_ml.research_program._build_multi_cycle_memory",
                 return_value={
@@ -172,18 +218,33 @@ class ResearchProgramTests(unittest.TestCase):
             program = evaluate_program_state(state)
         plan = program["next_step_plan"]
         self.assertEqual(plan["selected_family"], "policy_meta")
-        self.assertNotIn("policy_meta", [row["family"] for row in plan["rejected_alternatives"]])
+        self.assertNotIn(
+            "policy_meta", [row["family"] for row in plan["rejected_alternatives"]]
+        )
         self.assertIn("validation_window", plan["families_rejected"])
-        validation_score = next(row for row in plan["family_scores"] if row["family"] == "validation_window")
+        validation_score = next(
+            row for row in plan["family_scores"] if row["family"] == "validation_window"
+        )
         self.assertLess(validation_score["risk_adjusted_score"], 0)
 
     def test_program_director_routes_repeated_tail_paths_to_tail_cleanup(self) -> None:
         state = {
             "program_state": build_program_state(),
-            "stage2_config": {"source_path": "data/cache/exploration.parquet", "feature_family": "bnr_plus_context"},
-            "bnr_spec": {"frozen_benchmark": {"feature_family": "bnr_plus_context", "model_family": "linear_baseline", "threshold": 0.45}},
+            "stage2_config": {
+                "source_path": "data/cache/exploration.parquet",
+                "feature_family": "bnr_plus_context",
+            },
+            "bnr_spec": {
+                "frozen_benchmark": {
+                    "feature_family": "bnr_plus_context",
+                    "model_family": "linear_baseline",
+                    "threshold": 0.45,
+                }
+            },
             "data_manifest_loaded": True,
-            "stage2_result": {"model_diagnostics": {"shap_analysis": {"top_features": []}}},
+            "stage2_result": {
+                "model_diagnostics": {"shap_analysis": {"top_features": []}}
+            },
             "audit_summary": {
                 "walk_forward": {"status": "pass"},
                 "cpcv": {"status": "fail"},
@@ -197,13 +258,24 @@ class ResearchProgramTests(unittest.TestCase):
         attribution = {
             "status": "complete",
             "dominant_failure_axes": {
-                "subtype": {"key": "deep_retrace_repair", "trade_count": 23, "total_pnl_r": -23.0},
-                "probability_bucket": {"key": "[0.65,1.00]", "trade_count": 29, "total_pnl_r": -25.0},
+                "subtype": {
+                    "key": "deep_retrace_repair",
+                    "trade_count": 23,
+                    "total_pnl_r": -23.0,
+                },
+                "probability_bucket": {
+                    "key": "[0.65,1.00]",
+                    "trade_count": 29,
+                    "total_pnl_r": -25.0,
+                },
             },
             "failure_summary": {"failure_type": "tail_path_fragility"},
         }
         with (
-            mock.patch("trading_ml.research_program._load_cpcv_failure_attribution", return_value=attribution),
+            mock.patch(
+                "trading_ml.research_program._load_cpcv_failure_attribution",
+                return_value=attribution,
+            ),
             mock.patch(
                 "trading_ml.research_program._build_multi_cycle_memory",
                 return_value={
@@ -229,7 +301,10 @@ class ResearchProgramTests(unittest.TestCase):
     def test_program_director_moves_to_label_after_tail_cleanup_fails(self) -> None:
         state = {
             "program_state": build_program_state(),
-            "stage2_config": {"source_path": "data/cache/exploration.parquet", "feature_family": "bnr_plus_context"},
+            "stage2_config": {
+                "source_path": "data/cache/exploration.parquet",
+                "feature_family": "bnr_plus_context",
+            },
             "bnr_spec": {
                 "frozen_benchmark": {
                     "feature_family": "bnr_plus_context",
@@ -238,7 +313,13 @@ class ResearchProgramTests(unittest.TestCase):
                 }
             },
             "data_manifest_loaded": True,
-            "stage2_result": {"model_diagnostics": {"shap_analysis": {"top_features": [{"feature": "reclaim_body_strength"}]}}},
+            "stage2_result": {
+                "model_diagnostics": {
+                    "shap_analysis": {
+                        "top_features": [{"feature": "reclaim_body_strength"}]
+                    }
+                }
+            },
             "audit_summary": {
                 "walk_forward": {"status": "pass"},
                 "cpcv": {"status": "fail"},
@@ -252,12 +333,19 @@ class ResearchProgramTests(unittest.TestCase):
         attribution = {
             "status": "complete",
             "dominant_failure_axes": {
-                "probability_bucket": {"key": "[0.65,1.00]", "trade_count": 29, "total_pnl_r": -25.0},
+                "probability_bucket": {
+                    "key": "[0.65,1.00]",
+                    "trade_count": 29,
+                    "total_pnl_r": -25.0,
+                },
             },
             "failure_summary": {"failure_type": "tail_path_fragility"},
         }
         with (
-            mock.patch("trading_ml.research_program._load_cpcv_failure_attribution", return_value=attribution),
+            mock.patch(
+                "trading_ml.research_program._load_cpcv_failure_attribution",
+                return_value=attribution,
+            ),
             mock.patch(
                 "trading_ml.research_program._build_multi_cycle_memory",
                 return_value={
@@ -280,13 +368,26 @@ class ResearchProgramTests(unittest.TestCase):
         self.assertEqual(plan["selected_family"], "label")
         self.assertIn("Label", plan["family_scores"][0]["family"].title())
 
-    def test_program_director_moves_to_sample_expansion_after_label_geometry_fails(self) -> None:
+    def test_program_director_moves_to_sample_expansion_after_label_geometry_fails(
+        self,
+    ) -> None:
         state = {
             "program_state": build_program_state(),
-            "stage2_config": {"source_path": "data/cache/exploration.parquet", "feature_family": "bnr_plus_context"},
-            "bnr_spec": {"frozen_benchmark": {"feature_family": "bnr_plus_context", "model_family": "linear_baseline", "threshold": 0.45}},
+            "stage2_config": {
+                "source_path": "data/cache/exploration.parquet",
+                "feature_family": "bnr_plus_context",
+            },
+            "bnr_spec": {
+                "frozen_benchmark": {
+                    "feature_family": "bnr_plus_context",
+                    "model_family": "linear_baseline",
+                    "threshold": 0.45,
+                }
+            },
             "data_manifest_loaded": True,
-            "stage2_result": {"model_diagnostics": {"shap_analysis": {"top_features": []}}},
+            "stage2_result": {
+                "model_diagnostics": {"shap_analysis": {"top_features": []}}
+            },
             "audit_summary": {
                 "walk_forward": {"status": "pass"},
                 "cpcv": {"status": "fail"},
@@ -298,7 +399,12 @@ class ResearchProgramTests(unittest.TestCase):
             "controller_state": {"active_family": "label"},
         }
         with (
-            mock.patch("trading_ml.research_program._load_cpcv_failure_attribution", return_value={"failure_summary": {"failure_type": "tail_path_fragility"}}),
+            mock.patch(
+                "trading_ml.research_program._load_cpcv_failure_attribution",
+                return_value={
+                    "failure_summary": {"failure_type": "tail_path_fragility"}
+                },
+            ),
             mock.patch(
                 "trading_ml.research_program._build_multi_cycle_memory",
                 return_value={
@@ -310,7 +416,12 @@ class ResearchProgramTests(unittest.TestCase):
                     "persistent_tail_failure": {
                         "status": "active",
                         "path_ids": ["cpcv_010", "cpcv_003", "cpcv_002"],
-                        "families": ["model", "policy_meta", "tail_path_cleanup", "label"],
+                        "families": [
+                            "model",
+                            "policy_meta",
+                            "tail_path_cleanup",
+                            "label",
+                        ],
                         "tail_cleanup_failed": True,
                         "label_geometry_failed": True,
                     },
@@ -322,13 +433,26 @@ class ResearchProgramTests(unittest.TestCase):
         self.assertEqual(plan["selected_family"], "sample_expansion")
         self.assertIn("latest_trigger_time", plan["search_budget"]["allowed_knobs"])
 
-    def test_program_director_parks_benchmark_when_tail_persists_across_three_families(self) -> None:
+    def test_program_director_parks_benchmark_when_tail_persists_across_three_families(
+        self,
+    ) -> None:
         state = {
             "program_state": build_program_state(),
-            "stage2_config": {"source_path": "data/cache/exploration.parquet", "feature_family": "bnr_plus_context"},
-            "bnr_spec": {"frozen_benchmark": {"feature_family": "bnr_plus_context", "model_family": "linear_baseline", "threshold": 0.45}},
+            "stage2_config": {
+                "source_path": "data/cache/exploration.parquet",
+                "feature_family": "bnr_plus_context",
+            },
+            "bnr_spec": {
+                "frozen_benchmark": {
+                    "feature_family": "bnr_plus_context",
+                    "model_family": "linear_baseline",
+                    "threshold": 0.45,
+                }
+            },
             "data_manifest_loaded": True,
-            "stage2_result": {"model_diagnostics": {"shap_analysis": {"top_features": []}}},
+            "stage2_result": {
+                "model_diagnostics": {"shap_analysis": {"top_features": []}}
+            },
             "audit_summary": {
                 "walk_forward": {"status": "pass"},
                 "cpcv": {"status": "fail"},
@@ -340,7 +464,12 @@ class ResearchProgramTests(unittest.TestCase):
             "controller_state": {"active_family": "sample_expansion"},
         }
         with (
-            mock.patch("trading_ml.research_program._load_cpcv_failure_attribution", return_value={"failure_summary": {"failure_type": "tail_path_fragility"}}),
+            mock.patch(
+                "trading_ml.research_program._load_cpcv_failure_attribution",
+                return_value={
+                    "failure_summary": {"failure_type": "tail_path_fragility"}
+                },
+            ),
             mock.patch(
                 "trading_ml.research_program._build_multi_cycle_memory",
                 return_value={
@@ -368,10 +497,15 @@ class ResearchProgramTests(unittest.TestCase):
         self.assertEqual(plan["action"], "park_bnr_benchmark_definition")
         self.assertEqual(plan["search_budget"]["max_trials"], 0)
 
-    def test_program_director_logs_rejected_alternatives_and_kill_criteria(self) -> None:
+    def test_program_director_logs_rejected_alternatives_and_kill_criteria(
+        self,
+    ) -> None:
         state = {
             "program_state": build_program_state(),
-            "stage2_config": {"source_path": "data/cache/exploration.parquet", "feature_family": "bnr_plus_context"},
+            "stage2_config": {
+                "source_path": "data/cache/exploration.parquet",
+                "feature_family": "bnr_plus_context",
+            },
             "bnr_spec": {
                 "frozen_benchmark": {
                     "feature_family": "bnr_plus_context",
@@ -403,13 +537,28 @@ class ResearchProgramTests(unittest.TestCase):
         attribution = {
             "status": "complete",
             "dominant_failure_axes": {
-                "subtype": {"key": "clean_break_continuation", "trade_count": 4, "total_pnl_r": -4.0},
-                "time_of_day": {"key": "14:32", "trade_count": 12, "total_pnl_r": -10.0},
-                "probability_bucket": {"key": "[0.65,1.00]", "trade_count": 29, "total_pnl_r": -25.0},
+                "subtype": {
+                    "key": "clean_break_continuation",
+                    "trade_count": 4,
+                    "total_pnl_r": -4.0,
+                },
+                "time_of_day": {
+                    "key": "14:32",
+                    "trade_count": 12,
+                    "total_pnl_r": -10.0,
+                },
+                "probability_bucket": {
+                    "key": "[0.65,1.00]",
+                    "trade_count": 29,
+                    "total_pnl_r": -25.0,
+                },
             },
             "failure_summary": {"failure_type": "tail_path_fragility"},
         }
-        with mock.patch("trading_ml.research_program._load_cpcv_failure_attribution", return_value=attribution):
+        with mock.patch(
+            "trading_ml.research_program._load_cpcv_failure_attribution",
+            return_value=attribution,
+        ):
             program = evaluate_program_state(state)
         plan = program["next_step_plan"]
         self.assertIn("why_selected", plan)
@@ -419,10 +568,15 @@ class ResearchProgramTests(unittest.TestCase):
         self.assertIn("multi_cycle_memory", plan)
         self.assertIn("threshold", plan["why_rejected"])
 
-    def test_program_director_chooses_translation_policy_when_translation_is_weak(self) -> None:
+    def test_program_director_chooses_translation_policy_when_translation_is_weak(
+        self,
+    ) -> None:
         state = {
             "program_state": build_program_state(),
-            "stage2_config": {"source_path": "data/cache/exploration.parquet", "feature_family": "bnr_plus_context"},
+            "stage2_config": {
+                "source_path": "data/cache/exploration.parquet",
+                "feature_family": "bnr_plus_context",
+            },
             "bnr_spec": {
                 "frozen_benchmark": {
                     "feature_family": "bnr_plus_context",
@@ -446,7 +600,9 @@ class ResearchProgramTests(unittest.TestCase):
         program = evaluate_program_state(state)
         plan = program["next_step_plan"]
         self.assertEqual(plan["lane"], "translation_lab")
-        self.assertEqual(plan["controller_override"]["active_family"], "translation_policy")
+        self.assertEqual(
+            plan["controller_override"]["active_family"], "translation_policy"
+        )
 
 
 if __name__ == "__main__":

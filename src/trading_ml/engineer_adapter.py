@@ -12,11 +12,15 @@ def load_engineer_feature_config() -> dict[str, Any]:
     engineer.setdefault("backend", "hybrid")
     engineer.setdefault("enabled", True)
     engineer.setdefault("disable_numba_jit", True)
-    engineer.setdefault("features", ["rsi", "atr", "ema", "mfi", "stddev", "choppiness_index"])
+    engineer.setdefault(
+        "features", ["rsi", "atr", "ema", "mfi", "stddev", "choppiness_index"]
+    )
     return engineer
 
 
-def compute_engineer_features(bars: Any, *, features: list[str] | None = None) -> Any | None:
+def compute_engineer_features(
+    bars: Any, *, features: list[str] | None = None
+) -> Any | None:
     config = load_engineer_feature_config()
     if not config.get("enabled", True):
         return None
@@ -47,7 +51,9 @@ def compute_engineer_features(bars: Any, *, features: list[str] | None = None) -
 
     base_columns = set(frame.columns)
     featured = compute_features(pl.from_pandas(frame), feature_list).to_pandas()
-    extra_columns = [column for column in featured.columns if column not in base_columns]
+    extra_columns = [
+        column for column in featured.columns if column not in base_columns
+    ]
     if not extra_columns:
         return None
 
@@ -56,7 +62,9 @@ def compute_engineer_features(bars: Any, *, features: list[str] | None = None) -
     return result.set_index("ts_event").sort_index()
 
 
-def engineer_feature_snapshot(feature_frame: Any | None, cutoff: Any) -> dict[str, float]:
+def engineer_feature_snapshot(
+    feature_frame: Any | None, cutoff: Any
+) -> dict[str, float]:
     if feature_frame is None or feature_frame.empty:
         return {}
 

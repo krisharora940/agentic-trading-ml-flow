@@ -1,6 +1,6 @@
 [meta]
-version = 1
-purpose = "Canonical price-action ontology for BNR feature exploration."
+version = 2
+purpose = "Canonical price-action and auction-state ontology for BNR continuation research."
 default_inputs = ["ohlcv_1m"]
 
 [groups.volatility]
@@ -55,6 +55,17 @@ features = [
   "opening_balance_stability",
   "trend_day_probability",
   "session_transition_score",
+  "auction_state_type",
+  "opening_auction_acceptance",
+]
+
+[groups.continuation_lifecycle]
+label = "Continuation Lifecycle"
+features = [
+  "continuation_health_score",
+  "continuation_decay_rate",
+  "repair_dominance_score",
+  "failed_followthrough_repair_speed",
 ]
 
 [features.impulse_speed]
@@ -320,6 +331,78 @@ risk = "medium"
 curve_fit_risk = "high"
 support_requirement = "high"
 description = "Measures transition from impulse to balance or repair"
+
+[features.auction_state_type]
+category = "auction"
+concept = "Decision-time session-state taxonomy"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state", "eligibility", "continuation"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+related_clusters = ["weak_continuation", "no_follow_through", "failed_breakout"]
+description = "Classifies the current auction state as impulse, balance, repair, continuation, rejection, or transition"
+
+[features.opening_auction_acceptance]
+category = "auction"
+concept = "Opening auction acceptance vs rejection"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state", "liquidity", "eligibility"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+related_clusters = ["no_reclaim_edge", "failed_breakout"]
+description = "Measures whether early price discovery accepts outside the opening range or rejects back into balance"
+
+[features.continuation_health_score]
+category = "continuation_lifecycle"
+concept = "Healthy continuation"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["continuation", "market_state", "path_modeling"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+related_clusters = ["weak_continuation", "no_follow_through"]
+description = "Composite score for directional efficiency, candle quality, and pullback control after impulse"
+
+[features.continuation_decay_rate]
+category = "continuation_lifecycle"
+concept = "Continuation degradation"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["failure_detection", "path_modeling", "exit_behavior"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+related_clusters = ["weak_continuation", "no_follow_through"]
+description = "Rate at which post-trigger directional displacement, body quality, and tempo deteriorate"
+
+[features.repair_dominance_score]
+category = "continuation_lifecycle"
+concept = "Repair dominates continuation"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["market_state", "repair", "eligibility"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+related_clusters = ["deep_retrace_failure", "failed_breakout", "no_reclaim_edge"]
+description = "Measures whether counter-move repair is structurally stronger than continuation flow"
+
+[features.failed_followthrough_repair_speed]
+category = "continuation_lifecycle"
+concept = "Failed follow-through repair speed"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["failure_detection", "exit_behavior", "path_modeling"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+related_clusters = ["no_follow_through", "failed_breakout"]
+description = "Time and distance from breakout failure to repair back into the prior auction area"
 
 [restricted]
 exact_time_buckets = ["14:32"]

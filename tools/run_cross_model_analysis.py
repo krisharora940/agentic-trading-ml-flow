@@ -19,7 +19,9 @@ def bucket_monotonicity(prediction_rows: list[dict], bucket_count: int = 5) -> d
     if frame.empty or len(frame) < bucket_count:
         return {"status": "pending"}
     ranked = frame.sort_values("probability").reset_index(drop=True)
-    ranked["bucket"] = pd.qcut(ranked.index, q=min(bucket_count, len(ranked)), duplicates="drop")
+    ranked["bucket"] = pd.qcut(
+        ranked.index, q=min(bucket_count, len(ranked)), duplicates="drop"
+    )
     bucket_rows = []
     for _, group in ranked.groupby("bucket", observed=False):
         bucket_rows.append(
@@ -34,7 +36,11 @@ def bucket_monotonicity(prediction_rows: list[dict], bucket_count: int = 5) -> d
         bucket_rows[idx]["hit_rate"] <= bucket_rows[idx + 1]["hit_rate"]
         for idx in range(len(bucket_rows) - 1)
     )
-    return {"status": "complete", "monotonic_hit_rate": monotonic, "buckets": bucket_rows}
+    return {
+        "status": "complete",
+        "monotonic_hit_rate": monotonic,
+        "buckets": bucket_rows,
+    }
 
 
 def regime_conditional_summary(prediction_rows: list[dict]) -> dict:
@@ -78,7 +84,23 @@ def main() -> None:
     feature_cols = [
         col
         for col in merged.columns
-        if col not in {"candidate_id", "session_date", "label", "outcome", "entry_time", "exit_time", "entry_price", "stop_price", "target_price", "exit_price", "bars_held", "mfe", "mae", "pnl_r"}
+        if col
+        not in {
+            "candidate_id",
+            "session_date",
+            "label",
+            "outcome",
+            "entry_time",
+            "exit_time",
+            "entry_price",
+            "stop_price",
+            "target_price",
+            "exit_price",
+            "bars_held",
+            "mfe",
+            "mae",
+            "pnl_r",
+        }
         and pd.api.types.is_numeric_dtype(merged[col])
         and not merged[col].isna().all()
     ]
@@ -92,14 +114,23 @@ def main() -> None:
     family_results = []
     for family in active_families:
         if family["status"] != "active":
-            family_results.append({"model_family": family["family"], "status": family["status"]})
+            family_results.append(
+                {"model_family": family["family"], "status": family["status"]}
+            )
             continue
         fold_rows = []
         stitched_rows = []
         for train, test, fold_meta in folds_input[:2]:
-            if train.empty or test.empty or train["label"].nunique() < 2 or test["label"].nunique() < 2:
+            if (
+                train.empty
+                or test.empty
+                or train["label"].nunique() < 2
+                or test["label"].nunique() < 2
+            ):
                 continue
-            scored = score_model_split(train, test, model_family=family["family"], feature_cols=feature_cols)
+            scored = score_model_split(
+                train, test, model_family=family["family"], feature_cols=feature_cols
+            )
             pred = scored["prediction_frame"].copy()
             pred["fold"] = fold_meta.fold
             stitched_rows.extend(pred.to_dict(orient="records"))
@@ -111,7 +142,9 @@ def main() -> None:
                     **scored["metrics"],
                 }
             )
-        roc_values = [row.get("roc_auc") for row in fold_rows if row.get("roc_auc") is not None]
+        roc_values = [
+            row.get("roc_auc") for row in fold_rows if row.get("roc_auc") is not None
+        ]
         family_results.append(
             {
                 "model_family": family["family"],
@@ -119,11 +152,19 @@ def main() -> None:
                 "folds": fold_rows,
                 "fold_stability": {
                     "roc_auc_mean": mean(roc_values) if roc_values else None,
-                    "roc_auc_std": pstdev(roc_values) if len(roc_values) > 1 else 0.0 if roc_values else None,
+                    "roc_auc_std": (
+                        pstdev(roc_values)
+                        if len(roc_values) > 1
+                        else 0.0 if roc_values else None
+                    ),
                 },
                 "bucket_monotonicity": bucket_monotonicity(stitched_rows),
                 "regime_conditional": regime_conditional_summary(stitched_rows),
-                "advancement_recommendation": "advance_to_signal_stage" if roc_values and mean(roc_values) >= 0.55 else "freeze",
+                "advancement_recommendation": (
+                    "advance_to_signal_stage"
+                    if roc_values and mean(roc_values) >= 0.55
+                    else "freeze"
+                ),
             }
         )
 

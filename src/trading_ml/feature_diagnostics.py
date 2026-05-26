@@ -21,7 +21,9 @@ def build_feature_diagnostics(stage2_result: dict[str, Any]) -> dict[str, Any]:
 
     features_df = pd.DataFrame(features)
     labels_df = pd.DataFrame(labels)
-    merged = features_df.merge(labels_df[["candidate_id", "label"]], on="candidate_id", how="inner")
+    merged = features_df.merge(
+        labels_df[["candidate_id", "label"]], on="candidate_id", how="inner"
+    )
     if merged.empty or merged["label"].nunique() < 2:
         return {"status": "pending", "reason": "insufficient_class_diversity"}
 
@@ -35,7 +37,9 @@ def build_feature_diagnostics(stage2_result: dict[str, Any]) -> dict[str, Any]:
     numeric_features = [
         col
         for col in merged.columns
-        if col not in {"candidate_id", "session_date", "label"} and pd.api.types.is_numeric_dtype(merged[col]) and not merged[col].isna().all()
+        if col not in {"candidate_id", "session_date", "label"}
+        and pd.api.types.is_numeric_dtype(merged[col])
+        and not merged[col].isna().all()
     ]
     scored: list[dict[str, Any]] = []
     for column in numeric_features:
@@ -46,9 +50,18 @@ def build_feature_diagnostics(stage2_result: dict[str, Any]) -> dict[str, Any]:
         )
         model.fit(train[[column]], train["label"])
         probabilities = model.predict_proba(test[[column]])[:, 1]
-        scored.append({"feature": column, "single_feature_roc_auc": float(roc_auc_score(test["label"], probabilities))})
+        scored.append(
+            {
+                "feature": column,
+                "single_feature_roc_auc": float(
+                    roc_auc_score(test["label"], probabilities)
+                ),
+            }
+        )
 
-    ranked = sorted(scored, key=lambda item: item["single_feature_roc_auc"], reverse=True)
+    ranked = sorted(
+        scored, key=lambda item: item["single_feature_roc_auc"], reverse=True
+    )
     return {
         "status": "complete",
         "feature_count": len(numeric_features),

@@ -14,10 +14,14 @@ class PriceActionFeatureCatalogTests(unittest.TestCase):
         self.assertIn("groups", catalog)
         self.assertIn("features", catalog)
         self.assertIn("auction", catalog["groups"])
+        self.assertIn("continuation_lifecycle", catalog["groups"])
         self.assertIn("opening_drive_strength", catalog["features"])
+        self.assertIn("continuation_health_score", catalog["features"])
 
     def test_build_strategy_intake_uses_catalog_groups(self) -> None:
-        intake = build_strategy_intake("Opening reclaim strength and VWAP context matter.")
+        intake = build_strategy_intake(
+            "Opening reclaim strength and VWAP context matter."
+        )
         self.assertIn("auction", intake["selected_feature_groups"])
         self.assertIn("structure", intake["selected_feature_groups"])
         self.assertTrue(intake["feature_backlog"]["auction"])

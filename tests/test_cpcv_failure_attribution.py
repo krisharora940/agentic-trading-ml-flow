@@ -5,8 +5,12 @@ import unittest
 from pathlib import Path
 
 
-MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "run_cpcv_failure_attribution.py"
-SPEC = importlib.util.spec_from_file_location("run_cpcv_failure_attribution", MODULE_PATH)
+MODULE_PATH = (
+    Path(__file__).resolve().parents[1] / "tools" / "run_cpcv_failure_attribution.py"
+)
+SPEC = importlib.util.spec_from_file_location(
+    "run_cpcv_failure_attribution", MODULE_PATH
+)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
@@ -35,7 +39,9 @@ class CpcvFailureAttributionTests(unittest.TestCase):
         self.assertEqual(result["status"], "insufficient_artifacts")
         self.assertEqual(result["reason"], "missing_persisted_cpcv_rows")
         self.assertEqual(result["cpcv_status"], "fail")
-        self.assertEqual(result["failure_summary"]["failure_type"], "tail_path_fragility")
+        self.assertEqual(
+            result["failure_summary"]["failure_type"], "tail_path_fragility"
+        )
 
 
 if __name__ == "__main__":

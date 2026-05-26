@@ -5,8 +5,10 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from trading_ml.bnr_subtypes import classify_candidate_subtype, filter_candidates_by_subtype
-from trading_ml.config import load_bnr_config
+from trading_ml.bnr_subtypes import (
+    classify_candidate_subtype,
+    filter_candidates_by_subtype,
+)
 from trading_ml.paths import REPORTS_DIR
 from trading_ml.stage2_bnr import calculate_bnr_zones, generate_breakout_candidates
 from trading_ml.stage2_data import load_ohlcv_file, regular_session
@@ -26,14 +28,16 @@ MARKET_STATES = [
 SETUP_QUALITIES = ["high_quality", "marginal", "avoid"]
 
 
-def build_market_state_setup_quality_diagnostic(state: dict[str, Any]) -> dict[str, Any]:
+def build_market_state_setup_quality_diagnostic(
+    state: dict[str, Any],
+) -> dict[str, Any]:
     """Build a diagnostic-only market-state/setup-quality artifact.
 
     This intentionally stops before model fitting, search, or holdout access.
     """
 
     try:
-        import pandas as pd
+        __import__("pandas")
     except ImportError:
         return {"status": "pending", "reason": "missing_dependencies"}
 
@@ -74,7 +78,9 @@ def build_market_state_setup_quality_diagnostic(state: dict[str, Any]) -> dict[s
             "models_trained": 0,
         }
 
-    merged = features.merge(labels, on="candidate_id", how="inner", suffixes=("", "_label"))
+    merged = features.merge(
+        labels, on="candidate_id", how="inner", suffixes=("", "_label")
+    )
     if merged.empty:
         return {
             "status": "pending",
@@ -114,7 +120,9 @@ def build_market_state_setup_quality_diagnostic(state: dict[str, Any]) -> dict[s
         "avoided_vs_traded_simulation_summary": _avoided_vs_traded_summary(labeled),
         "cheap_state_policy_simulation": _cheap_state_policy_simulation(labeled),
         "residual_tail_diagnostic": _residual_tail_diagnostic(labeled),
-        "followthrough_confirmation_policy_gate": _followthrough_confirmation_policy_gate(labeled),
+        "followthrough_confirmation_policy_gate": _followthrough_confirmation_policy_gate(
+            labeled
+        ),
         "support_sufficiency": _support_sufficiency(labeled),
         "reliability_warnings": _reliability_warnings(labeled),
         "provisional_label_definitions": {
@@ -138,7 +146,9 @@ def _diagnostic_config(state: dict[str, Any], source_path: str) -> Stage2Config:
     return Stage2Config(**payload)
 
 
-def _build_point_in_time_inputs(config: Stage2Config) -> tuple[Any, Any, dict[str, Any]]:
+def _build_point_in_time_inputs(
+    config: Stage2Config,
+) -> tuple[Any, Any, dict[str, Any]]:
     pd = _require_pandas()
     bars = load_ohlcv_file(
         config.source_path,
@@ -166,7 +176,10 @@ def _build_point_in_time_inputs(config: Stage2Config) -> tuple[Any, Any, dict[st
     )
     features, feature_audits = build_feature_matrix(rth, candidates)
     if not features.empty:
-        subtype_map = {candidate.candidate_id: classify_candidate_subtype(candidate) for candidate in candidates}
+        subtype_map = {
+            candidate.candidate_id: classify_candidate_subtype(candidate)
+            for candidate in candidates
+        }
         features["setup_subtype"] = features["candidate_id"].map(subtype_map)
         raw_market_state = _build_raw_market_state_features(rth, candidates)
         features = features.merge(raw_market_state, on="candidate_id", how="left")
@@ -176,8 +189,17 @@ def _build_point_in_time_inputs(config: Stage2Config) -> tuple[Any, Any, dict[st
         "zone_count": len(zones),
         "feature_audit": {
             "rows": len(feature_audits),
-            "failed": len([audit for audit in feature_audits if audit.status != "pass"]),
-            "issues": sorted({issue for audit in feature_audits if audit.status != "pass" for issue in audit.issues}),
+            "failed": len(
+                [audit for audit in feature_audits if audit.status != "pass"]
+            ),
+            "issues": sorted(
+                {
+                    issue
+                    for audit in feature_audits
+                    if audit.status != "pass"
+                    for issue in audit.issues
+                }
+            ),
         },
         "config": asdict(config),
     }
@@ -206,8 +228,12 @@ def _build_market_state_features(frame: Any) -> Any:
         "wick_rejection_ratio_recent",
         ["first_break_wick_only", "pivot_overlap_ratio", "reclaim_failure_count"],
     )
-    out["alternating_bar_ratio"] = _fallback_score(out, "alternating_bar_ratio", ["reg_chop_10", "pivot_overlap_ratio"])
-    out["local_swing_overlap_score"] = _fallback_score(out, "local_swing_overlap_score", ["pivot_overlap_ratio", "reg_range_ratio_10"])
+    out["alternating_bar_ratio"] = _fallback_score(
+        out, "alternating_bar_ratio", ["reg_chop_10", "pivot_overlap_ratio"]
+    )
+    out["local_swing_overlap_score"] = _fallback_score(
+        out, "local_swing_overlap_score", ["pivot_overlap_ratio", "reg_range_ratio_10"]
+    )
     out["impulse_speed_score"] = _fallback_score(
         out,
         "impulse_speed_score",
@@ -246,30 +272,61 @@ def _build_market_state_features(frame: Any) -> Any:
     )
     out["msq_wick_body_structure"] = _mean_score(
         out,
-        ["body_to_range_ratio_recent", "reclaim_close_location", "post_reclaim_close_strength", "wick_rejection_ratio_recent"],
+        [
+            "body_to_range_ratio_recent",
+            "reclaim_close_location",
+            "post_reclaim_close_strength",
+            "wick_rejection_ratio_recent",
+        ],
         invert=["wick_rejection_ratio_recent"],
     )
     out["msq_impulse_strength"] = _mean_score(
         out,
-        ["recent_directional_efficiency", "continuation_displacement_ratio", "reg_trend_strength_10", "impulse_speed_score"],
+        [
+            "recent_directional_efficiency",
+            "continuation_displacement_ratio",
+            "reg_trend_strength_10",
+            "impulse_speed_score",
+        ],
     )
     out["msq_flem_shape"] = _mean_score(
         out,
-        ["post_reclaim_close_strength", "continuation_displacement_ratio", "flem_compression_score", "opposite_boundary_close_violation"],
+        [
+            "post_reclaim_close_strength",
+            "continuation_displacement_ratio",
+            "flem_compression_score",
+            "opposite_boundary_close_violation",
+        ],
         invert=["flem_compression_score", "opposite_boundary_close_violation"],
     )
     out["msq_pivot_shape"] = _mean_score(
         out,
-        ["pivot_cleanliness_score", "reclaim_close_location", "deepest_zone_retrace_fraction", "repair_speed_score"],
+        [
+            "pivot_cleanliness_score",
+            "reclaim_close_location",
+            "deepest_zone_retrace_fraction",
+            "repair_speed_score",
+        ],
     )
     out["msq_recent_high_low_context"] = _mean_score(
         out,
-        ["distance_to_recent_high_low", "local_swing_overlap_score", "pre_trigger_range", "zone_width"],
+        [
+            "distance_to_recent_high_low",
+            "local_swing_overlap_score",
+            "pre_trigger_range",
+            "zone_width",
+        ],
         invert=["distance_to_recent_high_low", "local_swing_overlap_score"],
     )
     out["msq_day_structure"] = _mean_score(
         out,
-        ["directional_efficiency_open_to_now", "reg_trend_strength_30", "reg_trend_30", "reg_range_ratio_30", "reg_chop_30"],
+        [
+            "directional_efficiency_open_to_now",
+            "reg_trend_strength_30",
+            "reg_trend_30",
+            "reg_range_ratio_30",
+            "reg_chop_30",
+        ],
         invert=["reg_range_ratio_30", "reg_chop_30"],
     )
     out["msq_chop_range_unpredictability"] = _mean_score(
@@ -307,7 +364,6 @@ def _assign_provisional_states(frame: Any) -> Any:
     clarity = out["msq_auction_clarity"].fillna(0.5)
     day_structure = out["msq_day_structure"].fillna(0.5)
     recent_efficiency = out["recent_directional_efficiency"].fillna(0.5)
-    open_efficiency = out["directional_efficiency_open_to_now"].fillna(0.5)
     body_ratio = out["body_to_range_ratio_recent"].fillna(0.5)
     wick_rejection = out["wick_rejection_ratio_recent"].fillna(0.5)
     alternating = out["alternating_bar_ratio"].fillna(0.5)
@@ -352,11 +408,17 @@ def _assign_provisional_states(frame: Any) -> Any:
 
         if violation.loc[idx] > 0 or failed_followthrough.loc[idx] >= 0.75:
             state = "failed_directional"
-        elif chop_signals >= 3 or (chop.loc[idx] >= 0.55 and recent_efficiency.loc[idx] <= 0.45):
+        elif chop_signals >= 3 or (
+            chop.loc[idx] >= 0.55 and recent_efficiency.loc[idx] <= 0.45
+        ):
             state = "balanced_chop"
         elif messy_signals >= 3:
             state = "messy_transition"
-        elif repair_depth.loc[idx] >= 0.65 or reclaim_count.loc[idx] >= 2 or pivot.loc[idx] <= 0.35:
+        elif (
+            repair_depth.loc[idx] >= 0.65
+            or reclaim_count.loc[idx] >= 2
+            or pivot.loc[idx] <= 0.35
+        ):
             state = "auction_repair"
         elif strong_continuation:
             state = "clean_strong_continuation"
@@ -367,7 +429,10 @@ def _assign_provisional_states(frame: Any) -> Any:
             quality = "high_quality"
         elif (
             state in {"balanced_chop", "messy_transition", "failed_directional"}
-            or (state == "weak_or_grindy_continuation" and (recent_efficiency.loc[idx] <= 0.50 or impulse.loc[idx] <= 0.45))
+            or (
+                state == "weak_or_grindy_continuation"
+                and (recent_efficiency.loc[idx] <= 0.50 or impulse.loc[idx] <= 0.45)
+            )
             or clarity.loc[idx] <= 0.40
         ):
             quality = "avoid"
@@ -398,7 +463,9 @@ def _mean_score(frame: Any, columns: list[str], invert: list[str] | None = None)
     return pd.concat(parts, axis=1).mean(axis=1)
 
 
-def _fallback_score(frame: Any, preferred: str, columns: list[str], invert: list[str] | None = None) -> Any:
+def _fallback_score(
+    frame: Any, preferred: str, columns: list[str], invert: list[str] | None = None
+) -> Any:
     if preferred in frame.columns and not _to_numeric(frame[preferred]).isna().all():
         return _normalize(frame[preferred])
     return _mean_score(frame, columns, invert=invert)
@@ -410,11 +477,15 @@ def _build_raw_market_state_features(bars: Any, candidates: list[Any]) -> Any:
     for candidate in candidates:
         cutoff = pd.Timestamp(candidate.feature_cutoff_time)
         history = bars[bars.index < cutoff]
-        session = history[history.index.date == pd.Timestamp(candidate.session_date).date()]
+        session = history[
+            history.index.date == pd.Timestamp(candidate.session_date).date()
+        ]
         recent = session.tail(16)
         pivot_start = pd.Timestamp(candidate.break_time)
         pivot_end = pd.Timestamp(candidate.trigger_time)
-        pivot_window = session[(session.index > pivot_start) & (session.index <= pivot_end)]
+        pivot_window = session[
+            (session.index > pivot_start) & (session.index <= pivot_end)
+        ]
         rows.append(
             {
                 "candidate_id": candidate.candidate_id,
@@ -426,10 +497,18 @@ def _build_raw_market_state_features(bars: Any, candidates: list[Any]) -> Any:
                 "local_swing_overlap_score": _local_swing_overlap_score(recent),
                 "impulse_speed_score": _impulse_speed_score(session, recent, candidate),
                 "repair_speed_score": _repair_speed_score(pivot_window, candidate),
-                "flem_compression_score": _flem_compression_score(pivot_window, candidate),
-                "pivot_cleanliness_score": _pivot_cleanliness_score(pivot_window, candidate),
-                "distance_to_recent_high_low": _distance_to_recent_high_low(recent, candidate),
-                "failed_followthrough_count": _failed_followthrough_count(pivot_window, candidate),
+                "flem_compression_score": _flem_compression_score(
+                    pivot_window, candidate
+                ),
+                "pivot_cleanliness_score": _pivot_cleanliness_score(
+                    pivot_window, candidate
+                ),
+                "distance_to_recent_high_low": _distance_to_recent_high_low(
+                    recent, candidate
+                ),
+                "failed_followthrough_count": _failed_followthrough_count(
+                    pivot_window, candidate
+                ),
             }
         )
     return pd.DataFrame(rows)
@@ -447,7 +526,9 @@ def _directional_efficiency(frame: Any) -> float:
 def _body_to_range_ratio(frame: Any) -> float:
     if frame.empty:
         return 0.0
-    ranges = (frame["high"].astype(float) - frame["low"].astype(float)).replace(0, float("nan"))
+    ranges = (frame["high"].astype(float) - frame["low"].astype(float)).replace(
+        0, float("nan")
+    )
     bodies = (frame["close"].astype(float) - frame["open"].astype(float)).abs()
     return float((bodies / ranges).fillna(0.0).mean())
 
@@ -455,7 +536,9 @@ def _body_to_range_ratio(frame: Any) -> float:
 def _wick_rejection_ratio(frame: Any) -> float:
     if frame.empty:
         return 0.0
-    ranges = (frame["high"].astype(float) - frame["low"].astype(float)).replace(0, float("nan"))
+    ranges = (frame["high"].astype(float) - frame["low"].astype(float)).replace(
+        0, float("nan")
+    )
     bodies = (frame["close"].astype(float) - frame["open"].astype(float)).abs()
     wick = (ranges - bodies).clip(lower=0.0)
     return float((wick / ranges).fillna(0.0).mean())
@@ -464,11 +547,15 @@ def _wick_rejection_ratio(frame: Any) -> float:
 def _alternating_bar_ratio(frame: Any) -> float:
     if frame.empty or len(frame) < 3:
         return 0.0
-    signs = (frame["close"].astype(float) - frame["open"].astype(float)).apply(lambda value: 1 if value > 0 else -1 if value < 0 else 0)
+    signs = (frame["close"].astype(float) - frame["open"].astype(float)).apply(
+        lambda value: 1 if value > 0 else -1 if value < 0 else 0
+    )
     signs = signs[signs != 0]
     if len(signs) < 2:
         return 0.0
-    alternations = sum(1 for prev, cur in zip(signs.iloc[:-1], signs.iloc[1:]) if prev != cur)
+    alternations = sum(
+        1 for prev, cur in zip(signs.iloc[:-1], signs.iloc[1:]) if prev != cur
+    )
     return float(alternations / max(len(signs) - 1, 1))
 
 
@@ -506,9 +593,13 @@ def _repair_speed_score(pivot_window: Any, candidate: Any) -> float:
     zone_width = max(float(candidate.zone.width), 0.25)
     bars = max(len(pivot_window), 1)
     if candidate.direction == "long":
-        repair = float(pivot_window["close"].iloc[-1]) - float(pivot_window["low"].min())
+        repair = float(pivot_window["close"].iloc[-1]) - float(
+            pivot_window["low"].min()
+        )
     else:
-        repair = float(pivot_window["high"].max()) - float(pivot_window["close"].iloc[-1])
+        repair = float(pivot_window["high"].max()) - float(
+            pivot_window["close"].iloc[-1]
+        )
     return float(max(repair, 0.0) / zone_width / bars)
 
 
@@ -531,7 +622,10 @@ def _distance_to_recent_high_low(recent: Any, candidate: Any) -> float:
         return 0.0
     zone_width = max(float(candidate.zone.width), 0.25)
     entry = float(candidate.entry_reference_price)
-    distance = min(abs(entry - float(recent["high"].max())), abs(entry - float(recent["low"].min())))
+    distance = min(
+        abs(entry - float(recent["high"].max())),
+        abs(entry - float(recent["low"].min())),
+    )
     return float(distance / zone_width)
 
 
@@ -572,7 +666,10 @@ def _series(frame: Any, column: str, default: float) -> Any:
 
 
 def _counts(frame: Any, column: str) -> dict[str, int]:
-    return {str(key): int(value) for key, value in frame[column].value_counts(dropna=False).to_dict().items()}
+    return {
+        str(key): int(value)
+        for key, value in frame[column].value_counts(dropna=False).to_dict().items()
+    }
 
 
 def _label_balance(frame: Any) -> dict[str, Any]:
@@ -602,7 +699,11 @@ def _missingness(frame: Any) -> dict[str, Any]:
     for group, columns in groups.items():
         existing = [column for column in columns if column in frame.columns]
         if not existing:
-            by_group[group] = {"status": "missing", "missing_rate": 1.0, "columns_present": []}
+            by_group[group] = {
+                "status": "missing",
+                "missing_rate": 1.0,
+                "columns_present": [],
+            }
             continue
         missing = frame[existing].isna().mean().mean()
         by_group[group] = {
@@ -614,8 +715,20 @@ def _missingness(frame: Any) -> dict[str, Any]:
 
 
 def _leakage_audit(metadata: dict[str, Any], frame: Any) -> dict[str, Any]:
-    feature_columns = [column for columns in _feature_group_columns().values() for column in columns]
-    forbidden_tokens = ["pnl", "mfe", "mae", "exit", "target", "stop", "bars_held", "outcome", "label"]
+    feature_columns = [
+        column for columns in _feature_group_columns().values() for column in columns
+    ]
+    forbidden_tokens = [
+        "pnl",
+        "mfe",
+        "mae",
+        "exit",
+        "target",
+        "stop",
+        "bars_held",
+        "outcome",
+        "label",
+    ]
     issues = []
     for column in feature_columns:
         lowered = column.lower()
@@ -623,7 +736,9 @@ def _leakage_audit(metadata: dict[str, Any], frame: Any) -> dict[str, Any]:
             issues.append(f"forbidden_feature_name:{column}")
     audit = dict(metadata.get("feature_audit", {}) or {})
     if int(audit.get("failed", 0) or 0) > 0:
-        issues.extend([f"stage2_feature_audit:{issue}" for issue in audit.get("issues", [])])
+        issues.extend(
+            [f"stage2_feature_audit:{issue}" for issue in audit.get("issues", [])]
+        )
     return {
         "status": "pass" if not issues else "fail",
         "issues": issues,
@@ -665,7 +780,11 @@ def _support_sufficiency(frame: Any) -> dict[str, Any]:
 def _reliability_warnings(frame: Any) -> list[dict[str, Any]]:
     warnings = []
     for state in MARKET_STATES:
-        count = int((frame["market_state"] == state).sum()) if "market_state" in frame.columns else 0
+        count = (
+            int((frame["market_state"] == state).sum())
+            if "market_state" in frame.columns
+            else 0
+        )
         if count < 25:
             warnings.append(
                 {
@@ -683,7 +802,9 @@ def _avoided_vs_traded_summary(frame: Any) -> dict[str, Any]:
     work = frame.copy()
     work["pnl_r"] = _to_numeric(work["pnl_r"])
     avoid_states = {"balanced_chop", "messy_transition", "failed_directional"}
-    avoided = work[(work["setup_quality"] == "avoid") | (work["market_state"].isin(avoid_states))]
+    avoided = work[
+        (work["setup_quality"] == "avoid") | (work["market_state"].isin(avoid_states))
+    ]
     baseline_pnl = float(work["pnl_r"].sum())
     return {
         "status": "diagnostic_only",
@@ -698,7 +819,18 @@ def _avoided_vs_traded_summary(frame: Any) -> dict[str, Any]:
             },
             {
                 "name": "avoid_weak_messy_failed_only",
-                **_avoidance_row(work, work[work["market_state"].isin({"weak_or_grindy_continuation", "messy_transition", "failed_directional"})]),
+                **_avoidance_row(
+                    work,
+                    work[
+                        work["market_state"].isin(
+                            {
+                                "weak_or_grindy_continuation",
+                                "messy_transition",
+                                "failed_directional",
+                            }
+                        )
+                    ],
+                ),
             },
             {
                 "name": "avoid_balanced_chop_only",
@@ -712,13 +844,19 @@ def _avoided_vs_traded_summary(frame: Any) -> dict[str, Any]:
 def _cheap_state_policy_simulation(frame: Any) -> dict[str, Any]:
     variants = [
         {"name": "baseline", "weights": {}},
-        {"name": "exclude_weak_or_grindy_continuation", "weights": {"weak_or_grindy_continuation": 0.0}},
+        {
+            "name": "exclude_weak_or_grindy_continuation",
+            "weights": {"weak_or_grindy_continuation": 0.0},
+        },
         {"name": "exclude_messy_transition", "weights": {"messy_transition": 0.0}},
         {
             "name": "exclude_weak_or_grindy_continuation_and_messy_transition",
             "weights": {"weak_or_grindy_continuation": 0.0, "messy_transition": 0.0},
         },
-        {"name": "size_haircut_weak_or_grindy_continuation", "weights": {"weak_or_grindy_continuation": 0.5}},
+        {
+            "name": "size_haircut_weak_or_grindy_continuation",
+            "weights": {"weak_or_grindy_continuation": 0.5},
+        },
         {"name": "size_haircut_messy_transition", "weights": {"messy_transition": 0.5}},
         {
             "name": "allow_only_clean_strong_continuation_and_auction_repair",
@@ -732,7 +870,9 @@ def _cheap_state_policy_simulation(frame: Any) -> dict[str, Any]:
         "models_trained": 0,
         "search_executed": False,
         "holdout_status": "locked",
-        "policy_variants": [_simulate_policy_variant(frame, variant) for variant in variants],
+        "policy_variants": [
+            _simulate_policy_variant(frame, variant) for variant in variants
+        ],
     }
 
 
@@ -740,13 +880,30 @@ def _followthrough_confirmation_policy_gate(frame: Any) -> dict[str, Any]:
     variants = [
         {"name": "baseline", "gate": "baseline"},
         {"name": "exclude_weak_or_grindy_continuation", "gate": "exclude_weak"},
-        {"name": "exclude_weak_or_grindy_plus_pre_entry_tempo_persistence_gate", "gate": "tempo_persistence"},
-        {"name": "exclude_weak_or_grindy_plus_pre_entry_breakout_quality_gate", "gate": "breakout_quality"},
-        {"name": "exclude_weak_or_grindy_plus_delayed_followthrough_confirmation_entry", "gate": "delayed_followthrough"},
-        {"name": "exclude_weak_or_grindy_plus_liquidity_proximity_rejection_veto", "gate": "liquidity_veto"},
-        {"name": "exclude_weak_or_grindy_plus_combined_conservative_gate", "gate": "combined_conservative"},
+        {
+            "name": "exclude_weak_or_grindy_plus_pre_entry_tempo_persistence_gate",
+            "gate": "tempo_persistence",
+        },
+        {
+            "name": "exclude_weak_or_grindy_plus_pre_entry_breakout_quality_gate",
+            "gate": "breakout_quality",
+        },
+        {
+            "name": "exclude_weak_or_grindy_plus_delayed_followthrough_confirmation_entry",
+            "gate": "delayed_followthrough",
+        },
+        {
+            "name": "exclude_weak_or_grindy_plus_liquidity_proximity_rejection_veto",
+            "gate": "liquidity_veto",
+        },
+        {
+            "name": "exclude_weak_or_grindy_plus_combined_conservative_gate",
+            "gate": "combined_conservative",
+        },
     ]
-    rows = [_simulate_followthrough_gate_variant(frame, variant) for variant in variants]
+    rows = [
+        _simulate_followthrough_gate_variant(frame, variant) for variant in variants
+    ]
     return {
         "status": "complete",
         "family": "followthrough_confirmation_policy_gate",
@@ -773,28 +930,36 @@ def _followthrough_confirmation_policy_gate(frame: Any) -> dict[str, Any]:
     }
 
 
-def _simulate_followthrough_gate_variant(frame: Any, variant: dict[str, Any]) -> dict[str, Any]:
+def _simulate_followthrough_gate_variant(
+    frame: Any, variant: dict[str, Any]
+) -> dict[str, Any]:
     work = frame.copy()
     work["pnl_r"] = _to_numeric(work["pnl_r"]) if "pnl_r" in work.columns else 0.0
     weights = []
     fill_impacts = []
     pit_flags = []
     for _, row in work.iterrows():
-        weight, fill_impact, pit_valid = _followthrough_gate_decision(row, variant["gate"])
+        weight, fill_impact, pit_valid = _followthrough_gate_decision(
+            row, variant["gate"]
+        )
         weights.append(weight)
         fill_impacts.append(fill_impact)
         pit_flags.append(pit_valid)
     work["policy_weight"] = weights
     work["fill_impact_r"] = fill_impacts
     work["pit_valid"] = pit_flags
-    work["policy_pnl_r"] = (work["pnl_r"] + work["fill_impact_r"]) * work["policy_weight"]
+    work["policy_pnl_r"] = (work["pnl_r"] + work["fill_impact_r"]) * work[
+        "policy_weight"
+    ]
     cpcv = _simulate_followthrough_gate_cpcv(frame, variant)
     return {
         "variant": variant["name"],
         "gate": variant["gate"],
         "candidate_count": int(len(work)),
         "trade_count": int((work["policy_weight"] > 0).sum()),
-        "retained_fraction": float((work["policy_weight"] > 0).mean()) if len(work) else 0.0,
+        "retained_fraction": (
+            float((work["policy_weight"] > 0).mean()) if len(work) else 0.0
+        ),
         "effective_trade_count": float(work["policy_weight"].sum()),
         "total_pnl_r": float(work["policy_pnl_r"].sum()),
         "baseline_total_pnl_r": float(work["pnl_r"].sum()),
@@ -840,11 +1005,17 @@ def _followthrough_gate_decision(row: Any, gate: str) -> tuple[float, float, boo
         )
         return (1.0 if keep else 0.0), 0.0, True
     if gate == "delayed_followthrough":
-        keep = _num(row, "continuation_displacement_ratio") >= 0.30 and _num(row, "post_reclaim_close_strength") >= 0.35
+        keep = (
+            _num(row, "continuation_displacement_ratio") >= 0.30
+            and _num(row, "post_reclaim_close_strength") >= 0.35
+        )
         fill_impact = -0.05 if keep else 0.0
         return (1.0 if keep else 0.0), fill_impact, True
     if gate == "liquidity_veto":
-        keep = _num(row, "distance_to_recent_high_low") > 0.20 and _num(row, "wick_rejection_ratio_recent") < 0.70
+        keep = (
+            _num(row, "distance_to_recent_high_low") > 0.20
+            and _num(row, "wick_rejection_ratio_recent") < 0.70
+        )
         return (1.0 if keep else 0.0), 0.0, True
     if gate == "combined_conservative":
         tempo = _followthrough_gate_decision(row, "tempo_persistence")[0] > 0
@@ -855,10 +1026,14 @@ def _followthrough_gate_decision(row: Any, gate: str) -> tuple[float, float, boo
     return 1.0, 0.0, True
 
 
-def _simulate_followthrough_gate_cpcv(frame: Any, variant: dict[str, Any]) -> dict[str, Any]:
+def _simulate_followthrough_gate_cpcv(
+    frame: Any, variant: dict[str, Any]
+) -> dict[str, Any]:
     import statistics
 
-    feature_by_id = frame.set_index(frame["candidate_id"].astype(str)).to_dict(orient="index")
+    feature_by_id = frame.set_index(frame["candidate_id"].astype(str)).to_dict(
+        orient="index"
+    )
     rows = []
     for path in _available_cpcv_path_rows():
         total = 0.0
@@ -871,8 +1046,12 @@ def _simulate_followthrough_gate_cpcv(frame: Any, variant: dict[str, Any]) -> di
             candidate_id = str(path_row.get("candidate_id", ""))
             joined = dict(path_row)
             joined.update(feature_by_id.get(candidate_id, {}))
-            pnl = float(path_row.get("executed_pnl_r", path_row.get("pnl_r", 0.0)) or 0.0)
-            weight, row_fill_impact, _ = _followthrough_gate_decision(joined, variant["gate"])
+            pnl = float(
+                path_row.get("executed_pnl_r", path_row.get("pnl_r", 0.0)) or 0.0
+            )
+            weight, row_fill_impact, _ = _followthrough_gate_decision(
+                joined, variant["gate"]
+            )
             weighted = (pnl + row_fill_impact) * weight
             state = str(joined.get("market_state", "unmatched"))
             baseline += pnl
@@ -881,7 +1060,9 @@ def _simulate_followthrough_gate_cpcv(frame: Any, variant: dict[str, Any]) -> di
             if weight > 0:
                 trade_count += 1
                 effective_count += weight
-            bucket = state_totals.setdefault(state, {"market_state": state, "trade_count": 0, "total_pnl_r": 0.0})
+            bucket = state_totals.setdefault(
+                state, {"market_state": state, "trade_count": 0, "total_pnl_r": 0.0}
+            )
             bucket["trade_count"] += 1
             bucket["total_pnl_r"] += weighted
         rows.append(
@@ -893,7 +1074,11 @@ def _simulate_followthrough_gate_cpcv(frame: Any, variant: dict[str, Any]) -> di
                 "trade_count": trade_count,
                 "effective_trade_count": effective_count,
                 "delayed_entry_fill_impact_r": fill_impact,
-                "state_contribution_table": sorted(state_totals.values(), key=lambda item: item["trade_count"], reverse=True),
+                "state_contribution_table": sorted(
+                    state_totals.values(),
+                    key=lambda item: item["trade_count"],
+                    reverse=True,
+                ),
             }
         )
     pnls = [row["total_pnl_r"] for row in rows]
@@ -901,7 +1086,9 @@ def _simulate_followthrough_gate_cpcv(frame: Any, variant: dict[str, Any]) -> di
     return {
         "mean_path_pnl_r": float(statistics.mean(pnls)) if pnls else 0.0,
         "median_path_pnl_r": float(statistics.median(pnls)) if pnls else 0.0,
-        "positive_path_rate": float(sum(1 for value in pnls if value > 0) / len(pnls)) if pnls else 0.0,
+        "positive_path_rate": (
+            float(sum(1 for value in pnls if value > 0) / len(pnls)) if pnls else 0.0
+        ),
         "worst_3_paths": sorted(rows, key=lambda row: row["total_pnl_r"])[:3],
         "paths": rows,
         "prior_worst_path_effect": [row for row in rows if row["path_id"] in prior_ids],
@@ -916,7 +1103,11 @@ def _followthrough_state_contribution(work: Any) -> list[dict[str, Any]]:
                 "market_state": str(state),
                 "candidate_count": int(len(group)),
                 "trade_count": int((_to_numeric(group["policy_weight"]) > 0).sum()),
-                "retained_fraction": float((_to_numeric(group["policy_weight"]) > 0).mean()) if len(group) else 0.0,
+                "retained_fraction": (
+                    float((_to_numeric(group["policy_weight"]) > 0).mean())
+                    if len(group)
+                    else 0.0
+                ),
                 "baseline_pnl_r": float(_to_numeric(group["pnl_r"]).sum()),
                 "policy_pnl_r": float(_to_numeric(group["policy_pnl_r"]).sum()),
             }
@@ -941,10 +1132,19 @@ def _followthrough_gate_leakage_audit(rows: list[dict[str, Any]]) -> dict[str, A
 
 def _residual_tail_diagnostic(frame: Any) -> dict[str, Any]:
     pd = _require_pandas()
-    path_rows = next((row["rows"] for row in _available_cpcv_path_rows() if row["path_id"] == "cpcv_010"), [])
+    path_rows = next(
+        (
+            row["rows"]
+            for row in _available_cpcv_path_rows()
+            if row["path_id"] == "cpcv_010"
+        ),
+        [],
+    )
     if not path_rows:
         return {"status": "pending", "reason": "missing_cpcv_010_rows"}
-    state_features = frame.set_index(frame["candidate_id"].astype(str)).to_dict(orient="index")
+    state_features = frame.set_index(frame["candidate_id"].astype(str)).to_dict(
+        orient="index"
+    )
     joined = []
     for row in path_rows:
         candidate_id = str(row.get("candidate_id", ""))
@@ -953,12 +1153,16 @@ def _residual_tail_diagnostic(frame: Any) -> dict[str, Any]:
             continue
         merged = dict(row)
         merged.update(feature_row)
-        merged["executed_pnl_r"] = float(row.get("executed_pnl_r", row.get("pnl_r", 0.0)) or 0.0)
+        merged["executed_pnl_r"] = float(
+            row.get("executed_pnl_r", row.get("pnl_r", 0.0)) or 0.0
+        )
         joined.append(merged)
     if not joined:
         return {"status": "pending", "reason": "no_joined_cpcv_010_rows"}
     joined_df = pd.DataFrame(joined)
-    surviving = joined_df[joined_df["market_state"] != "weak_or_grindy_continuation"].copy()
+    surviving = joined_df[
+        joined_df["market_state"] != "weak_or_grindy_continuation"
+    ].copy()
     tail = surviving[surviving["executed_pnl_r"] < 0].copy()
     clusters = _residual_failure_clusters(tail)
     support = _residual_support_summary(surviving, tail)
@@ -975,9 +1179,13 @@ def _residual_tail_diagnostic(frame: Any) -> dict[str, Any]:
         "surviving_trade_count": int(len(surviving)),
         "surviving_total_pnl_r": float(surviving["executed_pnl_r"].sum()),
         "surviving_loss_trade_count": int(len(tail)),
-        "surviving_loss_total_pnl_r": float(tail["executed_pnl_r"].sum()) if not tail.empty else 0.0,
+        "surviving_loss_total_pnl_r": (
+            float(tail["executed_pnl_r"].sum()) if not tail.empty else 0.0
+        ),
         "state_contribution": _residual_group_summary(surviving, "market_state"),
-        "setup_quality_contribution": _residual_group_summary(surviving, "setup_quality"),
+        "setup_quality_contribution": _residual_group_summary(
+            surviving, "setup_quality"
+        ),
         "residual_failure_clusters": clusters,
         "candidate_explanatory_features": _residual_explanatory_features(tail),
         "structural_coherence": _residual_structural_coherence(clusters, support),
@@ -999,69 +1207,137 @@ def _residual_failure_clusters(frame: Any) -> list[dict[str, Any]]:
                 "continuation_displacement_ratio",
                 "opposite_boundary_close_violation",
             ],
-            lambda row: _num(row, "first_break_wick_only") >= 0.5
-            or _num(row, "first_break_close_confirmed") < 0.5
-            or _num(row, "break_close_distance_to_zone") <= 0.15
-            or _num(row, "continuation_displacement_ratio") <= 0.25
-            or _num(row, "opposite_boundary_close_violation") > 0,
+            lambda row: (
+                _num(row, "first_break_wick_only") >= 0.5
+                or _num(row, "first_break_close_confirmed") < 0.5
+                or _num(row, "break_close_distance_to_zone") <= 0.15
+                or _num(row, "continuation_displacement_ratio") <= 0.25
+                or _num(row, "opposite_boundary_close_violation") > 0
+            ),
         ),
         (
             "poor_followthrough_after_trigger",
-            ["continuation_displacement_ratio", "post_reclaim_close_strength", "recent_directional_efficiency", "failed_followthrough_count"],
-            lambda row: _num(row, "continuation_displacement_ratio") <= 0.30
-            or _num(row, "post_reclaim_close_strength") <= 0.40
-            or _num(row, "failed_followthrough_count") >= 0.50,
+            [
+                "continuation_displacement_ratio",
+                "post_reclaim_close_strength",
+                "recent_directional_efficiency",
+                "failed_followthrough_count",
+            ],
+            lambda row: (
+                _num(row, "continuation_displacement_ratio") <= 0.30
+                or _num(row, "post_reclaim_close_strength") <= 0.40
+                or _num(row, "failed_followthrough_count") >= 0.50
+            ),
         ),
         (
             "volatility_expansion_then_collapse",
-            ["break_range_expansion", "impulse_speed_score", "continuation_displacement_ratio", "body_to_range_ratio_recent"],
-            lambda row: _num(row, "break_range_expansion") >= 1.50
-            and (_num(row, "continuation_displacement_ratio") <= 0.35 or _num(row, "body_to_range_ratio_recent") <= 0.45),
+            [
+                "break_range_expansion",
+                "impulse_speed_score",
+                "continuation_displacement_ratio",
+                "body_to_range_ratio_recent",
+            ],
+            lambda row: (
+                _num(row, "break_range_expansion") >= 1.50
+                and (
+                    _num(row, "continuation_displacement_ratio") <= 0.35
+                    or _num(row, "body_to_range_ratio_recent") <= 0.45
+                )
+            ),
         ),
         (
             "liquidity_proximity_rejection",
-            ["distance_to_recent_high_low", "wick_rejection_ratio_recent", "entry_distance_from_zone_high", "entry_distance_from_zone_low"],
-            lambda row: _num(row, "distance_to_recent_high_low") <= 0.35 or _num(row, "wick_rejection_ratio_recent") >= 0.55,
+            [
+                "distance_to_recent_high_low",
+                "wick_rejection_ratio_recent",
+                "entry_distance_from_zone_high",
+                "entry_distance_from_zone_low",
+            ],
+            lambda row: (
+                _num(row, "distance_to_recent_high_low") <= 0.35
+                or _num(row, "wick_rejection_ratio_recent") >= 0.55
+            ),
         ),
         (
             "late_opening_window_exhaustion",
-            ["trigger_seconds_after_open", "impulse_speed_score", "recent_directional_efficiency"],
-            lambda row: _num(row, "trigger_seconds_after_open") >= 3600
-            and (_num(row, "recent_directional_efficiency") <= 0.45 or _num(row, "impulse_speed_score") <= 0.35),
+            [
+                "trigger_seconds_after_open",
+                "impulse_speed_score",
+                "recent_directional_efficiency",
+            ],
+            lambda row: (
+                _num(row, "trigger_seconds_after_open") >= 3600
+                and (
+                    _num(row, "recent_directional_efficiency") <= 0.45
+                    or _num(row, "impulse_speed_score") <= 0.35
+                )
+            ),
         ),
         (
             "low_quality_repair",
-            ["reclaim_latency_bars", "reclaim_body_strength", "reclaim_close_location", "reclaim_failure_count", "repair_speed_score"],
-            lambda row: _num(row, "reclaim_latency_bars") >= 2
-            or _num(row, "reclaim_failure_count") >= 1
-            or _num(row, "reclaim_body_strength") <= 0.35
-            or _num(row, "repair_speed_score") <= 0.20,
+            [
+                "reclaim_latency_bars",
+                "reclaim_body_strength",
+                "reclaim_close_location",
+                "reclaim_failure_count",
+                "repair_speed_score",
+            ],
+            lambda row: (
+                _num(row, "reclaim_latency_bars") >= 2
+                or _num(row, "reclaim_failure_count") >= 1
+                or _num(row, "reclaim_body_strength") <= 0.35
+                or _num(row, "repair_speed_score") <= 0.20
+            ),
         ),
         (
             "messy_pivot_or_overlap",
-            ["pivot_overlap_ratio", "pivot_cleanliness_score", "pivot_symmetry", "alternating_bar_ratio", "local_swing_overlap_score"],
-            lambda row: _num(row, "pivot_overlap_ratio") >= 0.40
-            or _num(row, "pivot_cleanliness_score") <= 0.45
-            or _num(row, "alternating_bar_ratio") >= 0.55
-            or _num(row, "local_swing_overlap_score") >= 0.65,
+            [
+                "pivot_overlap_ratio",
+                "pivot_cleanliness_score",
+                "pivot_symmetry",
+                "alternating_bar_ratio",
+                "local_swing_overlap_score",
+            ],
+            lambda row: (
+                _num(row, "pivot_overlap_ratio") >= 0.40
+                or _num(row, "pivot_cleanliness_score") <= 0.45
+                or _num(row, "alternating_bar_ratio") >= 0.55
+                or _num(row, "local_swing_overlap_score") >= 0.65
+            ),
         ),
         (
             "trend_persistence_breakdown",
-            ["directional_efficiency_open_to_now", "recent_directional_efficiency", "reg_trend_strength_10", "reg_trend_strength_30"],
-            lambda row: _num(row, "directional_efficiency_open_to_now") <= 0.45
-            or _num(row, "recent_directional_efficiency") <= 0.40
-            or _num(row, "reg_trend_strength_10") <= 0.25,
+            [
+                "directional_efficiency_open_to_now",
+                "recent_directional_efficiency",
+                "reg_trend_strength_10",
+                "reg_trend_strength_30",
+            ],
+            lambda row: (
+                _num(row, "directional_efficiency_open_to_now") <= 0.45
+                or _num(row, "recent_directional_efficiency") <= 0.40
+                or _num(row, "reg_trend_strength_10") <= 0.25
+            ),
         ),
         (
             "candle_tempo_deterioration",
-            ["impulse_speed_score", "alternating_bar_ratio", "body_to_range_ratio_recent", "wick_rejection_ratio_recent"],
-            lambda row: _num(row, "impulse_speed_score") <= 0.35
-            or _num(row, "alternating_bar_ratio") >= 0.55
-            or _num(row, "wick_rejection_ratio_recent") >= 0.55,
+            [
+                "impulse_speed_score",
+                "alternating_bar_ratio",
+                "body_to_range_ratio_recent",
+                "wick_rejection_ratio_recent",
+            ],
+            lambda row: (
+                _num(row, "impulse_speed_score") <= 0.35
+                or _num(row, "alternating_bar_ratio") >= 0.55
+                or _num(row, "wick_rejection_ratio_recent") >= 0.55
+            ),
         ),
     ]
     rows = []
-    total_loss = abs(float(frame["executed_pnl_r"].sum())) if "executed_pnl_r" in frame else 0.0
+    total_loss = (
+        abs(float(frame["executed_pnl_r"].sum())) if "executed_pnl_r" in frame else 0.0
+    )
     for name, features, predicate in specs:
         matched = frame[frame.apply(predicate, axis=1)]
         if matched.empty:
@@ -1071,16 +1347,27 @@ def _residual_failure_clusters(frame: Any) -> list[dict[str, Any]]:
             {
                 "cluster": name,
                 "trade_count": int(len(matched)),
-                "session_count": int(matched["session_date"].astype(str).nunique()) if "session_date" in matched else 0,
+                "session_count": (
+                    int(matched["session_date"].astype(str).nunique())
+                    if "session_date" in matched
+                    else 0
+                ),
                 "total_pnl_r": loss,
                 "avg_pnl_r": float(matched["executed_pnl_r"].mean()),
                 "loss_share": float(abs(loss) / total_loss) if total_loss > 0 else 0.0,
                 "candidate_explanatory_features": features,
                 "state_contribution": _residual_group_summary(matched, "market_state"),
-                "example_candidate_ids": matched["candidate_id"].astype(str).head(5).tolist(),
+                "example_candidate_ids": matched["candidate_id"]
+                .astype(str)
+                .head(5)
+                .tolist(),
             }
         )
-    return sorted(rows, key=lambda row: (row["trade_count"], abs(row["total_pnl_r"])), reverse=True)
+    return sorted(
+        rows,
+        key=lambda row: (row["trade_count"], abs(row["total_pnl_r"])),
+        reverse=True,
+    )
 
 
 def _residual_explanatory_features(frame: Any) -> list[dict[str, Any]]:
@@ -1126,19 +1413,36 @@ def _residual_explanatory_features(frame: Any) -> list[dict[str, Any]]:
 def _residual_support_summary(surviving: Any, tail: Any) -> dict[str, Any]:
     return {
         "surviving_trade_count": int(len(surviving)),
-        "surviving_session_count": int(surviving["session_date"].astype(str).nunique()) if not surviving.empty and "session_date" in surviving else 0,
+        "surviving_session_count": (
+            int(surviving["session_date"].astype(str).nunique())
+            if not surviving.empty and "session_date" in surviving
+            else 0
+        ),
         "loss_trade_count": int(len(tail)),
-        "loss_session_count": int(tail["session_date"].astype(str).nunique()) if not tail.empty and "session_date" in tail else 0,
+        "loss_session_count": (
+            int(tail["session_date"].astype(str).nunique())
+            if not tail.empty and "session_date" in tail
+            else 0
+        ),
     }
 
 
-def _residual_structural_coherence(clusters: list[dict[str, Any]], support: dict[str, Any]) -> dict[str, Any]:
+def _residual_structural_coherence(
+    clusters: list[dict[str, Any]], support: dict[str, Any]
+) -> dict[str, Any]:
     loss_count = int(support.get("loss_trade_count", 0) or 0)
     if loss_count == 0:
-        return {"assessment": "no_residual_losses", "reason": "No surviving losing trades after policy."}
+        return {
+            "assessment": "no_residual_losses",
+            "reason": "No surviving losing trades after policy.",
+        }
     top_count = int(clusters[0]["trade_count"]) if clusters else 0
     top_share = top_count / loss_count if loss_count else 0.0
-    multi_cluster_coverage = sum(row["trade_count"] for row in clusters[:3]) / loss_count if loss_count else 0.0
+    multi_cluster_coverage = (
+        sum(row["trade_count"] for row in clusters[:3]) / loss_count
+        if loss_count
+        else 0.0
+    )
     if top_share >= 0.50 or multi_cluster_coverage >= 1.25:
         assessment = "structurally_coherent"
     elif top_share >= 0.30 or multi_cluster_coverage >= 0.80:
@@ -1158,12 +1462,20 @@ def _residual_group_summary(frame: Any, group_col: str) -> list[dict[str, Any]]:
         return []
     rows = []
     for key, group in frame.groupby(group_col, dropna=False):
-        pnl = _to_numeric(group["executed_pnl_r"]) if "executed_pnl_r" in group else _to_numeric(group["pnl_r"])
+        pnl = (
+            _to_numeric(group["executed_pnl_r"])
+            if "executed_pnl_r" in group
+            else _to_numeric(group["pnl_r"])
+        )
         rows.append(
             {
                 group_col: str(key),
                 "trade_count": int(len(group)),
-                "session_count": int(group["session_date"].astype(str).nunique()) if "session_date" in group else 0,
+                "session_count": (
+                    int(group["session_date"].astype(str).nunique())
+                    if "session_date" in group
+                    else 0
+                ),
                 "total_pnl_r": float(pnl.sum()),
                 "avg_pnl_r": float(pnl.mean()) if len(pnl) else 0.0,
             }
@@ -1187,8 +1499,14 @@ def _num(row: Any, column: str, default: float = 0.0) -> float:
 def market_state_policy_variant_specs() -> list[dict[str, Any]]:
     return [
         {"name": "baseline", "weights": {}},
-        {"name": "exclude_weak_or_grindy_continuation", "weights": {"weak_or_grindy_continuation": 0.0}},
-        {"name": "haircut_weak_or_grindy_continuation", "weights": {"weak_or_grindy_continuation": 0.5}},
+        {
+            "name": "exclude_weak_or_grindy_continuation",
+            "weights": {"weak_or_grindy_continuation": 0.0},
+        },
+        {
+            "name": "haircut_weak_or_grindy_continuation",
+            "weights": {"weak_or_grindy_continuation": 0.5},
+        },
         {
             "name": "exclude_weak_or_grindy_continuation_and_messy_transition",
             "weights": {"weak_or_grindy_continuation": 0.0, "messy_transition": 0.0},
@@ -1196,7 +1514,11 @@ def market_state_policy_variant_specs() -> list[dict[str, Any]]:
     ]
 
 
-def run_market_state_policy_simulation(state: dict[str, Any], variants: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+def run_market_state_policy_simulation(
+    state: dict[str, Any],
+    variants: list[dict[str, Any]] | None = None,
+    max_cpcv_paths: int | None = None,
+) -> dict[str, Any]:
     diagnostic = build_market_state_setup_quality_diagnostic(state)
     if diagnostic.get("status") != "complete":
         return {
@@ -1212,7 +1534,11 @@ def run_market_state_policy_simulation(state: dict[str, Any], variants: list[dic
         return {
             "status": "pending",
             "reason": "labeled_rows_not_available",
-            "diagnostic": {key: value for key, value in diagnostic.items() if key != "_labeled_rows"},
+            "diagnostic": {
+                key: value
+                for key, value in diagnostic.items()
+                if key != "_labeled_rows"
+            },
             "models_trained": 0,
             "search_executed": False,
             "holdout_status": "locked",
@@ -1227,19 +1553,28 @@ def run_market_state_policy_simulation(state: dict[str, Any], variants: list[dic
         "search_executed": True,
         "holdout_status": "locked",
         "trial_count": len(specs),
-        "policy_variants": [_simulate_policy_variant(frame, spec) for spec in specs],
-        "diagnostic_summary": {key: value for key, value in diagnostic.items() if key != "_labeled_rows"},
+        "policy_variants": [
+            _simulate_policy_variant(frame, spec, max_cpcv_paths=max_cpcv_paths)
+            for spec in specs
+        ],
+        "diagnostic_summary": {
+            key: value for key, value in diagnostic.items() if key != "_labeled_rows"
+        },
     }
 
 
-def _simulate_policy_variant(frame: Any, variant: dict[str, Any]) -> dict[str, Any]:
+def _simulate_policy_variant(
+    frame: Any, variant: dict[str, Any], *, max_cpcv_paths: int | None = None
+) -> dict[str, Any]:
     work = frame.copy()
     work["pnl_r"] = _to_numeric(work["pnl_r"]) if "pnl_r" in work.columns else 0.0
-    work["policy_weight"] = work["market_state"].map(lambda state: _state_weight(str(state), variant))
+    work["policy_weight"] = work["market_state"].map(
+        lambda state: _state_weight(str(state), variant)
+    )
     baseline_pnl = float(work["pnl_r"].sum())
     total_pnl = float((work["pnl_r"] * work["policy_weight"]).sum())
     avoided_pnl = float((work["pnl_r"] * (1.0 - work["policy_weight"])).sum())
-    cpcv = _simulate_cpcv_paths(work, variant)
+    cpcv = _simulate_cpcv_paths(work, variant, max_paths=max_cpcv_paths)
     return {
         "variant": variant["name"],
         "candidate_count": int(len(work)),
@@ -1265,12 +1600,16 @@ def _state_weight(state: str, variant: dict[str, Any]) -> float:
     return float(variant.get("default_weight", 1.0))
 
 
-def _simulate_cpcv_paths(frame: Any, variant: dict[str, Any]) -> dict[str, Any]:
+def _simulate_cpcv_paths(
+    frame: Any, variant: dict[str, Any], *, max_paths: int | None = None
+) -> dict[str, Any]:
     import statistics
 
-    state_by_id = frame.set_index(frame["candidate_id"].astype(str))[["market_state"]].to_dict(orient="index")
+    state_by_id = frame.set_index(frame["candidate_id"].astype(str))[
+        ["market_state"]
+    ].to_dict(orient="index")
     rows = []
-    for path in _available_cpcv_path_rows():
+    for path in _available_cpcv_path_rows(limit=max_paths):
         path_id = str(path["path_id"])
         total = 0.0
         baseline = 0.0
@@ -1279,7 +1618,11 @@ def _simulate_cpcv_paths(frame: Any, variant: dict[str, Any]) -> dict[str, Any]:
         state_totals: dict[str, dict[str, Any]] = {}
         for row in path["rows"]:
             candidate_id = str(row.get("candidate_id", ""))
-            state = str(dict(state_by_id.get(candidate_id, {}) or {}).get("market_state", "unmatched"))
+            state = str(
+                dict(state_by_id.get(candidate_id, {}) or {}).get(
+                    "market_state", "unmatched"
+                )
+            )
             pnl = float(row.get("executed_pnl_r", row.get("pnl_r", 0.0)) or 0.0)
             weight = _state_weight(state, variant) if state != "unmatched" else 1.0
             baseline += pnl
@@ -1287,7 +1630,9 @@ def _simulate_cpcv_paths(frame: Any, variant: dict[str, Any]) -> dict[str, Any]:
             if weight > 0:
                 trade_count += 1
                 effective_count += weight
-            bucket = state_totals.setdefault(state, {"market_state": state, "trade_count": 0, "total_pnl_r": 0.0})
+            bucket = state_totals.setdefault(
+                state, {"market_state": state, "trade_count": 0, "total_pnl_r": 0.0}
+            )
             bucket["trade_count"] += 1
             bucket["total_pnl_r"] += pnl * weight
         rows.append(
@@ -1298,7 +1643,11 @@ def _simulate_cpcv_paths(frame: Any, variant: dict[str, Any]) -> dict[str, Any]:
                 "pnl_delta_r": total - baseline,
                 "trade_count": trade_count,
                 "effective_trade_count": effective_count,
-                "state_contribution_table": sorted(state_totals.values(), key=lambda item: item["trade_count"], reverse=True),
+                "state_contribution_table": sorted(
+                    state_totals.values(),
+                    key=lambda item: item["trade_count"],
+                    reverse=True,
+                ),
             }
         )
     pnls = [row["total_pnl_r"] for row in rows]
@@ -1307,7 +1656,9 @@ def _simulate_cpcv_paths(frame: Any, variant: dict[str, Any]) -> dict[str, Any]:
     return {
         "mean_path_pnl_r": float(statistics.mean(pnls)) if pnls else 0.0,
         "median_path_pnl_r": float(statistics.median(pnls)) if pnls else 0.0,
-        "positive_path_rate": float(sum(1 for value in pnls if value > 0) / len(pnls)) if pnls else 0.0,
+        "positive_path_rate": (
+            float(sum(1 for value in pnls if value > 0) / len(pnls)) if pnls else 0.0
+        ),
         "worst_3_paths": worst,
         "paths": rows,
         "prior_worst_path_effect": [row for row in rows if row["path_id"] in prior_ids],
@@ -1334,7 +1685,7 @@ def _policy_state_contribution(work: Any) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda row: row["candidate_count"], reverse=True)
 
 
-def _available_cpcv_path_rows() -> list[dict[str, Any]]:
+def _available_cpcv_path_rows(limit: int | None = None) -> list[dict[str, Any]]:
     diagnostic = _read_json(REPORTS_DIR / "exploration_benchmark_diagnostics.json")
     cpcv = dict(diagnostic.get("cpcv", {}) or {})
     root = Path(str(cpcv.get("artifact_root", "") or ""))
@@ -1344,12 +1695,16 @@ def _available_cpcv_path_rows() -> list[dict[str, Any]]:
             path_id = path.name.replace("path_", "").replace("_rows.json", "")
             paths.append({"path_id": path_id, "rows": _read_rows_artifact(path)})
     if paths:
-        return paths
-    known = list(cpcv.get("worst_paths", []) or []) + list(cpcv.get("best_paths", []) or [])
+        return paths[:limit] if limit else paths
+    known = list(cpcv.get("worst_paths", []) or []) + list(
+        cpcv.get("best_paths", []) or []
+    )
     for row in known:
         path_id = str(row.get("path_id", "unknown"))
-        paths.append({"path_id": path_id, "rows": _read_rows_artifact(row.get("rows_artifact"))})
-    return paths
+        paths.append(
+            {"path_id": path_id, "rows": _read_rows_artifact(row.get("rows_artifact"))}
+        )
+    return paths[:limit] if limit else paths
 
 
 def _avoidance_row(work: Any, avoided: Any) -> dict[str, Any]:
@@ -1388,8 +1743,12 @@ def _support_rows(frame: Any, group_col: str) -> list[dict[str, Any]]:
 
 def _cpcv_worst_path_exposure(frame: Any) -> dict[str, Any]:
     diagnostic = _read_json(REPORTS_DIR / "exploration_benchmark_diagnostics.json")
-    worst_paths = list(dict(diagnostic.get("cpcv", {}) or {}).get("worst_paths", []) or [])[:3]
-    state_by_id = frame.set_index(frame["candidate_id"].astype(str))[["market_state", "setup_quality"]].to_dict(orient="index")
+    worst_paths = list(
+        dict(diagnostic.get("cpcv", {}) or {}).get("worst_paths", []) or []
+    )[:3]
+    state_by_id = frame.set_index(frame["candidate_id"].astype(str))[
+        ["market_state", "setup_quality"]
+    ].to_dict(orient="index")
     rows = []
     aggregate: dict[str, dict[str, Any]] = {}
     quality_aggregate: dict[str, dict[str, Any]] = {}
@@ -1406,13 +1765,21 @@ def _cpcv_worst_path_exposure(frame: Any) -> dict[str, Any]:
             matched.append({**state, "executed_pnl_r": pnl})
             bucket = aggregate.setdefault(
                 str(state["market_state"]),
-                {"market_state": str(state["market_state"]), "trade_count": 0, "total_pnl_r": 0.0},
+                {
+                    "market_state": str(state["market_state"]),
+                    "trade_count": 0,
+                    "total_pnl_r": 0.0,
+                },
             )
             bucket["trade_count"] += 1
             bucket["total_pnl_r"] += pnl
             quality_bucket = quality_aggregate.setdefault(
                 str(state["setup_quality"]),
-                {"setup_quality": str(state["setup_quality"]), "trade_count": 0, "total_pnl_r": 0.0},
+                {
+                    "setup_quality": str(state["setup_quality"]),
+                    "trade_count": 0,
+                    "total_pnl_r": 0.0,
+                },
             )
             quality_bucket["trade_count"] += 1
             quality_bucket["total_pnl_r"] += pnl
@@ -1427,8 +1794,12 @@ def _cpcv_worst_path_exposure(frame: Any) -> dict[str, Any]:
     return {
         "source": "exploration_benchmark_diagnostics.cpcv.worst_paths",
         "paths": rows,
-        "aggregate_by_market_state": sorted(aggregate.values(), key=lambda row: row["trade_count"], reverse=True),
-        "aggregate_by_setup_quality": sorted(quality_aggregate.values(), key=lambda row: row["trade_count"], reverse=True),
+        "aggregate_by_market_state": sorted(
+            aggregate.values(), key=lambda row: row["trade_count"], reverse=True
+        ),
+        "aggregate_by_setup_quality": sorted(
+            quality_aggregate.values(), key=lambda row: row["trade_count"], reverse=True
+        ),
     }
 
 
@@ -1436,11 +1807,17 @@ def _path_state_exposure(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     totals: dict[str, dict[str, Any]] = {}
     for row in rows:
         key = str(row["market_state"])
-        bucket = totals.setdefault(key, {"market_state": key, "trade_count": 0, "total_pnl_r": 0.0})
+        bucket = totals.setdefault(
+            key, {"market_state": key, "trade_count": 0, "total_pnl_r": 0.0}
+        )
         bucket["trade_count"] += 1
         bucket["total_pnl_r"] += float(row.get("executed_pnl_r", 0.0) or 0.0)
     for bucket in totals.values():
-        bucket["avg_trade_r"] = bucket["total_pnl_r"] / bucket["trade_count"] if bucket["trade_count"] else 0.0
+        bucket["avg_trade_r"] = (
+            bucket["total_pnl_r"] / bucket["trade_count"]
+            if bucket["trade_count"]
+            else 0.0
+        )
     return sorted(totals.values(), key=lambda row: row["trade_count"], reverse=True)
 
 
@@ -1453,7 +1830,10 @@ def _feature_group_columns() -> dict[str, list[str]]:
         "pivot_shape": ["msq_pivot_shape"],
         "recent_highs_lows_context": ["msq_recent_high_low_context"],
         "day_structure": ["msq_day_structure"],
-        "chop_range_unpredictability_avoidance": ["msq_chop_range_unpredictability", "msq_auction_clarity"],
+        "chop_range_unpredictability_avoidance": [
+            "msq_chop_range_unpredictability",
+            "msq_auction_clarity",
+        ],
         "requested_pit_features": [
             "directional_efficiency_open_to_now",
             "recent_directional_efficiency",
@@ -1472,7 +1852,9 @@ def _feature_group_columns() -> dict[str, list[str]]:
 
 
 def _diagnostic_source_path(state: dict[str, Any]) -> str:
-    configured = str(dict(state.get("stage2_config", {}) or {}).get("source_path", "") or "")
+    configured = str(
+        dict(state.get("stage2_config", {}) or {}).get("source_path", "") or ""
+    )
     if configured:
         return configured
     diagnostics = _read_json(REPORTS_DIR / "exploration_benchmark_diagnostics.json")
@@ -1484,7 +1866,10 @@ def _looks_like_holdout(source_path: str, state: dict[str, Any]) -> bool:
         return True
     manifest = dict(state.get("data_manifest", {}) or {})
     for entry in manifest.get("files", []) or []:
-        if entry.get("source_path") == source_path and entry.get("boundary_role") == "holdout":
+        if (
+            entry.get("source_path") == source_path
+            and entry.get("boundary_role") == "holdout"
+        ):
             return True
     return False
 
@@ -1515,5 +1900,7 @@ def _require_pandas():
     try:
         import pandas as pd
     except ImportError as exc:
-        raise RuntimeError("Market-state setup-quality diagnostics require pandas.") from exc
+        raise RuntimeError(
+            "Market-state setup-quality diagnostics require pandas."
+        ) from exc
     return pd

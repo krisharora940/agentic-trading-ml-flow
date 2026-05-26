@@ -62,17 +62,61 @@ class BNRAttemptTests(unittest.TestCase):
                 },
             ],
             "labels_records": [
-                {"candidate_id": "c1", "label": 1, "outcome": "target", "pnl_r": 1.0, "bars_held": 4},
-                {"candidate_id": "c2", "label": 0, "outcome": "stop", "pnl_r": -1.0, "bars_held": 3},
-                {"candidate_id": "c3", "label": 0, "outcome": "stop", "pnl_r": -0.8, "bars_held": 2},
-                {"candidate_id": "c4", "label": 0, "outcome": "stop", "pnl_r": -0.9, "bars_held": 2},
+                {
+                    "candidate_id": "c1",
+                    "label": 1,
+                    "outcome": "target",
+                    "pnl_r": 1.0,
+                    "bars_held": 4,
+                },
+                {
+                    "candidate_id": "c2",
+                    "label": 0,
+                    "outcome": "stop",
+                    "pnl_r": -1.0,
+                    "bars_held": 3,
+                },
+                {
+                    "candidate_id": "c3",
+                    "label": 0,
+                    "outcome": "stop",
+                    "pnl_r": -0.8,
+                    "bars_held": 2,
+                },
+                {
+                    "candidate_id": "c4",
+                    "label": 0,
+                    "outcome": "stop",
+                    "pnl_r": -0.9,
+                    "bars_held": 2,
+                },
             ],
         }
         stitched = [
-            {"candidate_id": "c1", "session_date": "2026-01-02", "probability": 0.71, "prediction": 1},
-            {"candidate_id": "c2", "session_date": "2026-01-02", "probability": 0.62, "prediction": 1},
-            {"candidate_id": "c3", "session_date": "2026-01-03", "probability": 0.58, "prediction": 1},
-            {"candidate_id": "c4", "session_date": "2026-01-03", "probability": 0.57, "prediction": 1},
+            {
+                "candidate_id": "c1",
+                "session_date": "2026-01-02",
+                "probability": 0.71,
+                "prediction": 1,
+            },
+            {
+                "candidate_id": "c2",
+                "session_date": "2026-01-02",
+                "probability": 0.62,
+                "prediction": 1,
+            },
+            {
+                "candidate_id": "c3",
+                "session_date": "2026-01-03",
+                "probability": 0.58,
+                "prediction": 1,
+            },
+            {
+                "candidate_id": "c4",
+                "session_date": "2026-01-03",
+                "probability": 0.57,
+                "prediction": 1,
+            },
         ]
 
         attempts = build_bnr_attempts(stage2_result, stitched)
@@ -90,8 +134,12 @@ class BNRAttemptTests(unittest.TestCase):
         self.assertTrue(clusters)
         families = {cluster["family"] for cluster in clusters}
         self.assertIn("weak_continuation", families)
-        volatile_cluster = next(cluster for cluster in clusters if cluster["family"] == "weak_continuation")
-        self.assertEqual(volatile_cluster["dominant_environment_state"], "volatile_chop")
+        volatile_cluster = next(
+            cluster for cluster in clusters if cluster["family"] == "weak_continuation"
+        )
+        self.assertEqual(
+            volatile_cluster["dominant_environment_state"], "volatile_chop"
+        )
         self.assertEqual(volatile_cluster["dominant_setup_state"], "weak_confirmation")
 
 

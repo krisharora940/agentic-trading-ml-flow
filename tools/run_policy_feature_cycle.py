@@ -16,26 +16,43 @@ from trading_ml.utility_analysis import compute_execution_utility
 from trading_ml.validation_audit import build_validation_audit
 
 
-def _build_session_slice(source_path: str, *, max_sessions: int, symbol: str, timeframe: str, timezone: str) -> str:
-    bars = load_ohlcv_file(source_path, symbol=symbol, timeframe=timeframe, timezone=timezone)
+def _build_session_slice(
+    source_path: str, *, max_sessions: int, symbol: str, timeframe: str, timezone: str
+) -> str:
+    bars = load_ohlcv_file(
+        source_path, symbol=symbol, timeframe=timeframe, timezone=timezone
+    )
     session_dates = sorted({idx.date() for idx in bars.index})
     chosen = set(session_dates[:max_sessions])
     subset = bars[[session_date in chosen for session_date in bars.index.date]].copy()
-    output = DATA_DIR / "cache" / f"{symbol.lower()}_{timeframe}_policy_feature_slice_{max_sessions}sessions.parquet"
+    output = (
+        DATA_DIR
+        / "cache"
+        / f"{symbol.lower()}_{timeframe}_policy_feature_slice_{max_sessions}sessions.parquet"
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     subset.to_parquet(output)
     return str(output)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run a feature-family cycle inside the winning subtype-policy universe.")
+    parser = argparse.ArgumentParser(
+        description="Run a feature-family cycle inside the winning subtype-policy universe."
+    )
     parser.add_argument("--max-sessions", type=int, default=80)
     args = parser.parse_args()
 
     state = build_agent_loop_state()
     cfg = load_bnr_config()
-    feature_families = ["context_plus_reclaim", "context_plus_geometry", "context_plus_regime", "bnr_plus_context"]
-    feature_families = [name for name in feature_families if name in set(list_feature_families())]
+    feature_families = [
+        "context_plus_reclaim",
+        "context_plus_geometry",
+        "context_plus_regime",
+        "bnr_plus_context",
+    ]
+    feature_families = [
+        name for name in feature_families if name in set(list_feature_families())
+    ]
     output = Path("reports/policy_feature_cycle.json")
 
     stage2_config = dict(state["stage2_config"])
@@ -54,21 +71,29 @@ def main() -> None:
         trial["feature_family"] = feature_family
         result = run_stage2_research_engine(Stage2Config(**trial))
         validation = build_validation_audit(result, {})
-        stitched = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []))
+        stitched = list(
+            validation.get("walk_forward", {}).get("stitched_prediction_records", [])
+        )
         filtered = apply_subtype_policy(
             stitched,
             exclude_subtypes=["weak_follow_through", "deep_retrace_repair"],
             default_threshold=float(cfg["frozen_benchmark"]["threshold"]),
         )
         execution = run_event_driven_policy_backtest(filtered, threshold=0.0)
-        utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+        utility = (
+            compute_execution_utility(execution)
+            if execution.get("status") == "complete"
+            else {"score": None}
+        )
         rows.append(
             {
                 "feature_family": feature_family,
                 "selected_signal_count": len(filtered),
                 "selected_subtype_counts": summarize_policy_records(filtered),
                 "walk_forward_status": validation.get("walk_forward", {}).get("status"),
-                "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get("mean_roc_auc"),
+                "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get(
+                    "mean_roc_auc"
+                ),
                 "trade_count": int(execution.get("trade_count", 0) or 0),
                 "total_pnl_r": float(execution.get("total_pnl_r", 0.0) or 0.0),
                 "avg_trade_r": float(execution.get("avg_trade_r", 0.0) or 0.0),
@@ -77,9 +102,18 @@ def main() -> None:
                 "utility_score": utility.get("score"),
             }
         )
-        output.write_text(json.dumps({"partial_rows": rows}, indent=2, default=str), encoding="utf-8")
+        output.write_text(
+            json.dumps({"partial_rows": rows}, indent=2, default=str), encoding="utf-8"
+        )
 
-    ranked = sorted(rows, key=lambda row: (float(row["utility_score"] or float("-inf")), row["total_pnl_r"]), reverse=True)
+    ranked = sorted(
+        rows,
+        key=lambda row: (
+            float(row["utility_score"] or float("-inf")),
+            row["total_pnl_r"],
+        ),
+        reverse=True,
+    )
     payload = {
         "source": "governed_policy_feature_cycle",
         "max_sessions": args.max_sessions,

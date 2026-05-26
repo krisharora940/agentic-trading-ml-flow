@@ -31,9 +31,17 @@ def main() -> None:
         config["target_multiple"] = float(target_multiple)
         result = run_stage2_research_engine(Stage2Config(**config))
         validation = build_validation_audit(result, {})
-        stitched = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []))
-        execution = run_event_driven_policy_backtest(stitched, threshold=frozen_threshold)
-        utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+        stitched = list(
+            validation.get("walk_forward", {}).get("stitched_prediction_records", [])
+        )
+        execution = run_event_driven_policy_backtest(
+            stitched, threshold=frozen_threshold
+        )
+        utility = (
+            compute_execution_utility(execution)
+            if execution.get("status") == "complete"
+            else {"score": None}
+        )
         rows.append(
             {
                 "horizon_bars": int(horizon_bars),
@@ -41,7 +49,9 @@ def main() -> None:
                 "target_multiple": float(target_multiple),
                 "candidate_count": int(result.get("candidate_count", 0)),
                 "walk_forward_status": validation.get("walk_forward", {}).get("status"),
-                "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get("mean_roc_auc"),
+                "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get(
+                    "mean_roc_auc"
+                ),
                 "signal_count": int(execution.get("signal_count", 0) or 0),
                 "trade_count": int(execution.get("trade_count", 0) or 0),
                 "total_pnl_r": float(execution.get("total_pnl_r", 0.0) or 0.0),

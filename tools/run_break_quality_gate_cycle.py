@@ -5,7 +5,10 @@ import json
 from pathlib import Path
 
 from trading_ml.agent_workflow import build_agent_loop_state
-from trading_ml.break_quality_policy import apply_break_quality_policy, get_break_quality_policies
+from trading_ml.break_quality_policy import (
+    apply_break_quality_policy,
+    get_break_quality_policies,
+)
 from trading_ml.event_driven_backtest import run_event_driven_policy_backtest
 from trading_ml.paths import DATA_DIR
 from trading_ml.stage2_data import load_ohlcv_file
@@ -14,19 +17,29 @@ from trading_ml.utility_analysis import compute_execution_utility
 from trading_ml.validation_audit import build_validation_audit
 
 
-def _build_session_slice(source_path: str, *, max_sessions: int, symbol: str, timeframe: str, timezone: str) -> str:
-    bars = load_ohlcv_file(source_path, symbol=symbol, timeframe=timeframe, timezone=timezone)
+def _build_session_slice(
+    source_path: str, *, max_sessions: int, symbol: str, timeframe: str, timezone: str
+) -> str:
+    bars = load_ohlcv_file(
+        source_path, symbol=symbol, timeframe=timeframe, timezone=timezone
+    )
     session_dates = sorted({idx.date() for idx in bars.index})
     chosen = set(session_dates[:max_sessions])
     subset = bars[[session_date in chosen for session_date in bars.index.date]].copy()
-    output = DATA_DIR / "cache" / f"{symbol.lower()}_{timeframe}_break_gate_slice_{max_sessions}sessions.parquet"
+    output = (
+        DATA_DIR
+        / "cache"
+        / f"{symbol.lower()}_{timeframe}_break_gate_slice_{max_sessions}sessions.parquet"
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     subset.to_parquet(output)
     return str(output)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run a break-quality gate cycle on the 160-session floor.")
+    parser = argparse.ArgumentParser(
+        description="Run a break-quality gate cycle on the 160-session floor."
+    )
     parser.add_argument("--max-sessions", type=int, default=160)
     parser.add_argument("--feature-family", default="bnr_plus_context")
     parser.add_argument("--threshold", type=float, default=0.45)
@@ -46,7 +59,9 @@ def main() -> None:
 
     result = run_stage2_research_engine(Stage2Config(**stage2_config))
     validation = build_validation_audit(result, {})
-    stitched = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []))
+    stitched = list(
+        validation.get("walk_forward", {}).get("stitched_prediction_records", [])
+    )
 
     rows: list[dict] = []
     output = Path("reports/break_quality_gate_cycle.json")
@@ -58,7 +73,11 @@ def main() -> None:
             threshold=args.threshold,
         )
         execution = run_event_driven_policy_backtest(filtered, threshold=0.0)
-        utility = compute_execution_utility(execution) if execution.get("status") == "complete" else {"score": None}
+        utility = (
+            compute_execution_utility(execution)
+            if execution.get("status") == "complete"
+            else {"score": None}
+        )
         rows.append(
             {
                 "policy_name": policy["name"],
@@ -70,12 +89,23 @@ def main() -> None:
                 "max_drawdown_r": float(execution.get("max_drawdown_r", 0.0) or 0.0),
                 "utility_score": utility.get("score"),
                 "walk_forward_status": validation.get("walk_forward", {}).get("status"),
-                "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get("mean_roc_auc"),
+                "walk_forward_mean_roc_auc": validation.get("walk_forward", {}).get(
+                    "mean_roc_auc"
+                ),
             }
         )
-        output.write_text(json.dumps({"partial_rows": rows}, indent=2, default=str), encoding="utf-8")
+        output.write_text(
+            json.dumps({"partial_rows": rows}, indent=2, default=str), encoding="utf-8"
+        )
 
-    ranked = sorted(rows, key=lambda row: (float(row["utility_score"] or float("-inf")), row["total_pnl_r"]), reverse=True)
+    ranked = sorted(
+        rows,
+        key=lambda row: (
+            float(row["utility_score"] or float("-inf")),
+            row["total_pnl_r"],
+        ),
+        reverse=True,
+    )
     payload = {
         "source": "governed_break_quality_gate_cycle",
         "max_sessions": args.max_sessions,

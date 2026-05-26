@@ -18,7 +18,8 @@ def build_setup_redesign_plan(state: dict[str, Any]) -> dict[str, Any]:
         "status": "ready_for_setup_redesign",
         "benchmark_status": "exhausted_or_structurally_fragile",
         "parked_benchmark": "current_bnr_benchmark_definition",
-        "reason": plan.get("why_selected") or "Current benchmark failed hard exhaustion criteria.",
+        "reason": plan.get("why_selected")
+        or "Current benchmark failed hard exhaustion criteria.",
         "evidence_used": {
             "persistent_tail_paths": rationale.get("persistent_tail_paths", []),
             "families_failed": rationale.get("families_failed", []),
@@ -47,7 +48,9 @@ def build_setup_redesign_plan(state: dict[str, Any]) -> dict[str, Any]:
         },
         "new_research_family": _market_state_quality_research_family(),
         "latent_feature_families": _latent_feature_families(),
-        "candidate_setup_hypotheses": _candidate_hypotheses(cpcv, large_sample, market_structure),
+        "candidate_setup_hypotheses": _candidate_hypotheses(
+            cpcv, large_sample, market_structure
+        ),
         "bounded_search_budget": {
             "max_trials": 4,
             "max_cycles": 1,
@@ -75,17 +78,23 @@ def build_setup_redesign_plan(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _candidate_hypotheses(cpcv: dict[str, Any], large_sample: dict[str, Any], market_structure: dict[str, Any]) -> list[dict[str, Any]]:
+def _candidate_hypotheses(
+    cpcv: dict[str, Any], large_sample: dict[str, Any], market_structure: dict[str, Any]
+) -> list[dict[str, Any]]:
     axes = dict(cpcv.get("dominant_failure_axes", {}) or {})
     failures = list(market_structure.get("failure_taxonomy", []) or [])
-    by_subtype = list(dict(large_sample.get("failure_map", {}) or {}).get("by_subtype", []) or [])
+    by_subtype = list(
+        dict(large_sample.get("failure_map", {}) or {}).get("by_subtype", []) or []
+    )
     return [
         {
             "name": "market_state_quality_classifier",
             "rationale": "The discretionary edge depends on continuous auction interpretation; encode trend, volatility, chop, speed, and sequence cleanliness before another geometry change.",
             "evidence": {
                 "persistent_tail": axes,
-                "market_structure_questions": market_structure.get("market_structure_questions", []),
+                "market_structure_questions": market_structure.get(
+                    "market_structure_questions", []
+                ),
             },
             "feature_families": [
                 "trend_quality",
@@ -120,7 +129,9 @@ def _candidate_hypotheses(cpcv: dict[str, Any], large_sample: dict[str, Any], ma
             "name": "bnr_no_follow_through_filter",
             "rationale": "The setup needs a structural no-trade condition, not a model confidence override.",
             "evidence": {
-                "market_structure_questions": market_structure.get("market_structure_questions", []),
+                "market_structure_questions": market_structure.get(
+                    "market_structure_questions", []
+                ),
             },
             "kill_rule": "Kill if filter reduces breadth without improving mean CPCV path PnL.",
         },
@@ -281,32 +292,62 @@ def _latent_feature_families() -> list[dict[str, Any]]:
     return [
         {
             "family": "trend_quality",
-            "examples": ["directional persistence", "slope stability", "higher-high/lower-low alignment", "trend versus balance state"],
+            "examples": [
+                "directional persistence",
+                "slope stability",
+                "higher-high/lower-low alignment",
+                "trend versus balance state",
+            ],
             "purpose": "avoid BNRs forming inside poor directional structure",
         },
         {
             "family": "volatility_expansion_contraction",
-            "examples": ["pre-trigger compression", "post-break expansion", "range expansion rate", "volatility-adjusted displacement"],
+            "examples": [
+                "pre-trigger compression",
+                "post-break expansion",
+                "range expansion rate",
+                "volatility-adjusted displacement",
+            ],
             "purpose": "distinguish energized breaks from slow/noisy auctions",
         },
         {
             "family": "candle_speed_momentum_texture",
-            "examples": ["distance traveled per bar", "body-to-wick persistence", "acceleration/deceleration", "consecutive directional closes"],
+            "examples": [
+                "distance traveled per bar",
+                "body-to-wick persistence",
+                "acceleration/deceleration",
+                "consecutive directional closes",
+            ],
             "purpose": "represent auction urgency and momentum texture instead of static ATR only",
         },
         {
             "family": "sequence_cleanliness",
-            "examples": ["overlap/chop ratio", "failed continuation count", "stalling after reclaim", "repair speed"],
+            "examples": [
+                "overlap/chop ratio",
+                "failed continuation count",
+                "stalling after reclaim",
+                "repair speed",
+            ],
             "purpose": "separate clean price-action sequences from ugly technically valid BNRs",
         },
         {
             "family": "local_liquidity_structure",
-            "examples": ["distance to recent swing high/low", "local range boundary proximity", "sweep/rejection context"],
+            "examples": [
+                "distance to recent swing high/low",
+                "local range boundary proximity",
+                "sweep/rejection context",
+            ],
             "purpose": "capture trapped-participant and range-boundary context",
         },
         {
             "family": "intraday_auction_state",
-            "examples": ["opening drive", "balanced auction", "trend day", "mean-reverting chop", "failed directional condition"],
+            "examples": [
+                "opening drive",
+                "balanced auction",
+                "trend day",
+                "mean-reverting chop",
+                "failed directional condition",
+            ],
             "purpose": "avoid firing during choppy or unpredictable day states",
         },
     ]
@@ -325,11 +366,17 @@ def _latest_market_structure_lab() -> dict[str, Any]:
     runs_root = REPORTS_DIR / "runs"
     if not runs_root.exists():
         return {}
-    for artifact_dir in sorted(runs_root.glob("*/node_artifacts"), key=lambda path: path.stat().st_mtime, reverse=True):
+    for artifact_dir in sorted(
+        runs_root.glob("*/node_artifacts"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    ):
         audit_files = sorted(artifact_dir.glob("*_audit_agent_*.json"))
         for audit_path in reversed(audit_files):
             try:
-                payload = json.loads(audit_path.read_text(encoding="utf-8")).get("payload", {})
+                payload = json.loads(audit_path.read_text(encoding="utf-8")).get(
+                    "payload", {}
+                )
             except json.JSONDecodeError:
                 continue
             market_structure = dict(payload.get("market_structure_lab", {}) or {})

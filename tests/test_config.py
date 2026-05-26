@@ -18,7 +18,9 @@ class ConfigTests(unittest.TestCase):
     def test_evidence_boundary_has_three_windows(self) -> None:
         boundary = load_evidence_boundary_config()
         self.assertEqual(boundary["boundary"]["mode"], "strict")
-        self.assertTrue({"boundary", "exploration", "validation", "holdout"} <= set(boundary))
+        self.assertTrue(
+            {"boundary", "exploration", "validation", "holdout"} <= set(boundary)
+        )
 
     def test_skill_registry_has_expected_roles(self) -> None:
         skills = load_skill_registry_config()
@@ -37,17 +39,24 @@ class ConfigTests(unittest.TestCase):
         self.assertIn("label_search_v1", config)
         self.assertIn("threshold_search_v1", config)
         self.assertIn("translation_policy_search_v1", config)
-        self.assertEqual(config["frozen_benchmark"]["feature_family"], "bnr_plus_context")
+        self.assertEqual(
+            config["frozen_benchmark"]["feature_family"], "bnr_plus_context"
+        )
         self.assertIn("sizing_policy", config["frozen_benchmark"])
         self.assertIn("regime_throttle_policy", config["frozen_benchmark"])
         self.assertIn("regime_size_policy", config["frozen_benchmark"])
 
     def test_research_program_config_defines_institutional_workstreams(self) -> None:
         config = load_research_program_config()
-        self.assertEqual(config["program"]["primary_objective"], "maximize_utility_subject_to_research_validity")
+        self.assertEqual(
+            config["program"]["primary_objective"],
+            "maximize_utility_subject_to_research_validity",
+        )
         self.assertIn("thesis_lab", config["program"]["workstreams"])
         self.assertIn("execution_lab", config["program"]["workstreams"])
-        self.assertEqual(config["program"]["domain_research"]["priority_sources"][0], "ml4trading.io")
+        self.assertEqual(
+            config["program"]["domain_research"]["priority_sources"][0], "ml4trading.io"
+        )
 
 
 if __name__ == "__main__":

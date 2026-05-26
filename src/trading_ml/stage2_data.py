@@ -34,7 +34,9 @@ def require_pandas():
     try:
         import pandas as pd
     except ImportError as exc:
-        raise RuntimeError("Stage 2 requires pandas. Install with `python3 -m pip install pandas pyarrow`.") from exc
+        raise RuntimeError(
+            "Stage 2 requires pandas. Install with `python3 -m pip install pandas pyarrow`."
+        ) from exc
     return pd
 
 
@@ -80,8 +82,12 @@ def load_ohlcv_file(
     if not isinstance(df.index, pd.DatetimeIndex):
         timestamp_column = _infer_timestamp_column(df)
         if timestamp_column is None:
-            raise ValueError("No timestamp column found and index is not datetime-like.")
-        df[timestamp_column] = _parse_timestamps(df[timestamp_column], timezone, source_timezone)
+            raise ValueError(
+                "No timestamp column found and index is not datetime-like."
+            )
+        df[timestamp_column] = _parse_timestamps(
+            df[timestamp_column], timezone, source_timezone
+        )
         df = df.set_index(timestamp_column)
     else:
         df.index = pd.to_datetime(df.index, errors="raise")
@@ -103,7 +109,9 @@ def load_ohlcv_file(
 def _parse_timestamps(series: Any, timezone: str, source_timezone: str | None) -> Any:
     pd = require_pandas()
     as_text = series.dropna().astype(str)
-    has_explicit_offset = bool(as_text.str.contains(r"(?:Z|[+-]\d{2}:\d{2})$", regex=True).any())
+    has_explicit_offset = bool(
+        as_text.str.contains(r"(?:Z|[+-]\d{2}:\d{2})$", regex=True).any()
+    )
     if has_explicit_offset:
         return pd.to_datetime(series, errors="raise", utc=True).dt.tz_convert(timezone)
     parsed = pd.to_datetime(series, errors="raise")
@@ -125,13 +133,18 @@ def _read_numbers(path: Path) -> Any:
             rows = table.rows(values_only=True)
             if not rows:
                 continue
-            header = [str(value).strip().lower() if value is not None else "" for value in rows[0]]
+            header = [
+                str(value).strip().lower() if value is not None else ""
+                for value in rows[0]
+            ]
             if {"open", "high", "low", "close", "volume"}.issubset(set(header)):
                 return pd.DataFrame(rows[1:], columns=header)
     raise ValueError(f"No OHLCV-like table found in Numbers file: {path}")
 
 
-def regular_session(df: Any, *, session_start: str = "09:30:00", session_end: str = "16:00:00") -> Any:
+def regular_session(
+    df: Any, *, session_start: str = "09:30:00", session_end: str = "16:00:00"
+) -> Any:
     return df.between_time(session_start, session_end, inclusive="left")
 
 
@@ -149,7 +162,22 @@ def build_data_quality_report(
     flags: list[str] = []
     if df.empty:
         flags.append("empty_dataset")
-        return DataQualityReport(str(source_path), symbol, timeframe, timezone, 0, None, None, 0, None, None, 0, 0, 0, flags)
+        return DataQualityReport(
+            str(source_path),
+            symbol,
+            timeframe,
+            timezone,
+            0,
+            None,
+            None,
+            0,
+            None,
+            None,
+            0,
+            0,
+            0,
+            flags,
+        )
 
     duplicates = int(df.index.duplicated().sum())
     if duplicates:
@@ -166,9 +194,15 @@ def build_data_quality_report(
         if session_df.empty:
             continue
         session_ends.append(session_df.index.max())
-        start = pd.Timestamp.combine(session_date, pd.Timestamp(session_start).time()).tz_localize(timezone)
-        end = pd.Timestamp.combine(session_date, pd.Timestamp(session_end).time()).tz_localize(timezone)
-        expected = pd.date_range(start=start, end=end, freq=expected_freq, inclusive="left")
+        start = pd.Timestamp.combine(
+            session_date, pd.Timestamp(session_start).time()
+        ).tz_localize(timezone)
+        end = pd.Timestamp.combine(
+            session_date, pd.Timestamp(session_end).time()
+        ).tz_localize(timezone)
+        expected = pd.date_range(
+            start=start, end=end, freq=expected_freq, inclusive="left"
+        )
         missing += len(expected.difference(session_df.index))
         zone = session_df.between_time("09:30:00", "09:30:59", inclusive="both")
         if len(zone) >= (2 if timeframe == "30s" else 1):

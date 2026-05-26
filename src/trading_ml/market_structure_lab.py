@@ -20,9 +20,18 @@ def build_market_structure_lab(
     candidate_frame["trace"] = candidate_frame["trace"].apply(lambda value: value or {})
     trace_frame = pd.json_normalize(candidate_frame["trace"])
     merged = pd.concat(
-        [candidate_frame.drop(columns=["trace"]).reset_index(drop=True), trace_frame.reset_index(drop=True)],
+        [
+            candidate_frame.drop(columns=["trace"]).reset_index(drop=True),
+            trace_frame.reset_index(drop=True),
+        ],
         axis=1,
-    ).merge(label_frame[["candidate_id", "label", "outcome", "pnl_r", "bars_held", "mfe", "mae"]], on="candidate_id", how="inner")
+    ).merge(
+        label_frame[
+            ["candidate_id", "label", "outcome", "pnl_r", "bars_held", "mfe", "mae"]
+        ],
+        on="candidate_id",
+        how="inner",
+    )
     if merged.empty:
         return {"status": "pending", "reason": "empty_merged_dataset"}
 
@@ -37,9 +46,21 @@ def build_market_structure_lab(
                 "count": int(len(group)),
                 "positive_rate": float(group["label"].mean()),
                 "avg_pnl_r": float(group["pnl_r"].mean()),
-                "reclaim_mean": float(group["reclaim_count"].mean()) if "reclaim_count" in group else 0.0,
-                "retrace_mean": float(group["deepest_zone_retrace_fraction"].mean()) if "deepest_zone_retrace_fraction" in group else 0.0,
-                "continuation_strength_mean": float(group["post_reclaim_close_strength"].mean()) if "post_reclaim_close_strength" in group else 0.0,
+                "reclaim_mean": (
+                    float(group["reclaim_count"].mean())
+                    if "reclaim_count" in group
+                    else 0.0
+                ),
+                "retrace_mean": (
+                    float(group["deepest_zone_retrace_fraction"].mean())
+                    if "deepest_zone_retrace_fraction" in group
+                    else 0.0
+                ),
+                "continuation_strength_mean": (
+                    float(group["post_reclaim_close_strength"].mean())
+                    if "post_reclaim_close_strength" in group
+                    else 0.0
+                ),
             }
         )
 
@@ -51,7 +72,11 @@ def build_market_structure_lab(
                 "failure_reason": str(reason),
                 "count": int(len(group)),
                 "avg_pnl_r": float(group["pnl_r"].mean()),
-                "common_family": str(group["structure_family"].mode().iloc[0]) if not group["structure_family"].mode().empty else "unknown",
+                "common_family": (
+                    str(group["structure_family"].mode().iloc[0])
+                    if not group["structure_family"].mode().empty
+                    else "unknown"
+                ),
             }
         )
 
@@ -59,9 +84,13 @@ def build_market_structure_lab(
     return {
         "status": "complete",
         "candidate_count": int(len(merged)),
-        "structure_families": sorted(family_rows, key=lambda row: row["avg_pnl_r"], reverse=True),
+        "structure_families": sorted(
+            family_rows, key=lambda row: row["avg_pnl_r"], reverse=True
+        ),
         "failure_taxonomy": top_failures,
-        "market_structure_questions": _market_structure_questions(top_failures, family_rows),
+        "market_structure_questions": _market_structure_questions(
+            top_failures, family_rows
+        ),
     }
 
 
@@ -97,12 +126,18 @@ def _failure_reason(row: Any) -> str:
     return "stop_before_target"
 
 
-def _market_structure_questions(failure_rows: list[dict[str, Any]], family_rows: list[dict[str, Any]]) -> list[str]:
+def _market_structure_questions(
+    failure_rows: list[dict[str, Any]], family_rows: list[dict[str, Any]]
+) -> list[str]:
     questions: list[str] = []
     if failure_rows:
         top = failure_rows[0]["failure_reason"]
-        questions.append(f"How can the setup filter reduce {top} without collapsing trade count?")
+        questions.append(
+            f"How can the setup filter reduce {top} without collapsing trade count?"
+        )
     if family_rows:
         best = family_rows[0]["family"]
-        questions.append(f"Which pre-open and reclaim conditions best explain strength in {best}?")
+        questions.append(
+            f"Which pre-open and reclaim conditions best explain strength in {best}?"
+        )
     return questions

@@ -121,7 +121,9 @@ def label_candidate(
         exit_time = last_ts.isoformat()
         exit_price = last_close
 
-    pnl = _directional_pnl(candidate, entry, exit_price if exit_price is not None else entry)
+    pnl = _directional_pnl(
+        candidate, entry, exit_price if exit_price is not None else entry
+    )
     pnl_r = pnl / risk if risk else 0.0
     return TradeLabel(
         candidate_id=candidate.candidate_id,
@@ -141,7 +143,9 @@ def label_candidate(
     )
 
 
-def _directional_pnl(candidate: CandidateSetup, entry: float, exit_price: float) -> float:
+def _directional_pnl(
+    candidate: CandidateSetup, entry: float, exit_price: float
+) -> float:
     if candidate.direction == "long":
         return exit_price - entry
     return entry - exit_price

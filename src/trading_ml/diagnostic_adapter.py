@@ -24,7 +24,9 @@ def diagnostic_available() -> bool:
     return True
 
 
-def build_diagnostic_walk_forward_splits(merged: Any) -> tuple[list[tuple[Any, Any, WalkForwardFold]], dict[str, Any]] | None:
+def build_diagnostic_walk_forward_splits(
+    merged: Any,
+) -> tuple[list[tuple[Any, Any, WalkForwardFold]], dict[str, Any]] | None:
     if not diagnostic_available():
         return None
 
@@ -33,7 +35,9 @@ def build_diagnostic_walk_forward_splits(merged: Any) -> tuple[list[tuple[Any, A
     pd = _require_pandas()
     global_config = load_global_config()
     validation = dict(global_config.get("validation", {}))
-    session_count = len(sorted(merged["session_date"].dropna().astype(str).unique().tolist()))
+    session_count = len(
+        sorted(merged["session_date"].dropna().astype(str).unique().tolist())
+    )
     min_train_sessions = int(validation.get("min_train_sessions", 10) or 10)
     test_sessions = int(validation.get("test_sessions", 5) or 5)
     step_sessions = int(validation.get("step_sessions", test_sessions) or test_sessions)
@@ -67,8 +71,12 @@ def build_diagnostic_walk_forward_splits(merged: Any) -> tuple[list[tuple[Any, A
                 test,
                 WalkForwardFold(
                     fold=fold_idx,
-                    train_sessions=sorted(train["session_date"].astype(str).unique().tolist()),
-                    test_sessions=sorted(test["session_date"].astype(str).unique().tolist()),
+                    train_sessions=sorted(
+                        train["session_date"].astype(str).unique().tolist()
+                    ),
+                    test_sessions=sorted(
+                        test["session_date"].astype(str).unique().tolist()
+                    ),
                     train_rows=int(len(train)),
                     test_rows=int(len(test)),
                     purged_rows=0,

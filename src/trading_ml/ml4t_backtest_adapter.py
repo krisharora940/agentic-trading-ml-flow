@@ -18,7 +18,11 @@ from ml4t.backtest import (
 from ml4t.backtest.config import DataFrequency, ExecutionPrice, SlippageType
 
 from trading_ml.agent_workflow import build_agent_loop_state
-from trading_ml.config import load_bnr_config, load_databento_manifest, load_global_config
+from trading_ml.config import (
+    load_bnr_config,
+    load_databento_manifest,
+    load_global_config,
+)
 from trading_ml.evidence_sources import select_manifest_source_path
 from trading_ml.exit_engine import _simulate_trade_exit
 from trading_ml.market_state_quality import (
@@ -34,7 +38,9 @@ from trading_ml.validation_audit import build_validation_audit
 
 
 BENCHMARK_NAME = "market_state_setup_quality_v1"
-ENTRY_POLICY_NAME = "exclude_weak_or_grindy_continuation + pre_entry_breakout_quality_gate"
+ENTRY_POLICY_NAME = (
+    "exclude_weak_or_grindy_continuation + pre_entry_breakout_quality_gate"
+)
 EXIT_POLICY_NAME = "scratch_no_followthrough_after_3_bars"
 N_RECENT_POLICY_TRIALS = 11
 BACKTEST_SYMBOL = "MNQ"
@@ -72,7 +78,11 @@ class ScheduledTradeReplayStrategy(Strategy):
 
         if len(entry_actions) > 1:
             self.same_timestamp_entry_collisions += len(entry_actions) - 1
-        action = sorted(entry_actions, key=lambda item: float(item.get("probability", 0.0)), reverse=True)[0]
+        action = sorted(
+            entry_actions,
+            key=lambda item: float(item.get("probability", 0.0)),
+            reverse=True,
+        )[0]
         if position is not None:
             self.skipped_overlap_entries += 1
             return
@@ -82,15 +92,21 @@ class ScheduledTradeReplayStrategy(Strategy):
             broker.sell(self.symbol, contracts=1)
 
 
-def run_market_state_v1_ml4t_backtest(*, boundary_role: str = "exploration") -> MarketStateBacktestBundle:
+def run_market_state_v1_ml4t_backtest(
+    *, boundary_role: str = "exploration"
+) -> MarketStateBacktestBundle:
     state = build_agent_loop_state()
-    source_path = select_manifest_source_path(load_databento_manifest(), timeframe="30s", boundary_role=boundary_role)
+    source_path = select_manifest_source_path(
+        load_databento_manifest(), timeframe="30s", boundary_role=boundary_role
+    )
     if not source_path:
         raise RuntimeError(f"missing_{boundary_role}_source")
     stage2_config = dict(state.get("stage2_config", {}) or {})
     stage2_config["source_path"] = source_path
     state["stage2_config"] = stage2_config
-    state["phase"] = "validation_confirmation" if boundary_role == "validation" else "exploration"
+    state["phase"] = (
+        "validation_confirmation" if boundary_role == "validation" else "exploration"
+    )
     diagnostic = build_market_state_setup_quality_diagnostic(state)
     if diagnostic.get("status") != "complete":
         raise RuntimeError(f"diagnostic unavailable: {diagnostic.get('reason')}")
@@ -112,8 +128,12 @@ def run_market_state_v1_ml4t_backtest(*, boundary_role: str = "exploration") -> 
         {"trial_count": N_RECENT_POLICY_TRIALS},
         artifact_context={"run_id": f"ml4t-bt-{boundary_role}-{uuid4().hex[:12]}"},
     )
-    stitched = list(validation.get("walk_forward", {}).get("stitched_prediction_records", []) or [])
-    feature_by_id = {str(row["candidate_id"]): row for row in diagnostic.get("_labeled_rows", [])}
+    stitched = list(
+        validation.get("walk_forward", {}).get("stitched_prediction_records", []) or []
+    )
+    feature_by_id = {
+        str(row["candidate_id"]): row for row in diagnostic.get("_labeled_rows", [])
+    }
     policy_records = _apply_market_state_v1(stitched, feature_by_id)
     planned_trades = _build_planned_trades(policy_records, bars, config.horizon_bars)
 
@@ -152,7 +172,9 @@ def run_market_state_v1_ml4t_backtest(*, boundary_role: str = "exploration") -> 
         "source_path": source_path,
         "entry_policy": ENTRY_POLICY_NAME,
         "exit_policy": EXIT_POLICY_NAME,
-        "threshold": float(load_bnr_config().get("frozen_benchmark", {}).get("threshold", 0.45) or 0.45),
+        "threshold": float(
+            load_bnr_config().get("frozen_benchmark", {}).get("threshold", 0.45) or 0.45
+        ),
         "walk_forward": {
             "status": validation.get("walk_forward", {}).get("status"),
             "mean_roc_auc": validation.get("walk_forward", {}).get("mean_roc_auc"),
@@ -204,16 +226,30 @@ def run_market_state_v1_ml4t_backtest(*, boundary_role: str = "exploration") -> 
         },
     }
 
-    (run_dir / "summary.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
-    (run_dir / "trade_records.json").write_text(json.dumps(trade_records, indent=2, default=str), encoding="utf-8")
-    (run_dir / "fill_records.json").write_text(json.dumps(fill_records, indent=2, default=str), encoding="utf-8")
-    (run_dir / "equity_curve.json").write_text(json.dumps(equity_records, indent=2, default=str), encoding="utf-8")
-    (run_dir / "planned_trades.json").write_text(json.dumps(planned_trades, indent=2, default=str), encoding="utf-8")
+    (run_dir / "summary.json").write_text(
+        json.dumps(summary, indent=2, default=str), encoding="utf-8"
+    )
+    (run_dir / "trade_records.json").write_text(
+        json.dumps(trade_records, indent=2, default=str), encoding="utf-8"
+    )
+    (run_dir / "fill_records.json").write_text(
+        json.dumps(fill_records, indent=2, default=str), encoding="utf-8"
+    )
+    (run_dir / "equity_curve.json").write_text(
+        json.dumps(equity_records, indent=2, default=str), encoding="utf-8"
+    )
+    (run_dir / "planned_trades.json").write_text(
+        json.dumps(planned_trades, indent=2, default=str), encoding="utf-8"
+    )
 
     suffix = "validation" if boundary_role == "validation" else "exploration"
-    output_path = REPORTS_DIR / f"market_state_setup_quality_v1_ml4t_backtest_{suffix}.json"
+    output_path = (
+        REPORTS_DIR / f"market_state_setup_quality_v1_ml4t_backtest_{suffix}.json"
+    )
     output_path.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
-    return MarketStateBacktestBundle(report=summary, output_path=output_path, run_dir=run_dir)
+    return MarketStateBacktestBundle(
+        report=summary, output_path=output_path, run_dir=run_dir
+    )
 
 
 def _apply_market_state_v1(
@@ -250,14 +286,19 @@ def _build_planned_trades(
                 "label": int(joined.get("label", 0) or 0),
                 "market_state": str(joined.get("market_state", "")),
                 "setup_quality": str(joined.get("setup_quality", "")),
-                "setup_subtype": str(joined.get("setup_subtype", joined.get("subtype", ""))),
+                "setup_subtype": str(
+                    joined.get("setup_subtype", joined.get("subtype", ""))
+                ),
                 "baseline_pnl_r": float(joined.get("pnl_r", 0.0) or 0.0),
                 "scratch_exit_pnl_r": float(exit_row["pnl_r"]),
                 "scratch_outcome": str(exit_row["outcome"]),
                 "bars_held": int(exit_row["bars_held"]),
             }
         )
-    return sorted(rows, key=lambda row: (row["entry_time"], -row["probability"], row["candidate_id"]))
+    return sorted(
+        rows,
+        key=lambda row: (row["entry_time"], -row["probability"], row["candidate_id"]),
+    )
 
 
 def _bars_to_polars(bars: Any) -> pl.DataFrame:
@@ -265,13 +306,17 @@ def _bars_to_polars(bars: Any) -> pl.DataFrame:
     if "timestamp" not in frame.columns:
         frame = frame.rename(columns={frame.columns[0]: "timestamp"})
     frame["symbol"] = BACKTEST_SYMBOL
-    return pl.from_pandas(frame[["timestamp", "symbol", "open", "high", "low", "close", "volume"]])
+    return pl.from_pandas(
+        frame[["timestamp", "symbol", "open", "high", "low", "close", "volume"]]
+    )
 
 
 def _build_context_frame(planned_trades: list[dict[str, Any]]) -> pl.DataFrame:
     by_ts: dict[str, dict[str, list[dict[str, Any]]]] = {}
     for row in planned_trades:
-        entry_bucket = by_ts.setdefault(str(row["entry_time"]), {"entries": [], "exits": []})
+        entry_bucket = by_ts.setdefault(
+            str(row["entry_time"]), {"entries": [], "exits": []}
+        )
         entry_bucket["entries"].append(
             {
                 "candidate_id": row["candidate_id"],
@@ -280,7 +325,9 @@ def _build_context_frame(planned_trades: list[dict[str, Any]]) -> pl.DataFrame:
                 "setup_subtype": row["setup_subtype"],
             }
         )
-        exit_bucket = by_ts.setdefault(str(row["exit_time"]), {"entries": [], "exits": []})
+        exit_bucket = by_ts.setdefault(
+            str(row["exit_time"]), {"entries": [], "exits": []}
+        )
         exit_bucket["exits"].append(
             {
                 "candidate_id": row["candidate_id"],
@@ -308,7 +355,9 @@ def _backtest_config() -> BacktestConfig:
         allow_short_selling=True,
         allow_leverage=True,
         initial_cash=100000.0,
-        timezone=str(load_global_config().get("project", {}).get("timezone", "America/New_York")),
+        timezone=str(
+            load_global_config().get("project", {}).get("timezone", "America/New_York")
+        ),
         data_frequency=DataFrequency.IRREGULAR,
         execution_mode=ExecutionMode.SAME_BAR,
         execution_price=ExecutionPrice.CLOSE,
@@ -359,5 +408,7 @@ def _parse_timestamp(value: str) -> Any:
     try:
         import pandas as pd
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError("pandas is required to parse market-state timestamps") from exc
+        raise RuntimeError(
+            "pandas is required to parse market-state timestamps"
+        ) from exc
     return pd.Timestamp(value).to_pydatetime()

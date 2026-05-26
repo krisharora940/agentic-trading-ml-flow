@@ -37,6 +37,10 @@ def _normalize_model_name(model_name: str) -> str:
     return model_name
 
 
+def _normalize_openai_model_name(model_name: str) -> str:
+    return _normalize_model_name(model_name)
+
+
 def _default_timeout_seconds() -> float:
     raw = str(os.environ.get("TRADING_ML_LLM_TIMEOUT_SECONDS", "45") or "45").strip()
     try:
@@ -76,15 +80,23 @@ def create_chat_model(model_name: str | None = None, **kwargs: Any) -> Any:
             raise RuntimeError("OPENAI_API_KEY is not set in the runtime environment.")
         return ChatOpenAI(model=resolved_model, api_key=api_key, **request_kwargs)
     if provider == "ollama":
-        base_url = os.environ.get("TRADING_ML_LLM_BASE_URL", "http://127.0.0.1:11434/v1")
+        base_url = os.environ.get(
+            "TRADING_ML_LLM_BASE_URL", "http://127.0.0.1:11434/v1"
+        )
         api_key = os.environ.get("TRADING_ML_LLM_API_KEY", "ollama")
-        return ChatOpenAI(model=resolved_model, api_key=api_key, base_url=base_url, **request_kwargs)
+        return ChatOpenAI(
+            model=resolved_model, api_key=api_key, base_url=base_url, **request_kwargs
+        )
     if provider == "openai_compatible":
         base_url = os.environ.get("TRADING_ML_LLM_BASE_URL")
         if not base_url:
-            raise RuntimeError("TRADING_ML_LLM_BASE_URL is not set for openai_compatible LLM usage.")
+            raise RuntimeError(
+                "TRADING_ML_LLM_BASE_URL is not set for openai_compatible LLM usage."
+            )
         api_key = os.environ.get("TRADING_ML_LLM_API_KEY", "local")
-        return ChatOpenAI(model=resolved_model, api_key=api_key, base_url=base_url, **request_kwargs)
+        return ChatOpenAI(
+            model=resolved_model, api_key=api_key, base_url=base_url, **request_kwargs
+        )
     raise RuntimeError(f"Unsupported LLM provider: {provider}")
 
 

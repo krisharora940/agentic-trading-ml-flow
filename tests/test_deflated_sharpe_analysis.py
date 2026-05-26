@@ -1,6 +1,9 @@
 import unittest
 
-from trading_ml.deflated_sharpe_analysis import compute_sharpe_ratio, deflated_sharpe_probability
+from trading_ml.deflated_sharpe_analysis import (
+    compute_sharpe_ratio,
+    deflated_sharpe_probability,
+)
 
 
 class DeflatedSharpeTests(unittest.TestCase):

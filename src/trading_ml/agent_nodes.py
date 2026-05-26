@@ -5,16 +5,30 @@ from datetime import timedelta
 import time
 from typing import Any
 
-from trading_ml.agent_state import DecisionName, FailureCategory, LoopLimits, ReviewCheckpoint
+from trading_ml.agent_state import (
+    DecisionName,
+    FailureCategory,
+    LoopLimits,
+    ReviewCheckpoint,
+)
 from trading_ml.artifact_store import persist_node_artifact
 from trading_ml.bnr_attempts import build_bnr_attempts
-from trading_ml.price_action_feature_catalog import build_catalog_feature_proposals, build_strategy_intake
+from trading_ml.price_action_feature_catalog import (
+    build_catalog_feature_proposals,
+    build_strategy_intake,
+)
 from trading_ml.config import load_bnr_config
 from trading_ml.failure_clusters import build_failure_clusters
 from trading_ml.feature_diagnostics import build_feature_diagnostics
 from trading_ml.market_state_quality import build_market_state_setup_quality_diagnostic
-from trading_ml.research_memory_store import append_action_history_entry, append_failure_memory_entry
-from trading_ml.research_actions import available_research_actions, execute_research_action
+from trading_ml.research_memory_store import (
+    append_action_history_entry,
+    append_failure_memory_entry,
+)
+from trading_ml.research_actions import (
+    available_research_actions,
+    execute_research_action,
+)
 from trading_ml.research_os import (
     append_failure_memory,
     build_curated_domain_priors,
@@ -50,7 +64,12 @@ from trading_ml.translation_analysis import build_translation_analysis
 from trading_ml.validation_audit import build_validation_audit
 
 
-def _append_log(state: dict[str, Any], actor: str, message: str, payload: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+def _append_log(
+    state: dict[str, Any],
+    actor: str,
+    message: str,
+    payload: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     entry = {
         "created_at": utc_now_iso(),
         "actor": actor,
@@ -72,7 +91,9 @@ def _ensure_counts(state: dict[str, Any]) -> dict[str, int]:
     return {
         "trials": state.get("experiment_counts", {}).get("trials", 0),
         "feature_changes": state.get("experiment_counts", {}).get("feature_changes", 0),
-        "threshold_changes": state.get("experiment_counts", {}).get("threshold_changes", 0),
+        "threshold_changes": state.get("experiment_counts", {}).get(
+            "threshold_changes", 0
+        ),
     }
 
 
@@ -94,12 +115,21 @@ def _budget_exhausted(state: dict[str, Any], usage: dict[str, Any]) -> list[str]
         if limit is not None and int(usage.get(key, 0) or 0) >= int(limit):
             exhausted.append(key)
     runtime_limit = budgets.get("max_runtime_seconds")
-    if runtime_limit is not None and float(usage.get("runtime_seconds", 0) or 0) >= float(runtime_limit):
+    if runtime_limit is not None and float(
+        usage.get("runtime_seconds", 0) or 0
+    ) >= float(runtime_limit):
         exhausted.append("runtime_seconds")
     return exhausted
 
 
-def _route_decision(state: dict[str, Any], *, node: str, decision: str, reason: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def _route_decision(
+    state: dict[str, Any],
+    *,
+    node: str,
+    decision: str,
+    reason: str,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     return {
         "node": node,
         "decision": decision,
@@ -110,7 +140,9 @@ def _route_decision(state: dict[str, Any], *, node: str, decision: str, reason: 
     }
 
 
-def _append_route_decision(state: dict[str, Any], decision: dict[str, Any]) -> list[dict[str, Any]]:
+def _append_route_decision(
+    state: dict[str, Any], decision: dict[str, Any]
+) -> list[dict[str, Any]]:
     return [*list(state.get("route_decisions", []) or []), decision]
 
 
@@ -124,8 +156,13 @@ def _current_action_kind(state: dict[str, Any]) -> str:
     return str(action.get("callable_kind", ""))
 
 
-def _runtime_profile_trial_cap(state: dict[str, Any], selected_family: str, action_kind: str) -> int | None:
-    if str(state.get("runtime_profile", "standard")) not in {"bounded_autonomous", "unattended"}:
+def _runtime_profile_trial_cap(
+    state: dict[str, Any], selected_family: str, action_kind: str
+) -> int | None:
+    if str(state.get("runtime_profile", "standard")) not in {
+        "bounded_autonomous",
+        "unattended",
+    }:
         return None
     if action_kind != "governed_research_cycle":
         return None
@@ -146,16 +183,29 @@ def _runtime_profile_trial_cap(state: dict[str, Any], selected_family: str, acti
     return caps.get(selected_family, 1)
 
 
-def _cheap_screen_subtype_candidates(state: dict[str, Any], search_space: dict[str, Any]) -> dict[str, Any]:
+def _cheap_screen_subtype_candidates(
+    state: dict[str, Any], search_space: dict[str, Any]
+) -> dict[str, Any]:
     configured = list(search_space.get("space", {}).get("setup_subtype", []) or [])
-    attribution = dict((state.get("next_step_plan", {}) or {}).get("evidence_used", {}) or {})
+    attribution = dict(
+        (state.get("next_step_plan", {}) or {}).get("evidence_used", {}) or {}
+    )
     dominant = dict(attribution.get("subtype", {}) or {})
     dominant_key = dominant.get("key")
-    subtype_counts = dict((state.get("stage2_result", {}) or {}).get("subtype_counts", {}) or {})
+    subtype_counts = dict(
+        (state.get("stage2_result", {}) or {}).get("subtype_counts", {}) or {}
+    )
     ordered = ["all_subtypes"]
     if dominant_key:
         ordered.append(str(dominant_key))
-    ordered.extend([name for name, _ in sorted(subtype_counts.items(), key=lambda item: item[1], reverse=True)])
+    ordered.extend(
+        [
+            name
+            for name, _ in sorted(
+                subtype_counts.items(), key=lambda item: item[1], reverse=True
+            )
+        ]
+    )
     shortlist: list[str] = []
     for name in ordered:
         if name in configured and name not in shortlist:
@@ -169,7 +219,9 @@ def _cheap_screen_subtype_candidates(state: dict[str, Any], search_space: dict[s
         "shortlisted_candidates": shortlist[:2],
         "dominant_failure_subtype": dominant,
         "subtype_counts": subtype_counts,
-        "reuse_artifacts": bool(dict(state.get("compute_budgets", {}) or {}).get("reuse_artifacts", True)),
+        "reuse_artifacts": bool(
+            dict(state.get("compute_budgets", {}) or {}).get("reuse_artifacts", True)
+        ),
     }
 
 
@@ -379,7 +431,10 @@ def governor_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         )
         blocking_issues = update["blocking_issues"]
         blocking_issue_records = update["blocking_issue_records"]
-    if state.get("holdout_consumed") and state.get("phase") not in {"holdout_confirmation", "completed"}:
+    if state.get("holdout_consumed") and state.get("phase") not in {
+        "holdout_confirmation",
+        "completed",
+    }:
         update = _append_blocking_issue(
             state,
             code="HOLDOUT_ALREADY_CONSUMED",
@@ -412,7 +467,8 @@ def cto_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     review = {
         "unified_strategy_code": True,
         "parity_test_required": True,
-        "human_approval_required": "search_space_approval" in state.get("checkpoints_pending", []),
+        "human_approval_required": "search_space_approval"
+        in state.get("checkpoints_pending", []),
         "technical_risks": ["no live adapter yet", "no parity test fixtures yet"],
         "score_to_signal_contract_required": True,
         "shared_validation_contract_required": True,
@@ -421,7 +477,12 @@ def cto_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "current_node": "cto_agent",
         "technical_review": review,
-        "run_log": _append_log(state, "cto_agent", "Reviewed architecture, parity, and safety requirements.", review),
+        "run_log": _append_log(
+            state,
+            "cto_agent",
+            "Reviewed architecture, parity, and safety requirements.",
+            review,
+        ),
     }
 
 
@@ -443,8 +504,14 @@ def data_steward_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             "current_node": "data_steward_agent",
             "data_summary": summary,
             "stage2_result": result,
-            "holdout_consumed": bool(state.get("holdout_consumed")) or boundary_role == "holdout",
-            "run_log": _append_log(state, "data_steward_agent", "Ran Stage 2 data validation and BNR research engine.", summary),
+            "holdout_consumed": bool(state.get("holdout_consumed"))
+            or boundary_role == "holdout",
+            "run_log": _append_log(
+                state,
+                "data_steward_agent",
+                "Ran Stage 2 data validation and BNR research engine.",
+                summary,
+            ),
         }
         if state.get("phase") != "holdout_confirmation" and boundary_role == "holdout":
             payload.update(
@@ -467,13 +534,21 @@ def data_steward_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "current_node": "data_steward_agent",
         "data_summary": summary,
-        "run_log": _append_log(state, "data_steward_agent", "Checked manifests and data validation prerequisites.", summary),
+        "run_log": _append_log(
+            state,
+            "data_steward_agent",
+            "Checked manifests and data validation prerequisites.",
+            summary,
+        ),
     }
 
 
 def bnr_research_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     spec = dict(state.get("bnr_spec", {}))
-    spec.setdefault("candidate_description", "Candidate setup rules pending Stage 2 engine implementation.")
+    spec.setdefault(
+        "candidate_description",
+        "Candidate setup rules pending Stage 2 engine implementation.",
+    )
     stage2 = dict(state.get("stage2_result", {}))
     if stage2:
         spec["stage2_zone_count"] = stage2.get("zone_count", 0)
@@ -484,7 +559,12 @@ def bnr_research_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         "current_node": "bnr_research_agent",
         "bnr_spec": spec,
         "candidate_setups_defined": bool(spec.get("candidate_description")),
-        "run_log": _append_log(state, "bnr_research_agent", "Reviewed BNR setup definition and candidate generation scope.", spec),
+        "run_log": _append_log(
+            state,
+            "bnr_research_agent",
+            "Reviewed BNR setup definition and candidate generation scope.",
+            spec,
+        ),
     }
 
 
@@ -503,7 +583,12 @@ def labeling_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         "current_node": "labeling_agent",
         "label_spec": label_spec,
         "checkpoints_pending": pending,
-        "run_log": _append_log(state, "labeling_agent", "Prepared label logic and queued label review.", label_spec),
+        "run_log": _append_log(
+            state,
+            "labeling_agent",
+            "Prepared label logic and queued label review.",
+            label_spec,
+        ),
     }
 
 
@@ -516,7 +601,9 @@ def feature_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         feature_spec["timestamp_validation"] = "complete"
         feature_spec["feature_audit"] = stage2.get("feature_audit", {})
         diagnostics = build_feature_diagnostics(stage2)
-        feature_spec["feature_diagnostics_status"] = diagnostics.get("status", "pending")
+        feature_spec["feature_diagnostics_status"] = diagnostics.get(
+            "status", "pending"
+        )
     intake = dict(state.get("research_intake", {}))
     if intake.get("feature_backlog"):
         feature_spec["strategy_feature_backlog"] = intake["feature_backlog"]
@@ -528,21 +615,38 @@ def feature_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         limit=8,
     )
     feature_spec["feature_catalog_version"] = catalog_intake.get("catalog_version", 1)
-    feature_spec["feature_catalog_groups"] = catalog_intake.get("selected_feature_groups", [])
-    feature_spec["feature_catalog_candidates"] = catalog_intake.get("feature_catalog_candidates", [])
+    feature_spec["feature_catalog_groups"] = catalog_intake.get(
+        "selected_feature_groups", []
+    )
+    feature_spec["feature_catalog_candidates"] = catalog_intake.get(
+        "feature_catalog_candidates", []
+    )
     feature_spec["feature_catalog_claim"] = catalog_intake.get("feature_claim")
     feature_spec["target_setup_state"] = top_cluster.get("dominant_setup_state")
-    feature_spec["target_environment_state"] = top_cluster.get("dominant_environment_state")
-    feature_spec["target_path_class"] = dict(top_cluster.get("evidence", {}) or {}).get("path_class_mode")
+    feature_spec["target_environment_state"] = top_cluster.get(
+        "dominant_environment_state"
+    )
+    feature_spec["target_path_class"] = dict(top_cluster.get("evidence", {}) or {}).get(
+        "path_class_mode"
+    )
     if not feature_spec.get("strategy_feature_backlog"):
-        feature_spec["strategy_feature_backlog"] = catalog_intake.get("feature_backlog", {})
+        feature_spec["strategy_feature_backlog"] = catalog_intake.get(
+            "feature_backlog", {}
+        )
     return {
         "current_node": "feature_agent",
         "feature_spec": feature_spec,
         "feature_catalog": catalog_intake,
-        "feature_catalog_candidates": catalog_intake.get("feature_catalog_candidates", []),
+        "feature_catalog_candidates": catalog_intake.get(
+            "feature_catalog_candidates", []
+        ),
         "feature_diagnostics": diagnostics,
-        "run_log": _append_log(state, "feature_agent", "Prepared feature proposal set and timestamp validation requirements.", {**feature_spec, "feature_diagnostics": diagnostics}),
+        "run_log": _append_log(
+            state,
+            "feature_agent",
+            "Prepared feature proposal set and timestamp validation requirements.",
+            {**feature_spec, "feature_diagnostics": diagnostics},
+        ),
     }
 
 
@@ -568,7 +672,12 @@ def model_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "current_node": "model_agent",
         "model_spec": model_spec,
-        "run_log": _append_log(state, "model_agent", "Prepared model training and calibration plan.", model_spec),
+        "run_log": _append_log(
+            state,
+            "model_agent",
+            "Prepared model training and calibration plan.",
+            model_spec,
+        ),
     }
 
 
@@ -587,11 +696,18 @@ def backtest_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "current_node": "backtest_agent",
         "backtest_summary": summary,
-        "run_log": _append_log(state, "backtest_agent", "Prepared simulation and metrics requirements.", summary),
+        "run_log": _append_log(
+            state,
+            "backtest_agent",
+            "Prepared simulation and metrics requirements.",
+            summary,
+        ),
     }
 
 
-def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> dict[str, Any]:
+def search_controller_agent_node(
+    state: dict[str, Any], limits: LoopLimits
+) -> dict[str, Any]:
     started_at = time.monotonic()
     counts = _ensure_counts(state)
     budget_usage = _ensure_budget_usage(state)
@@ -602,43 +718,80 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     _apply_bnr_state_focus_to_controller(controller, state, next_step_plan)
     stage2_config = dict(state.get("stage2_config", {}))
     if next_step_plan.get("stage2_overrides"):
-        stage2_config.update(_stage2_safe_overrides(dict(next_step_plan["stage2_overrides"])))
+        stage2_config.update(
+            _stage2_safe_overrides(dict(next_step_plan["stage2_overrides"]))
+        )
     active_family = controller.get("active_family")
     search_space = dict(state.get("search_space", {})) or (
         build_model_search_space()
         if active_family == "model"
-        else build_feature_search_space()
-        if active_family == "feature"
-        else build_feature_threshold_search_space()
-        if active_family == "feature_threshold"
-        else build_label_search_space()
-        if active_family == "label"
-        else build_sample_expansion_search_space()
-        if active_family == "sample_expansion"
-        else build_subtype_search_space()
-        if active_family == "subtype"
-        else build_policy_gate_search_space()
-        if active_family == "policy_gate"
-        else build_policy_meta_search_space()
-        if active_family == "policy_meta"
-        else build_tail_path_cleanup_search_space()
-        if active_family == "tail_path_cleanup"
-        else build_market_state_setup_quality_search_space()
-        if active_family == "market_state_setup_quality"
-        else build_exit_behavior_research_search_space()
-        if active_family == "exit_behavior_research"
-        else build_candidate_universe_expansion_search_space()
-        if active_family == "candidate_universe_expansion"
-        else build_threshold_search_space()
-        if active_family == "threshold"
-        else build_translation_policy_search_space()
-        if active_family == "translation_policy"
-        else build_search_space()
+        else (
+            build_feature_search_space()
+            if active_family == "feature"
+            else (
+                build_feature_threshold_search_space()
+                if active_family == "feature_threshold"
+                else (
+                    build_label_search_space()
+                    if active_family == "label"
+                    else (
+                        build_sample_expansion_search_space()
+                        if active_family == "sample_expansion"
+                        else (
+                            build_subtype_search_space()
+                            if active_family == "subtype"
+                            else (
+                                build_policy_gate_search_space()
+                                if active_family == "policy_gate"
+                                else (
+                                    build_policy_meta_search_space()
+                                    if active_family == "policy_meta"
+                                    else (
+                                        build_tail_path_cleanup_search_space()
+                                        if active_family == "tail_path_cleanup"
+                                        else (
+                                            build_market_state_setup_quality_search_space()
+                                            if active_family
+                                            == "market_state_setup_quality"
+                                            else (
+                                                build_exit_behavior_research_search_space()
+                                                if active_family
+                                                == "exit_behavior_research"
+                                                else (
+                                                    build_candidate_universe_expansion_search_space()
+                                                    if active_family
+                                                    == "candidate_universe_expansion"
+                                                    else (
+                                                        build_threshold_search_space()
+                                                        if active_family == "threshold"
+                                                        else (
+                                                            build_translation_policy_search_space()
+                                                            if active_family
+                                                            == "translation_policy"
+                                                            else build_search_space()
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
     )
     family_budget = dict(next_step_plan.get("search_budget", {}) or {})
     remaining_trial_budget = max(
         0,
-        int(dict(state.get("compute_budgets", {}) or {}).get("max_trials", limits.max_trials) or limits.max_trials)
+        int(
+            dict(state.get("compute_budgets", {}) or {}).get(
+                "max_trials", limits.max_trials
+            )
+            or limits.max_trials
+        )
         - int(budget_usage.get("trials", 0) or 0),
     )
     candidate_trial_limits = [
@@ -654,19 +807,35 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         controller["max_batch_trials"] = min(candidate_trial_limits)
     desk_handoff = dict(next_step_plan.get("desk_handoff", {}) or {})
     if desk_handoff.get("first_governed_batch"):
-        controller["max_batch_trials"] = min(int(controller.get("max_batch_trials", 1) or 1), 1)
+        controller["max_batch_trials"] = min(
+            int(controller.get("max_batch_trials", 1) or 1), 1
+        )
         if active_family == "candidate_universe_expansion":
-            top_cluster = dict(next_step_plan.get("evidence_used", {}) or {}).get("top_failure_cluster", {}) or {}
+            top_cluster = (
+                dict(next_step_plan.get("evidence_used", {}) or {}).get(
+                    "top_failure_cluster", {}
+                )
+                or {}
+            )
             shortlist = ["first_reclaim_only_baseline", "allow_delayed_reclaim"]
             recommended_focus = set(top_cluster.get("recommended_focus", []) or [])
-            if "attempt_definition" in recommended_focus or "candidate_deduplication" in recommended_focus:
+            if (
+                "attempt_definition" in recommended_focus
+                or "candidate_deduplication" in recommended_focus
+            ):
                 shortlist.append("multiple_reclaim_attempts")
             elif "reclaim_timing" in recommended_focus:
                 shortlist.append("allow_post_failed_break_repair")
             else:
                 shortlist.append("allow_wick_through_breaks")
             controller["fast_variant_names"] = shortlist
-            controller["max_sessions"] = min(int(controller.get("max_sessions", 96) or 96), 96)
+            controller["max_sessions"] = min(
+                int(controller.get("max_sessions", 96) or 96), 96
+            )
+        if active_family == "market_state_setup_quality":
+            controller["market_state_max_cpcv_paths"] = min(
+                int(controller.get("market_state_max_cpcv_paths", 3) or 3), 3
+            )
     selected_family = str(next_step_plan.get("selected_family", active_family))
     action_registry = available_research_actions()
     preferred_action = next_step_plan.get("assigned_research_action")
@@ -679,9 +848,13 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     if action_id not in action_registry and selected_family in action_registry:
         action_id = selected_family
     action_spec = action_registry.get(action_id)
-    profile_trial_cap = _runtime_profile_trial_cap(state, selected_family, action_spec.callable_kind if action_spec else "")
+    profile_trial_cap = _runtime_profile_trial_cap(
+        state, selected_family, action_spec.callable_kind if action_spec else ""
+    )
     if profile_trial_cap is not None:
-        current_limit = int(controller.get("max_batch_trials", profile_trial_cap) or profile_trial_cap)
+        current_limit = int(
+            controller.get("max_batch_trials", profile_trial_cap) or profile_trial_cap
+        )
         controller["max_batch_trials"] = min(current_limit, profile_trial_cap)
     cycle = int(state.get("research_cycle", 1) or 1)
     approvals = dict(state.get("approvals", {}))
@@ -691,9 +864,17 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     execution_mode = (
         "diagnostic_only"
         if action_spec and action_spec.callable_kind != "governed_research_cycle"
-        else "cheap_search"
-        if active_family in {"subtype", "market_state_setup_quality", "exit_behavior_research", "candidate_universe_expansion"}
-        else "full_validation"
+        else (
+            "cheap_search"
+            if active_family
+            in {
+                "subtype",
+                "market_state_setup_quality",
+                "exit_behavior_research",
+                "candidate_universe_expansion",
+            }
+            else "full_validation"
+        )
     )
     route_payload = {"selected_family": selected_family, "active_family": active_family}
 
@@ -709,7 +890,9 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
             reason="Selected family already executed in the current cycle.",
             payload=route_payload,
         )
-        budget_usage["runtime_seconds"] = float(budget_usage.get("runtime_seconds", 0) or 0) + round(time.monotonic() - started_at, 3)
+        budget_usage["runtime_seconds"] = float(
+            budget_usage.get("runtime_seconds", 0) or 0
+        ) + round(time.monotonic() - started_at, 3)
         return {
             "current_node": "search_controller_agent",
             "search_space": search_space,
@@ -727,7 +910,9 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         }
 
     exhausted = _budget_exhausted(state, budget_usage)
-    if exhausted and dict(state.get("compute_budgets", {}) or {}).get("stop_on_budget_exhaustion", True):
+    if exhausted and dict(state.get("compute_budgets", {}) or {}).get(
+        "stop_on_budget_exhaustion", True
+    ):
         decision = _route_decision(
             state,
             node="search_controller_agent",
@@ -777,8 +962,12 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
                 {
                     "search_space": search_space,
                     "selected_family": selected_family,
-                    "diagnostic_evidence_used": next_step_plan.get("diagnostic_evidence_used"),
-                    "rejected_alternatives": next_step_plan.get("rejected_alternatives"),
+                    "diagnostic_evidence_used": next_step_plan.get(
+                        "diagnostic_evidence_used"
+                    ),
+                    "rejected_alternatives": next_step_plan.get(
+                        "rejected_alternatives"
+                    ),
                     "rationale": next_step_plan.get("rationale"),
                     "route_decision": decision,
                     "budget_usage": budget_usage,
@@ -793,7 +982,9 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         cheap_screen: dict[str, Any] | None = None
         if active_family == "subtype":
             cheap_screen = _cheap_screen_subtype_candidates(state, search_space)
-            controller["allowed_setup_subtypes"] = cheap_screen["shortlisted_candidates"]
+            controller["allowed_setup_subtypes"] = cheap_screen[
+                "shortlisted_candidates"
+            ]
         if action_id in action_registry:
             search_results = execute_research_action(
                 action_id,
@@ -802,10 +993,19 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
                 state=state,
             )
         else:
-            search_results = run_governed_search(trial_config, controller_override=controller)
+            search_results = run_governed_search(
+                trial_config, controller_override=controller
+            )
         counts["trials"] += int(search_results.get("trial_count", 0))
-        budget_usage["trials"] = int(budget_usage.get("trials", 0) or 0) + int(search_results.get("trial_count", 0))
-        budget_usage["model_trains"] = int(budget_usage.get("model_trains", 0) or 0) + int(search_results.get("models_trained", search_results.get("trial_count", 0)) or 0)
+        budget_usage["trials"] = int(budget_usage.get("trials", 0) or 0) + int(
+            search_results.get("trial_count", 0)
+        )
+        budget_usage["model_trains"] = int(
+            budget_usage.get("model_trains", 0) or 0
+        ) + int(
+            search_results.get("models_trained", search_results.get("trial_count", 0))
+            or 0
+        )
         if cheap_screen:
             search_results["cheap_screen"] = cheap_screen
         focus_slice = _controller_focus_slice(controller)
@@ -819,7 +1019,9 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
     blocked = counts["trials"] > limits.max_trials
     if blocked and "Max trials exceeded." not in issues:
         issues.append("Max trials exceeded.")
-    budget_usage["runtime_seconds"] = float(budget_usage.get("runtime_seconds", 0) or 0) + round(time.monotonic() - started_at, 3)
+    budget_usage["runtime_seconds"] = float(
+        budget_usage.get("runtime_seconds", 0) or 0
+    ) + round(time.monotonic() - started_at, 3)
     decision = _route_decision(
         state,
         node="search_controller_agent",
@@ -839,9 +1041,13 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
             "family": selected_family,
             "cycle": cycle,
             "hypothesis_id": next_step_plan.get("hypothesis_id"),
-            "proposal_id": dict(next_step_plan.get("desk_handoff", {}) or {}).get("proposal_id"),
+            "proposal_id": dict(next_step_plan.get("desk_handoff", {}) or {}).get(
+                "proposal_id"
+            ),
             "callable_kind": action_spec.callable_kind if action_spec else "implicit",
-            "status": search_results.get("status", search_results.get("batch_decision", "complete")),
+            "status": search_results.get(
+                "status", search_results.get("batch_decision", "complete")
+            ),
             "batch_decision": search_results.get("batch_decision"),
             "best_trial": search_results.get("best_trial"),
             "accepted_trial": search_results.get("accepted_trial"),
@@ -863,16 +1069,30 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
         "budget_usage": budget_usage,
         "blocking_issues": issues,
         "research_action_history": action_history,
-        "domain_priors": search_results.get("domain_priors", state.get("domain_priors", [])),
-        "research_backlog": search_results.get("research_backlog", state.get("research_backlog", [])),
-        "active_hypothesis": search_results.get("active_hypothesis", state.get("active_hypothesis", {})),
-        "setup_redesign_plan": search_results.get("setup_redesign_plan", state.get("setup_redesign_plan", {})),
-        "checkpoints_pending": [name for name in pending if name != "search_space_approval"],
+        "domain_priors": search_results.get(
+            "domain_priors", state.get("domain_priors", [])
+        ),
+        "research_backlog": search_results.get(
+            "research_backlog", state.get("research_backlog", [])
+        ),
+        "active_hypothesis": search_results.get(
+            "active_hypothesis", state.get("active_hypothesis", {})
+        ),
+        "setup_redesign_plan": search_results.get(
+            "setup_redesign_plan", state.get("setup_redesign_plan", {})
+        ),
+        "checkpoints_pending": [
+            name for name in pending if name != "search_space_approval"
+        ],
         "route_decisions": _append_route_decision(state, decision),
         "run_log": _append_log(
             state,
             "search_controller_agent",
-            "Ran governed research-controller batch." if search_results else "Evaluated constrained parameter search limits.",
+            (
+                "Ran governed research-controller batch."
+                if search_results
+                else "Evaluated constrained parameter search limits."
+            ),
             {
                 "limits": asdict(limits),
                 "counts": counts,
@@ -885,14 +1105,16 @@ def search_controller_agent_node(state: dict[str, Any], limits: LoopLimits) -> d
                 "search_batch_status": "complete" if search_results else "skipped",
                 "execution_mode": execution_mode,
                 "action_id": action_id,
-                "diagnostic_evidence_used": next_step_plan.get("diagnostic_evidence_used"),
+                "diagnostic_evidence_used": next_step_plan.get(
+                    "diagnostic_evidence_used"
+                ),
                 "rejected_alternatives": next_step_plan.get("rejected_alternatives"),
                 "rationale": next_step_plan.get("rationale"),
                 "route_decision": decision,
                 "search_results": search_results,
             },
         ),
-}
+    }
 
 
 def _apply_bnr_state_focus_to_controller(
@@ -911,7 +1133,12 @@ def _apply_bnr_state_focus_to_controller(
         if value not in {None, "", "unknown"}:
             controller[key] = value
             continue
-        top_cluster = dict(dict(next_step_plan.get("evidence_used", {}) or {}).get("top_failure_cluster", {}) or {})
+        top_cluster = dict(
+            dict(next_step_plan.get("evidence_used", {}) or {}).get(
+                "top_failure_cluster", {}
+            )
+            or {}
+        )
         if key == "focus_setup_state":
             value = top_cluster.get("dominant_setup_state")
         elif key == "focus_environment_state":
@@ -928,7 +1155,9 @@ def _controller_focus_slice(controller: dict[str, Any]) -> dict[str, Any]:
         "environment_state": controller.get("focus_environment_state"),
         "path_class": controller.get("focus_path_class"),
     }
-    return {key: value for key, value in focus.items() if value not in {None, "", "unknown"}}
+    return {
+        key: value for key, value in focus.items() if value not in {None, "", "unknown"}
+    }
 
 
 def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -952,7 +1181,10 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             node="audit_agent",
             decision="diagnostic_audit_route_to_translation",
             reason="Diagnostic research actions bypass full validation and preserve existing audit evidence.",
-            payload={"action_id": action.get("action_id"), "budget_usage": budget_usage},
+            payload={
+                "action_id": action.get("action_id"),
+                "budget_usage": budget_usage,
+            },
         )
         return {
             "current_node": "audit_agent",
@@ -963,7 +1195,11 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
                 state,
                 "audit_agent",
                 "Recorded diagnostic research action without rerunning full validation.",
-                {"audit_summary": audit_summary, "budget_usage": budget_usage, "route_decision": decision},
+                {
+                    "audit_summary": audit_summary,
+                    "budget_usage": budget_usage,
+                    "route_decision": decision,
+                },
             ),
         }
     if structural_governance.get("promotion_blocked"):
@@ -983,7 +1219,11 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             node="audit_agent",
             decision="structural_research_route_to_translation",
             reason="Structural governed research updates memory and artifacts without running promotion-grade validation.",
-            payload={"action_id": action.get("action_id"), "family": search_results.get("family"), "budget_usage": budget_usage},
+            payload={
+                "action_id": action.get("action_id"),
+                "family": search_results.get("family"),
+                "budget_usage": budget_usage,
+            },
         )
         return {
             "current_node": "audit_agent",
@@ -994,7 +1234,11 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
                 state,
                 "audit_agent",
                 "Recorded structural governed research action without rerunning full validation.",
-                {"audit_summary": audit_summary, "budget_usage": budget_usage, "route_decision": decision},
+                {
+                    "audit_summary": audit_summary,
+                    "budget_usage": budget_usage,
+                    "route_decision": decision,
+                },
             ),
         }
     if stage2:
@@ -1022,9 +1266,14 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             "market_structure_lab": stage2.get("market_structure_lab", {}),
             "model_diagnostics": stage2.get("model_diagnostics", {}),
         }
-        if dict(audit_summary.get("cpcv", {}) or {}).get("status") not in {None, "pending"}:
+        if dict(audit_summary.get("cpcv", {}) or {}).get("status") not in {
+            None,
+            "pending",
+        }:
             budget_usage["cpcv_runs"] = int(budget_usage.get("cpcv_runs", 0) or 0) + 1
-        budget_usage["full_validations"] = int(budget_usage.get("full_validations", 0) or 0) + 1
+        budget_usage["full_validations"] = (
+            int(budget_usage.get("full_validations", 0) or 0) + 1
+        )
         decision = _route_decision(
             state,
             node="audit_agent",
@@ -1032,7 +1281,9 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             reason="Validation audit completed after governed search.",
             payload={
                 "cpcv_status": dict(audit_summary.get("cpcv", {}) or {}).get("status"),
-                "deflated_sharpe_status": dict(audit_summary.get("deflated_sharpe", {}) or {}).get("status"),
+                "deflated_sharpe_status": dict(
+                    audit_summary.get("deflated_sharpe", {}) or {}
+                ).get("status"),
                 "budget_usage": budget_usage,
             },
         )
@@ -1045,7 +1296,11 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
                 state,
                 "audit_agent",
                 "Audited Stage 2 feature timestamps and data quality flags.",
-                {**audit_summary, "budget_usage": budget_usage, "route_decision": decision},
+                {
+                    **audit_summary,
+                    "budget_usage": budget_usage,
+                    "route_decision": decision,
+                },
             ),
         }
     audit_summary = {
@@ -1059,7 +1314,12 @@ def audit_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         "current_node": "audit_agent",
         "audit_summary": audit_summary,
         "budget_usage": budget_usage,
-        "run_log": _append_log(state, "audit_agent", "Prepared audit checklist for leakage and robustness.", {**audit_summary, "budget_usage": budget_usage}),
+        "run_log": _append_log(
+            state,
+            "audit_agent",
+            "Prepared audit checklist for leakage and robustness.",
+            {**audit_summary, "budget_usage": budget_usage},
+        ),
     }
 
 
@@ -1093,7 +1353,9 @@ def _robustness_status(stage2: dict[str, Any]) -> str:
     flags = list(data_quality.get("quality_flags", []))
     if not flags:
         return "pending"
-    non_session_flags = [flag for flag in flags if flag != "missing_regular_session_bars"]
+    non_session_flags = [
+        flag for flag in flags if flag != "missing_regular_session_bars"
+    ]
     if non_session_flags:
         return "blocked-by-data-flags"
     if _has_opening_hours_coverage(stage2):
@@ -1117,15 +1379,22 @@ def _has_opening_hours_coverage(stage2: dict[str, Any]) -> bool:
     if not session_end:
         return False
     session_end_ts = pd.Timestamp(session_end)
-    latest_trigger = pd.Timestamp.combine(session_end_ts.date(), pd.Timestamp(latest_trigger_text).time()).tz_localize(session_end_ts.tz)
+    latest_trigger = pd.Timestamp.combine(
+        session_end_ts.date(), pd.Timestamp(latest_trigger_text).time()
+    ).tz_localize(session_end_ts.tz)
     required_end = latest_trigger + timedelta(seconds=seconds_per_bar * horizon_bars)
     return session_end_ts >= required_end
 
 
 def diagnosis_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     category = diagnose_failure(state)
-    diagnostics = [*state.get("diagnostics", []), {"category": category, "created_at": utc_now_iso()}]
-    walk_forward = dict(dict(state.get("audit_summary", {}) or {}).get("walk_forward", {}) or {})
+    diagnostics = [
+        *state.get("diagnostics", []),
+        {"category": category, "created_at": utc_now_iso()},
+    ]
+    walk_forward = dict(
+        dict(state.get("audit_summary", {}) or {}).get("walk_forward", {}) or {}
+    )
     attempts = build_bnr_attempts(
         dict(state.get("stage2_result", {}) or {}),
         list(walk_forward.get("stitched_prediction_records", []) or []),
@@ -1171,7 +1440,10 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
             node="translation_checkpoint",
             decision="route_to_review_frozen_spec",
             reason="Diagnostic actions skip translation analysis but keep cycle accounting through diagnosis and iteration control.",
-            payload={"diagnostic_action": action.get("action_id"), "translation_status": "inform"},
+            payload={
+                "diagnostic_action": action.get("action_id"),
+                "translation_status": "inform",
+            },
         )
         summary["route_decision"] = decision
         return {
@@ -1198,7 +1470,10 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
             node="translation_checkpoint",
             decision="route_to_review_frozen_spec",
             reason="Structural governed research is not promotion-eligible and skips translation analysis.",
-            payload={"structural_action": action.get("action_id"), "translation_status": "inform"},
+            payload={
+                "structural_action": action.get("action_id"),
+                "translation_status": "inform",
+            },
         )
         summary["route_decision"] = decision
         return {
@@ -1223,21 +1498,42 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
     session_count = max(int(data_quality.get("sessions", 0) or 0), 1)
     breadth_per_session = candidate_count / session_count
     positive_rate = float(label_summary.get("positive_rate", 0.0) or 0.0)
-    net_avg_pnl_r = accepted_trial.get("net_avg_pnl_r", search_results.get("baseline", {}).get("net_avg_pnl_r"))
+    net_avg_pnl_r = accepted_trial.get(
+        "net_avg_pnl_r", search_results.get("baseline", {}).get("net_avg_pnl_r")
+    )
     turnover_proxy = breadth_per_session
     translation_contract = dict(bnr_config.get("translation_contract", {}))
-    translation_records = list(audit_summary.get("walk_forward", {}).get("stitched_prediction_records", []))
+    translation_records = list(
+        audit_summary.get("walk_forward", {}).get("stitched_prediction_records", [])
+    )
     threshold_analysis = build_translation_analysis(
         stage2,
         prediction_records=translation_records or None,
-        sizing_policy=str(controller_state.get("benchmark_sizing_policy") or "binary_threshold_v1"),
-        regime_throttle_policy=str(controller_state.get("benchmark_regime_throttle_policy") or "none"),
-        regime_size_policy=str(controller_state.get("benchmark_regime_size_policy") or "none"),
+        sizing_policy=str(
+            controller_state.get("benchmark_sizing_policy") or "binary_threshold_v1"
+        ),
+        regime_throttle_policy=str(
+            controller_state.get("benchmark_regime_throttle_policy") or "none"
+        ),
+        regime_size_policy=str(
+            controller_state.get("benchmark_regime_size_policy") or "none"
+        ),
     )
     status = threshold_analysis.get("status", "pending")
     if status == "pending" and net_avg_pnl_r is not None:
-        status = "pass" if float(net_avg_pnl_r) > 0 and breadth_per_session >= float(translation_contract.get("min_breadth_per_session", 1.0)) and float(translation_contract.get("min_positive_rate", 0.05)) <= positive_rate <= float(translation_contract.get("max_positive_rate", 0.6)) else "fail"
-    applied_threshold = accepted_trial.get("overrides", {}).get("decision_threshold", controller_state.get("frozen_threshold"))
+        status = (
+            "pass"
+            if float(net_avg_pnl_r) > 0
+            and breadth_per_session
+            >= float(translation_contract.get("min_breadth_per_session", 1.0))
+            and float(translation_contract.get("min_positive_rate", 0.05))
+            <= positive_rate
+            <= float(translation_contract.get("max_positive_rate", 0.6))
+            else "fail"
+        )
+    applied_threshold = accepted_trial.get("overrides", {}).get(
+        "decision_threshold", controller_state.get("frozen_threshold")
+    )
     summary = {
         "status": status,
         "breadth_per_session": breadth_per_session,
@@ -1249,33 +1545,63 @@ def translation_checkpoint_node(state: dict[str, Any]) -> dict[str, Any]:
         "best_translation_row": threshold_analysis.get("best_threshold"),
         "applied_threshold": applied_threshold,
         "applied_sizing_policy": controller_state.get("benchmark_sizing_policy"),
-        "applied_regime_throttle_policy": controller_state.get("benchmark_regime_throttle_policy"),
-        "applied_regime_size_policy": controller_state.get("benchmark_regime_size_policy"),
+        "applied_regime_throttle_policy": controller_state.get(
+            "benchmark_regime_throttle_policy"
+        ),
+        "applied_regime_size_policy": controller_state.get(
+            "benchmark_regime_size_policy"
+        ),
     }
     if accepted_trial.get("overrides", {}).get("decision_threshold") is not None:
-        summary["suggested_threshold"] = accepted_trial["overrides"]["decision_threshold"]
-    elif threshold_analysis.get("status") == "pass" and controller_state.get("frozen_threshold") is None:
+        summary["suggested_threshold"] = accepted_trial["overrides"][
+            "decision_threshold"
+        ]
+    elif (
+        threshold_analysis.get("status") == "pass"
+        and controller_state.get("frozen_threshold") is None
+    ):
         best_threshold = dict(threshold_analysis.get("best_threshold", {}))
         summary["suggested_threshold"] = best_threshold.get("threshold")
     elif controller_state.get("frozen_threshold") is not None:
         summary["suggested_threshold"] = controller_state["frozen_threshold"]
-    summary["suggested_sizing_policy"] = accepted_trial.get("overrides", {}).get("sizing_policy", controller_state.get("benchmark_sizing_policy"))
-    summary["suggested_regime_throttle_policy"] = accepted_trial.get("overrides", {}).get("regime_throttle_policy", controller_state.get("benchmark_regime_throttle_policy"))
-    summary["suggested_regime_size_policy"] = accepted_trial.get("overrides", {}).get("regime_size_policy", controller_state.get("benchmark_regime_size_policy"))
-    route_target = "review_frozen_spec" if state.get("search_batch_status") == "complete" else "program_director"
+    summary["suggested_sizing_policy"] = accepted_trial.get("overrides", {}).get(
+        "sizing_policy", controller_state.get("benchmark_sizing_policy")
+    )
+    summary["suggested_regime_throttle_policy"] = accepted_trial.get(
+        "overrides", {}
+    ).get(
+        "regime_throttle_policy",
+        controller_state.get("benchmark_regime_throttle_policy"),
+    )
+    summary["suggested_regime_size_policy"] = accepted_trial.get("overrides", {}).get(
+        "regime_size_policy", controller_state.get("benchmark_regime_size_policy")
+    )
+    route_target = (
+        "review_frozen_spec"
+        if state.get("search_batch_status") == "complete"
+        else "program_director"
+    )
     decision = _route_decision(
         state,
         node="translation_checkpoint",
         decision=f"route_to_{route_target}",
         reason="Search-complete cycles proceed to validation and promotion gates before new research planning.",
-        payload={"search_batch_status": state.get("search_batch_status"), "translation_status": status},
+        payload={
+            "search_batch_status": state.get("search_batch_status"),
+            "translation_status": status,
+        },
     )
     summary["route_decision"] = decision
     return {
         "current_node": "translation_checkpoint",
         "translation_summary": summary,
         "route_decisions": _append_route_decision(state, decision),
-        "run_log": _append_log(state, "translation_checkpoint", "Checked prediction-to-strategy translation quality.", summary),
+        "run_log": _append_log(
+            state,
+            "translation_checkpoint",
+            "Checked prediction-to-strategy translation quality.",
+            summary,
+        ),
     }
 
 
@@ -1299,7 +1625,9 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
         "deflated_sharpe_status": deflated_sharpe.get("status"),
         "purging_status": purging.get("status"),
         "multiple_testing_status": multiple_testing.get("status"),
-        "multiple_testing_promotable_method": bool(multiple_testing.get("promotable_method", False)),
+        "multiple_testing_promotable_method": bool(
+            multiple_testing.get("promotable_method", False)
+        ),
         "random_signal_plumbing_status": random_signal_plumbing.get("status"),
         "translation_status": translation_summary.get("status"),
         "calibration_status": calibration.get("status"),
@@ -1366,7 +1694,12 @@ def promotion_decision_node(state: dict[str, Any]) -> dict[str, Any]:
             state,
             "promotion_decision",
             "Computed promotion decision from the canonical validation gate.",
-            {"decision": decision, "promotion_gate": promotion_gate, "auto_accept_robust": auto_accept_robust, "robust_enough": robust_enough},
+            {
+                "decision": decision,
+                "promotion_gate": promotion_gate,
+                "auto_accept_robust": auto_accept_robust,
+                "robust_enough": robust_enough,
+            },
         ),
     }
 
@@ -1394,7 +1727,9 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
     max_cycles = int(state.get("max_research_cycles", 1))
     search_results = dict(state.get("search_results", {}))
     accepted_trial = dict(search_results.get("accepted_trial", {}) or {})
-    controller_state = dict(state.get("controller_state", {})) or load_controller_config()
+    controller_state = (
+        dict(state.get("controller_state", {})) or load_controller_config()
+    )
     stage2_config = dict(state.get("stage2_config", {}))
     family = str(controller_state.get("active_family", "setup"))
     translation_summary = dict(state.get("translation_summary", {}))
@@ -1409,33 +1744,49 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
         research_action_history=list(state.get("research_action_history", []) or []),
     )
     viable_hypotheses = count_viable_hypotheses(refreshed_backlog)
+    raw_viable_hypotheses = count_viable_hypotheses(
+        list(state.get("research_backlog", []) or [])
+    )
+    iteration_candidates = max(viable_hypotheses, raw_viable_hypotheses)
     continue_iteration = (
         state.get("promotion_decision") == "freeze"
         and bool(accepted_trial)
         and cycle < max_cycles
         and hard_gates_pass
-        and dict(audit_summary.get("walk_forward", {}) or {}).get("status") in {"pending", "pass"}
+        and dict(audit_summary.get("walk_forward", {}) or {}).get("status")
+        in {"pending", "pass"}
         and dict(audit_summary.get("purging", {}) or {}).get("status") != "fail"
     )
-    if state.get("promotion_decision") == "freeze" and cycle < max_cycles and viable_hypotheses > 0 and not state.get("blocking_issues"):
+    if (
+        state.get("promotion_decision") == "freeze"
+        and cycle < max_cycles
+        and iteration_candidates > 0
+        and not state.get("blocking_issues")
+    ):
         continue_iteration = True
     if (
         str(state.get("runtime_profile", "standard")) == "unattended"
         and state.get("promotion_decision") == "reject"
         and cycle < max_cycles
-        and viable_hypotheses > 0
+        and iteration_candidates > 0
         and not state.get("blocking_issues")
     ):
         continue_iteration = True
     if state.get("promotion_decision") == "accept":
         continue_iteration = False
-    if family == "setup" and state.get("promotion_decision") == "advance_to_validation" and bool(accepted_trial) and cycle < max_cycles:
+    if (
+        family == "setup"
+        and state.get("promotion_decision") == "advance_to_validation"
+        and bool(accepted_trial)
+        and cycle < max_cycles
+    ):
         continue_iteration = True
     payload = {
         "continue_iteration": continue_iteration,
         "research_cycle": cycle,
         "max_research_cycles": max_cycles,
         "viable_hypotheses": viable_hypotheses,
+        "raw_viable_hypotheses": raw_viable_hypotheses,
     }
     if bool(accepted_trial) and not hard_gates_pass:
         payload["stop_reasons"] = ["accepted trial vetoed by hard validation gates"]
@@ -1444,31 +1795,56 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
     if state.get("promotion_decision") == "accept":
         payload["stop_reasons"] = ["auto-accepted robust candidate"]
     if continue_iteration:
-        if family == "setup" and state.get("promotion_decision") == "advance_to_validation":
+        if (
+            family == "setup"
+            and state.get("promotion_decision") == "advance_to_validation"
+        ):
             stage2_config.update(accepted_trial.get("overrides", {}))
             controller_state["active_family"] = "model"
             controller_state["active_model_family"] = "linear_baseline"
-            controller_state["frozen_threshold"] = translation_summary.get("suggested_threshold", controller_state.get("frozen_threshold"))
-            controller_state["spec_version"] = f"{controller_state.get('spec_version', 'bnr_spec_vA')}.model"
+            controller_state["frozen_threshold"] = translation_summary.get(
+                "suggested_threshold", controller_state.get("frozen_threshold")
+            )
+            controller_state["spec_version"] = (
+                f"{controller_state.get('spec_version', 'bnr_spec_vA')}.model"
+            )
             payload["handoff"] = "setup_to_model"
             payload["benchmark_name"] = controller_state.get("benchmark_name")
         else:
             overrides = dict(accepted_trial.get("overrides", {}))
             if family in {"threshold", "feature_threshold", "translation_policy"}:
-                controller_state["frozen_threshold"] = overrides.get("decision_threshold", controller_state.get("frozen_threshold"))
+                controller_state["frozen_threshold"] = overrides.get(
+                    "decision_threshold", controller_state.get("frozen_threshold")
+                )
             if family == "translation_policy":
-                controller_state["benchmark_sizing_policy"] = overrides.get("sizing_policy", controller_state.get("benchmark_sizing_policy"))
-                controller_state["benchmark_regime_throttle_policy"] = overrides.get("regime_throttle_policy", controller_state.get("benchmark_regime_throttle_policy"))
-                controller_state["benchmark_regime_size_policy"] = overrides.get("regime_size_policy", controller_state.get("benchmark_regime_size_policy"))
+                controller_state["benchmark_sizing_policy"] = overrides.get(
+                    "sizing_policy", controller_state.get("benchmark_sizing_policy")
+                )
+                controller_state["benchmark_regime_throttle_policy"] = overrides.get(
+                    "regime_throttle_policy",
+                    controller_state.get("benchmark_regime_throttle_policy"),
+                )
+                controller_state["benchmark_regime_size_policy"] = overrides.get(
+                    "regime_size_policy",
+                    controller_state.get("benchmark_regime_size_policy"),
+                )
             stage2_overrides = {
                 key: value
                 for key, value in overrides.items()
-                if key not in {"decision_threshold", "sizing_policy", "regime_throttle_policy", "regime_size_policy"}
+                if key
+                not in {
+                    "decision_threshold",
+                    "sizing_policy",
+                    "regime_throttle_policy",
+                    "regime_size_policy",
+                }
             }
             stage2_overrides = _stage2_safe_overrides(stage2_overrides)
             if family != "threshold" and stage2_overrides:
                 stage2_config.update(stage2_overrides)
-            controller_state["spec_version"] = f"{controller_state.get('spec_version', 'bnr_spec_vA')}.c{cycle + 1}"
+            controller_state["spec_version"] = (
+                f"{controller_state.get('spec_version', 'bnr_spec_vA')}.c{cycle + 1}"
+            )
             payload["adopted_trial_id"] = accepted_trial.get("trial_id")
         if state.get("promotion_decision") in {"freeze", "reject"}:
             payload["handoff"] = "failure_memory_to_research_director"
@@ -1486,7 +1862,12 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
                 "executed_research_family": "",
                 "executed_family_cycle": 0,
                 "next_step_plan": {},
-                "run_log": _append_log(state, "iteration_controller", "Continued autonomous research with a new hypothesis after a non-promotable branch.", payload),
+                "run_log": _append_log(
+                    state,
+                    "iteration_controller",
+                    "Continued autonomous research with a new hypothesis after a non-promotable branch.",
+                    payload,
+                ),
             }
         payload["new_spec_version"] = controller_state["spec_version"]
         payload["stage2_config"] = stage2_config
@@ -1502,12 +1883,26 @@ def iteration_controller_node(state: dict[str, Any]) -> dict[str, Any]:
                 "setup_trial_id": accepted_trial.get("trial_id"),
                 "frozen_threshold": controller_state.get("frozen_threshold"),
                 "sizing_policy": controller_state.get("benchmark_sizing_policy"),
-                "regime_throttle_policy": controller_state.get("benchmark_regime_throttle_policy"),
-                "regime_size_policy": controller_state.get("benchmark_regime_size_policy"),
+                "regime_throttle_policy": controller_state.get(
+                    "benchmark_regime_throttle_policy"
+                ),
+                "regime_size_policy": controller_state.get(
+                    "benchmark_regime_size_policy"
+                ),
             },
-            "run_log": _append_log(state, "iteration_controller", "Adopted accepted exploratory trial as next frozen baseline.", payload),
+            "run_log": _append_log(
+                state,
+                "iteration_controller",
+                "Adopted accepted exploratory trial as next frozen baseline.",
+                payload,
+            ),
         }
     return {
         "current_node": "iteration_controller",
-        "run_log": _append_log(state, "iteration_controller", "Stopped autonomous research cycling.", payload),
+        "run_log": _append_log(
+            state,
+            "iteration_controller",
+            "Stopped autonomous research cycling.",
+            payload,
+        ),
     }

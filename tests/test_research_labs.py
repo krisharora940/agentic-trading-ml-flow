@@ -38,8 +38,24 @@ class ResearchLabsTests(unittest.TestCase):
             },
         ]
         labels = [
-            {"candidate_id": "a", "label": 1, "outcome": "target", "pnl_r": 1.5, "bars_held": 3, "mfe": 2.0, "mae": -0.2},
-            {"candidate_id": "b", "label": 0, "outcome": "stop", "pnl_r": -1.0, "bars_held": 2, "mfe": 0.2, "mae": -1.0},
+            {
+                "candidate_id": "a",
+                "label": 1,
+                "outcome": "target",
+                "pnl_r": 1.5,
+                "bars_held": 3,
+                "mfe": 2.0,
+                "mae": -0.2,
+            },
+            {
+                "candidate_id": "b",
+                "label": 0,
+                "outcome": "stop",
+                "pnl_r": -1.0,
+                "bars_held": 2,
+                "mfe": 0.2,
+                "mae": -1.0,
+            },
         ]
         result = build_market_structure_lab(candidates, labels)
         self.assertEqual(result["status"], "complete")

@@ -14,7 +14,9 @@ from trading_ml.paths import REPORTS_DIR
 from trading_ml.stage2_modeling import score_model_split
 
 
-def build_cpcv_audit(stage2_result: dict[str, Any], artifact_context: dict[str, Any] | None = None) -> dict[str, Any]:
+def build_cpcv_audit(
+    stage2_result: dict[str, Any], artifact_context: dict[str, Any] | None = None
+) -> dict[str, Any]:
     try:
         import pandas as pd
     except ImportError:
@@ -30,14 +32,22 @@ def build_cpcv_audit(stage2_result: dict[str, Any], artifact_context: dict[str, 
         return {"status": "pending", "reason": "insufficient_labels"}
 
     merged = merged.sort_values("entry_time").reset_index(drop=True)
-    session_dates = sorted(merged["session_date"].dropna().astype(str).unique().tolist())
+    session_dates = sorted(
+        merged["session_date"].dropna().astype(str).unique().tolist()
+    )
     if len(session_dates) < 40:
-        return {"status": "pending", "reason": "insufficient_sessions", "session_count": len(session_dates)}
+        return {
+            "status": "pending",
+            "reason": "insufficient_sessions",
+            "session_count": len(session_dates),
+        }
 
     global_config = load_global_config()
     bnr_config = load_bnr_config()
     validation_cfg = dict(global_config.get("validation", {}))
-    threshold = float(bnr_config.get("frozen_benchmark", {}).get("threshold", 0.45) or 0.45)
+    threshold = float(
+        bnr_config.get("frozen_benchmark", {}).get("threshold", 0.45) or 0.45
+    )
     n_groups = min(8, max(6, len(session_dates) // 20))
     n_test_groups = 2
     max_combinations = 20
@@ -48,7 +58,6 @@ def build_cpcv_audit(stage2_result: dict[str, Any], artifact_context: dict[str, 
         return {"status": "pending", "reason": "no_feature_columns"}
 
     groups = _partition_sessions(session_dates, n_groups)
-    group_index = {session: idx for idx, bucket in enumerate(groups) for session in bucket}
     total_paths = comb(n_groups, n_test_groups)
     selected_combinations = list(combinations(range(n_groups), n_test_groups))
     rng = random.Random(42)
@@ -57,12 +66,16 @@ def build_cpcv_audit(stage2_result: dict[str, Any], artifact_context: dict[str, 
     rows: list[dict[str, Any]] = []
     negative_paths = 0
 
-    model_family = str(stage2_result.get("config", {}).get("model_family", "linear_baseline"))
+    model_family = str(
+        stage2_result.get("config", {}).get("model_family", "linear_baseline")
+    )
     run_id = str((artifact_context or {}).get("run_id", "") or "")
     artifact_root = _artifact_root(run_id) if run_id else None
 
     for fold_id, test_groups in enumerate(selected_combinations, start=1):
-        test_sessions = sorted(session for idx in test_groups for session in groups[idx])
+        test_sessions = sorted(
+            session for idx in test_groups for session in groups[idx]
+        )
         test = merged[merged["session_date"].astype(str).isin(test_sessions)].copy()
         if test.empty or test["label"].nunique() < 2:
             continue
@@ -70,19 +83,32 @@ def build_cpcv_audit(stage2_result: dict[str, Any], artifact_context: dict[str, 
         test_max_idx = max(test.index)
         purge_start = max(test_min_idx - label_horizon, 0)
         embargo_end = min(test_max_idx + embargo_bars, len(merged) - 1)
-        train = merged[(merged.index < purge_start) | (merged.index > embargo_end)].copy()
+        train = merged[
+            (merged.index < purge_start) | (merged.index > embargo_end)
+        ].copy()
         train = train[~train["session_date"].astype(str).isin(test_sessions)]
         if train.empty or train["label"].nunique() < 2:
             continue
 
-        scored = score_model_split(train, test, model_family=model_family, feature_cols=feature_cols)
+        scored = score_model_split(
+            train, test, model_family=model_family, feature_cols=feature_cols
+        )
         prediction_frame = scored["prediction_frame"].copy()
-        execution = run_event_driven_policy_backtest(prediction_frame.to_dict(orient="records"), threshold=threshold)
+        execution = run_event_driven_policy_backtest(
+            prediction_frame.to_dict(orient="records"), threshold=threshold
+        )
         total_pnl_r = float(execution.get("total_pnl_r", 0.0) or 0.0)
-        path_returns = [float(row.get("executed_pnl_r", 0.0) or 0.0) for row in execution.get("equity_curve", [])]
+        path_returns = [
+            float(row.get("executed_pnl_r", 0.0) or 0.0)
+            for row in execution.get("equity_curve", [])
+        ]
         sharpe_r = compute_sharpe_ratio(path_returns)
         attribution, persisted_rows = _path_attribution(prediction_frame, execution)
-        rows_artifact = _persist_cpcv_path_rows(artifact_root, fold_id, persisted_rows) if artifact_root is not None else None
+        rows_artifact = (
+            _persist_cpcv_path_rows(artifact_root, fold_id, persisted_rows)
+            if artifact_root is not None
+            else None
+        )
         if total_pnl_r <= 0:
             negative_paths += 1
         rows.append(
@@ -101,13 +127,19 @@ def build_cpcv_audit(stage2_result: dict[str, Any], artifact_context: dict[str, 
                 "win_rate": float(execution.get("win_rate", 0.0) or 0.0),
                 "max_drawdown_r": float(execution.get("max_drawdown_r", 0.0) or 0.0),
                 "sharpe_r": sharpe_r,
-                "rows_artifact": str(rows_artifact) if rows_artifact is not None else None,
+                "rows_artifact": (
+                    str(rows_artifact) if rows_artifact is not None else None
+                ),
                 **attribution,
             }
         )
 
     if not rows:
-        return {"status": "pending", "reason": "no_valid_cpcv_paths", "total_paths": total_paths}
+        return {
+            "status": "pending",
+            "reason": "no_valid_cpcv_paths",
+            "total_paths": total_paths,
+        }
 
     pbo = negative_paths / len(rows)
     mean_pnl = sum(row["total_pnl_r"] for row in rows) / len(rows)
@@ -118,7 +150,15 @@ def build_cpcv_audit(stage2_result: dict[str, Any], artifact_context: dict[str, 
     mean_roc_auc = sum(row["roc_auc"] for row in rows) / len(rows)
     distribution = _path_distribution(sorted_pnls)
     ranked_rows = sorted(rows, key=lambda row: row["total_pnl_r"])
-    status = "pass" if pbo <= 0.25 and mean_pnl > 0 and median_pnl > 0 and path_positive_rate >= 0.60 and min_path_pnl > -5.0 else "fail"
+    status = (
+        "pass"
+        if pbo <= 0.25
+        and mean_pnl > 0
+        and median_pnl > 0
+        and path_positive_rate >= 0.60
+        and min_path_pnl > -5.0
+        else "fail"
+    )
     return {
         "status": status,
         "backend": "local_cpcv",
@@ -176,7 +216,9 @@ def _feature_columns(merged: Any) -> list[str]:
     return [
         col
         for col in merged.columns
-        if col not in exclude and pd.api.types.is_numeric_dtype(merged[col]) and not merged[col].isna().all()
+        if col not in exclude
+        and pd.api.types.is_numeric_dtype(merged[col])
+        and not merged[col].isna().all()
     ]
 
 
@@ -197,7 +239,9 @@ def _path_distribution(sorted_pnls: list[float]) -> dict[str, float]:
     }
 
 
-def _path_attribution(prediction_frame: Any, execution: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def _path_attribution(
+    prediction_frame: Any, execution: dict[str, Any]
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     try:
         import pandas as pd
     except ImportError:
@@ -225,7 +269,9 @@ def _path_attribution(prediction_frame: Any, execution: dict[str, Any]) -> tuple
         how="left",
     )
     if "entry_time" in merged.columns:
-        merged["entry_time"] = pd.to_datetime(merged["entry_time"], errors="coerce", utc=True)
+        merged["entry_time"] = pd.to_datetime(
+            merged["entry_time"], errors="coerce", utc=True
+        )
         merged["time_bucket"] = merged["entry_time"].dt.strftime("%H:%M")
     else:
         merged["time_bucket"] = "unknown"
@@ -263,9 +309,21 @@ def _simple_group(frame: Any, column: str) -> list[dict[str, Any]]:
             {
                 "key": str(key),
                 "trade_count": int(len(group)),
-                "total_pnl_r": float(group["executed_pnl_r"].sum()) if "executed_pnl_r" in group else 0.0,
-                "avg_trade_r": float(group["executed_pnl_r"].mean()) if "executed_pnl_r" in group else 0.0,
-                "win_rate": float((group["executed_pnl_r"] > 0).mean()) if "executed_pnl_r" in group else 0.0,
+                "total_pnl_r": (
+                    float(group["executed_pnl_r"].sum())
+                    if "executed_pnl_r" in group
+                    else 0.0
+                ),
+                "avg_trade_r": (
+                    float(group["executed_pnl_r"].mean())
+                    if "executed_pnl_r" in group
+                    else 0.0
+                ),
+                "win_rate": (
+                    float((group["executed_pnl_r"] > 0).mean())
+                    if "executed_pnl_r" in group
+                    else 0.0
+                ),
             }
         )
     return sorted(rows, key=lambda row: row["trade_count"], reverse=True)
@@ -282,8 +340,12 @@ def _probability_bins(frame: Any) -> list[dict[str, Any]]:
             {
                 "bucket": f"[{low:.2f},{high:.2f})",
                 "trade_count": int(len(group)),
-                "total_pnl_r": float(group["executed_pnl_r"].sum()) if len(group) else 0.0,
-                "avg_trade_r": float(group["executed_pnl_r"].mean()) if len(group) else 0.0,
+                "total_pnl_r": (
+                    float(group["executed_pnl_r"].sum()) if len(group) else 0.0
+                ),
+                "avg_trade_r": (
+                    float(group["executed_pnl_r"].mean()) if len(group) else 0.0
+                ),
             }
         )
     return rows
@@ -292,11 +354,17 @@ def _probability_bins(frame: Any) -> list[dict[str, Any]]:
 def _calibration_rows(frame: Any) -> dict[str, Any]:
     import pandas as pd
 
-    if "probability" not in frame.columns or "label" not in frame.columns or frame.empty:
+    if (
+        "probability" not in frame.columns
+        or "label" not in frame.columns
+        or frame.empty
+    ):
         return {}
     ranked = frame.sort_values("probability").reset_index(drop=True).copy()
     bucket_count = min(5, max(2, int(len(ranked) ** 0.5)))
-    ranked["bucket"] = pd.qcut(ranked.index, q=bucket_count, labels=False, duplicates="drop")
+    ranked["bucket"] = pd.qcut(
+        ranked.index, q=bucket_count, labels=False, duplicates="drop"
+    )
     rows = []
     for bucket, group in ranked.groupby("bucket"):
         rows.append(
@@ -316,7 +384,9 @@ def _artifact_root(run_id: str) -> Path:
     return root
 
 
-def _persist_cpcv_path_rows(root: Path, fold_id: int, rows: list[dict[str, Any]]) -> Path:
+def _persist_cpcv_path_rows(
+    root: Path, fold_id: int, rows: list[dict[str, Any]]
+) -> Path:
     path = root / f"path_cpcv_{fold_id:03d}_rows.json"
     path.write_text(json.dumps(rows, default=str, indent=2), encoding="utf-8")
     return path

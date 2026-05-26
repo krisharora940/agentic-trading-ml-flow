@@ -3,7 +3,10 @@ from __future__ import annotations
 import json
 
 from trading_ml.agent_workflow import pending_human_checkpoints
-from trading_ml.langgraph_integration import build_langgraph_initial_input, compile_bnr_langgraph
+from trading_ml.langgraph_integration import (
+    build_langgraph_initial_input,
+    compile_bnr_langgraph,
+)
 
 
 def main() -> None:

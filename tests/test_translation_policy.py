@@ -1,13 +1,21 @@
 import unittest
 
 from trading_ml.event_driven_backtest import run_event_driven_policy_backtest
-from trading_ml.translation_policy import allow_signal_for_regime, compute_position_size, compute_regime_size_multiplier
+from trading_ml.translation_policy import (
+    allow_signal_for_regime,
+    compute_position_size,
+    compute_regime_size_multiplier,
+)
 
 
 class TranslationPolicyTests(unittest.TestCase):
     def test_confidence_linear_size_increases_with_probability(self) -> None:
-        small = compute_position_size(0.46, threshold=0.45, policy_name="confidence_linear_v1")
-        large = compute_position_size(0.80, threshold=0.45, policy_name="confidence_linear_v1")
+        small = compute_position_size(
+            0.46, threshold=0.45, policy_name="confidence_linear_v1"
+        )
+        large = compute_position_size(
+            0.80, threshold=0.45, policy_name="confidence_linear_v1"
+        )
         self.assertGreaterEqual(small, 0.5)
         self.assertGreater(large, small)
 

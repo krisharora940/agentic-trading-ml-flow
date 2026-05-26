@@ -28,7 +28,9 @@ class ReclaimMetaPolicyTests(unittest.TestCase):
                 "reclaim_body_strength": 0.00,
             },
         ]
-        filtered = apply_reclaim_meta_policy(records, policy_name="balanced_clean_reclaim_close_ge_0.15")
+        filtered = apply_reclaim_meta_policy(
+            records, policy_name="balanced_clean_reclaim_close_ge_0.15"
+        )
         ids = {row["candidate_id"] for row in filtered}
         self.assertNotIn("a", ids)
         self.assertIn("b", ids)

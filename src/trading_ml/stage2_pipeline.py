@@ -5,13 +5,20 @@ from pathlib import Path
 from typing import Any
 
 from trading_ml.config import load_bnr_config
-from trading_ml.bnr_subtypes import classify_candidate_subtype, filter_candidates_by_subtype
+from trading_ml.bnr_subtypes import (
+    classify_candidate_subtype,
+    filter_candidates_by_subtype,
+)
 from trading_ml.feature_validation import build_feature_validation
 from trading_ml.feature_families import apply_feature_family
 from trading_ml.market_structure_lab import build_market_structure_lab
 from trading_ml.model_diagnostics_lab import build_model_diagnostics_lab
 from trading_ml.stage2_bnr import calculate_bnr_zones, generate_breakout_candidates
-from trading_ml.stage2_data import build_data_quality_report, load_ohlcv_file, regular_session
+from trading_ml.stage2_data import (
+    build_data_quality_report,
+    load_ohlcv_file,
+    regular_session,
+)
 from trading_ml.stage2_features import build_feature_matrix
 from trading_ml.stage2_labeling import label_candidates
 from trading_ml.stage2_modeling import train_baseline_classifier
@@ -92,12 +99,21 @@ def run_stage2_research_engine(config: Stage2Config) -> dict[str, Any]:
     )
     features, feature_audits = build_feature_matrix(rth, candidates)
     if not features.empty:
-        subtype_map = {candidate.candidate_id: classify_candidate_subtype(candidate) for candidate in candidates}
+        subtype_map = {
+            candidate.candidate_id: classify_candidate_subtype(candidate)
+            for candidate in candidates
+        }
         features["setup_subtype"] = features["candidate_id"].map(subtype_map)
     features = apply_feature_family(features, config.feature_family)
     labels_df = pd.DataFrame([label.to_dict() for label in labels])
-    model_summary = train_baseline_classifier(features, labels_df, model_family=config.model_family) if not labels_df.empty else None
-    feature_validation = build_feature_validation(features.to_dict(orient="records"), labels_df.to_dict(orient="records"))
+    model_summary = (
+        train_baseline_classifier(features, labels_df, model_family=config.model_family)
+        if not labels_df.empty
+        else None
+    )
+    feature_validation = build_feature_validation(
+        features.to_dict(orient="records"), labels_df.to_dict(orient="records")
+    )
     prediction_records = model_summary.prediction_records if model_summary else []
     market_structure_lab = build_market_structure_lab(
         [candidate.to_dict() for candidate in candidates],
@@ -119,7 +135,9 @@ def run_stage2_research_engine(config: Stage2Config) -> dict[str, Any]:
         "feature_audit": _feature_audit_summary(feature_audits),
         "feature_validation": feature_validation,
         "market_structure_lab": market_structure_lab,
-        "model_summary": model_summary.to_dict() if model_summary else {"status": "no_labels"},
+        "model_summary": (
+            model_summary.to_dict() if model_summary else {"status": "no_labels"}
+        ),
         "model_diagnostics": model_diagnostics,
         "features_records": features.to_dict(orient="records"),
         "labels_records": labels_df.to_dict(orient="records"),
@@ -144,7 +162,10 @@ def _label_summary(labels_df: Any) -> dict[str, Any]:
     return {
         "rows": int(len(labels_df)),
         "positive_rate": float(labels_df["label"].mean()),
-        "outcomes": {str(key): int(value) for key, value in labels_df["outcome"].value_counts().to_dict().items()},
+        "outcomes": {
+            str(key): int(value)
+            for key, value in labels_df["outcome"].value_counts().to_dict().items()
+        },
         "avg_pnl_r": float(labels_df["pnl_r"].mean()),
     }
 

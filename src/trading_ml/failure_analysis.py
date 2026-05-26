@@ -32,7 +32,9 @@ def build_failure_map(
         "reclaim_close_location",
         "reclaim_failure_count",
     ]
-    available_feature_columns = [column for column in feature_columns if column in features.columns]
+    available_feature_columns = [
+        column for column in feature_columns if column in features.columns
+    ]
     feature_frame = features[available_feature_columns].copy()
     for column in feature_columns:
         if column not in feature_frame.columns:
@@ -63,11 +65,17 @@ def build_failure_map(
 
     base["session_month"] = base["session_date"].astype(str).str.slice(0, 7)
     base["regime_bucket"] = base.apply(
-        lambda row: f"hv{int(row.get('reg_high_vol_state', 0) or 0)}_tr{int(row.get('reg_trending_state', 0) or 0)}",
+        lambda row: (
+            f"hv{int(row.get('reg_high_vol_state', 0) or 0)}_tr{int(row.get('reg_trending_state', 0) or 0)}"
+        ),
         axis=1,
     )
 
-    executed_ids = set(executed["candidate_id"].tolist()) if not executed.empty and "candidate_id" in executed else set()
+    executed_ids = (
+        set(executed["candidate_id"].tolist())
+        if not executed.empty and "candidate_id" in executed
+        else set()
+    )
     base["executed"] = base["candidate_id"].isin(executed_ids)
 
     return {
@@ -91,10 +99,18 @@ def _group_rows(frame: Any, column: str) -> list[dict[str, Any]]:
             {
                 column: str(key),
                 "rows": int(len(group)),
-                "positive_rate": float(group["label"].mean()) if "label" in group else 0.0,
+                "positive_rate": (
+                    float(group["label"].mean()) if "label" in group else 0.0
+                ),
                 "avg_pnl_r": float(group["pnl_r"].mean()) if "pnl_r" in group else 0.0,
-                "avg_probability": float(group["probability"].mean()) if "probability" in group else 0.0,
-                "executed_share": float(group["executed"].mean()) if "executed" in group else 0.0,
+                "avg_probability": (
+                    float(group["probability"].mean())
+                    if "probability" in group
+                    else 0.0
+                ),
+                "executed_share": (
+                    float(group["executed"].mean()) if "executed" in group else 0.0
+                ),
             }
         )
     return sorted(rows, key=lambda row: row["rows"], reverse=True)
@@ -112,9 +128,21 @@ def _executed_failures(frame: Any) -> list[dict[str, Any]]:
                 "setup_subtype": str(subtype),
                 "rows": int(len(group)),
                 "avg_pnl_r": float(group["pnl_r"].mean()),
-                "avg_break_efficiency_ratio": float(group["break_efficiency_ratio"].mean()) if "break_efficiency_ratio" in group else 0.0,
-                "avg_reclaim_close_location": float(group["reclaim_close_location"].mean()) if "reclaim_close_location" in group else 0.0,
-                "avg_reclaim_failure_count": float(group["reclaim_failure_count"].mean()) if "reclaim_failure_count" in group else 0.0,
+                "avg_break_efficiency_ratio": (
+                    float(group["break_efficiency_ratio"].mean())
+                    if "break_efficiency_ratio" in group
+                    else 0.0
+                ),
+                "avg_reclaim_close_location": (
+                    float(group["reclaim_close_location"].mean())
+                    if "reclaim_close_location" in group
+                    else 0.0
+                ),
+                "avg_reclaim_failure_count": (
+                    float(group["reclaim_failure_count"].mean())
+                    if "reclaim_failure_count" in group
+                    else 0.0
+                ),
             }
         )
     return sorted(rows, key=lambda row: row["rows"], reverse=True)

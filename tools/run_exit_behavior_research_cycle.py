@@ -14,9 +14,15 @@ def main() -> None:
                 "status": result.get("status"),
                 "artifact_path": result.get("artifact_path"),
                 "run_artifact_path": result.get("run_artifact_path"),
-                "trade_count": result.get("stage_1_trade_path_diagnostics", {}).get("trade_count"),
-                "taxonomy_counts": result.get("stage_1_trade_path_diagnostics", {}).get("taxonomy_counts"),
-                "candidate_exit_families": result.get("stage_3_candidate_exit_families"),
+                "trade_count": result.get("stage_1_trade_path_diagnostics", {}).get(
+                    "trade_count"
+                ),
+                "taxonomy_counts": result.get("stage_1_trade_path_diagnostics", {}).get(
+                    "taxonomy_counts"
+                ),
+                "candidate_exit_families": result.get(
+                    "stage_3_candidate_exit_families"
+                ),
                 "full_validation_shortlist": [
                     {
                         "variant": row.get("variant"),

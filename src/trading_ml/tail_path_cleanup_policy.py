@@ -38,7 +38,12 @@ def get_tail_path_cleanup_policies() -> list[dict[str, Any]]:
         {
             "name": "deep_retrace_high_conf_cap",
             "kind": "high_conf_calibration_cap",
-            "subtype_probability_cap": {"deep_retrace_repair": {"min_probability": 0.65, "cap_probability": 0.64}},
+            "subtype_probability_cap": {
+                "deep_retrace_repair": {
+                    "min_probability": 0.65,
+                    "cap_probability": 0.64,
+                }
+            },
         },
         {
             "name": "deep_retrace_regime_confirmed_only",
@@ -54,11 +59,16 @@ def apply_tail_path_cleanup_policy(
     policy_name: str,
     threshold: float,
 ) -> list[dict[str, Any]]:
-    policy = next((row for row in get_tail_path_cleanup_policies() if row["name"] == policy_name), None)
+    policy = next(
+        (row for row in get_tail_path_cleanup_policies() if row["name"] == policy_name),
+        None,
+    )
     if policy is None:
         raise KeyError(f"Unknown tail path cleanup policy: {policy_name}")
     if policy.get("executable") is False:
-        raise ValueError(f"Tail cleanup policy is diagnostic-only and cannot be executed: {policy_name}")
+        raise ValueError(
+            f"Tail cleanup policy is diagnostic-only and cannot be executed: {policy_name}"
+        )
 
     filtered: list[dict[str, Any]] = []
     for row in records:
@@ -74,22 +84,32 @@ def apply_tail_path_cleanup_policy(
             continue
 
         subtype_thresholds = dict(policy.get("subtype_thresholds", {}))
-        if subtype in subtype_thresholds and probability < float(subtype_thresholds[subtype]):
+        if subtype in subtype_thresholds and probability < float(
+            subtype_thresholds[subtype]
+        ):
             continue
 
         subtype_size_haircuts = dict(policy.get("subtype_size_haircuts", {}))
         if subtype in subtype_size_haircuts:
-            updated["policy_size_multiplier"] = float(updated.get("policy_size_multiplier", 1.0) or 1.0) * float(subtype_size_haircuts[subtype])
+            updated["policy_size_multiplier"] = float(
+                updated.get("policy_size_multiplier", 1.0) or 1.0
+            ) * float(subtype_size_haircuts[subtype])
 
         time_bucket_haircuts = dict(policy.get("time_bucket_size_haircuts", {}))
         if time_bucket in time_bucket_haircuts:
-            updated["policy_size_multiplier"] = float(updated.get("policy_size_multiplier", 1.0) or 1.0) * float(time_bucket_haircuts[time_bucket])
+            updated["policy_size_multiplier"] = float(
+                updated.get("policy_size_multiplier", 1.0) or 1.0
+            ) * float(time_bucket_haircuts[time_bucket])
 
         subtype_probability_cap = dict(policy.get("subtype_probability_cap", {}))
         cap_config = dict(subtype_probability_cap.get(subtype, {}))
         if cap_config:
-            min_probability = float(cap_config.get("min_probability", threshold) or threshold)
-            cap_probability = float(cap_config.get("cap_probability", probability) or probability)
+            min_probability = float(
+                cap_config.get("min_probability", threshold) or threshold
+            )
+            cap_probability = float(
+                cap_config.get("cap_probability", probability) or probability
+            )
             if probability >= min_probability:
                 updated["probability"] = min(probability, cap_probability)
 
