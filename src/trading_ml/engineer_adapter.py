@@ -12,10 +12,19 @@ def load_engineer_feature_config() -> dict[str, Any]:
     engineer.setdefault("backend", "hybrid")
     engineer.setdefault("enabled", True)
     engineer.setdefault("disable_numba_jit", True)
+    engineer.setdefault("runtime_opt_in", False)
     engineer.setdefault(
         "features", ["rsi", "atr", "ema", "mfi", "stddev", "choppiness_index"]
     )
     return engineer
+
+
+def engineer_runtime_enabled() -> bool:
+    flag = os.environ.get("TRADING_ML_ENABLE_ML4T_ENGINEER", "")
+    if flag.lower() in {"1", "true", "yes", "on"}:
+        return True
+    config = load_engineer_feature_config()
+    return bool(config.get("runtime_opt_in", False))
 
 
 def compute_engineer_features(
@@ -23,6 +32,8 @@ def compute_engineer_features(
 ) -> Any | None:
     config = load_engineer_feature_config()
     if not config.get("enabled", True):
+        return None
+    if not engineer_runtime_enabled():
         return None
 
     feature_list = list(features or config.get("features", []))

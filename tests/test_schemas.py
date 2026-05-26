@@ -45,15 +45,20 @@ class SchemaTests(unittest.TestCase):
         plan = ResearchActionPlan(
             plan_id="RAP-1",
             proposal_id=proposal["proposal_id"],
-            action_id="exit_behavior_research",
+            action_id="continuation_policy_search",
             family=proposal["family"],
             objective=proposal["claim"],
+            allowed_policy_atoms=["tempo_persistence_gate"],
+            search_mechanics=["component_ablation"],
+            doctrine={"primary_modeling_target": "auction_state_continuation_validity"},
         ).to_dict()
         review = RedTeamReview(
             proposal_id=proposal["proposal_id"], status="pass"
         ).to_dict()
         self.assertTrue(plan["requires_governor_validation"])
         self.assertEqual(plan["validation_scope"], "governor_only")
+        self.assertTrue(plan["allowed_policy_atoms"])
+        self.assertTrue(plan["search_mechanics"])
         self.assertEqual(review["status"], "pass")
 
     def test_state_ontology_and_branch_schemas_serialize(self) -> None:

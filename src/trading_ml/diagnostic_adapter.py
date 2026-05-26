@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Any
 
 from trading_ml.config import load_global_config
@@ -10,12 +9,20 @@ from trading_ml.validation_types import WalkForwardFold
 
 def prepare_diagnostic_runtime() -> None:
     os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
-    mpl_dir = Path("/private/tmp/mplconfig")
-    mpl_dir.mkdir(parents=True, exist_ok=True)
-    os.environ.setdefault("MPLCONFIGDIR", str(mpl_dir))
+
+
+def diagnostic_runtime_enabled() -> bool:
+    flag = os.environ.get("TRADING_ML_ENABLE_ML4T_DIAGNOSTIC", "")
+    if flag.lower() in {"1", "true", "yes", "on"}:
+        return True
+    global_config = load_global_config()
+    validation = dict(global_config.get("validation", {}))
+    return bool(validation.get("enable_ml4t_diagnostic_backend", False))
 
 
 def diagnostic_available() -> bool:
+    if not diagnostic_runtime_enabled():
+        return False
     prepare_diagnostic_runtime()
     try:
         import ml4t.diagnostic  # noqa: F401

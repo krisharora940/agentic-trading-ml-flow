@@ -60,13 +60,19 @@ class ResearchActionTests(unittest.TestCase):
             "claim": "Measure continuation decay by auction state.",
         }
         plan = build_research_action_plan(proposal, {"stage2_config_overrides": {}})
-        self.assertEqual(plan["action_id"], "exit_behavior_research")
+        self.assertEqual(plan["action_id"], "continuation_policy_search")
         self.assertTrue(plan["requires_governor_validation"])
         self.assertEqual(
             plan["expected_metric_delta"]["primary"],
             "auction_state_continuation_validity",
         )
         self.assertTrue(plan["allowable_knobs"])
+        self.assertTrue(plan["allowed_policy_atoms"])
+        self.assertTrue(plan["search_mechanics"])
+        self.assertEqual(
+            plan["doctrine"]["primary_modeling_target"],
+            "auction_state_continuation_validity",
+        )
         self.assertIn("holdout_access", plan["forbidden_knobs"])
         self.assertTrue(plan["support_requirements"])
         self.assertTrue(plan["falsification_rule"])
@@ -90,7 +96,7 @@ class ResearchActionTests(unittest.TestCase):
                     }
                 },
             )
-        self.assertEqual(result["action_id"], "exit_behavior_research")
+        self.assertEqual(result["action_id"], "continuation_policy_search")
         self.assertEqual(result["status"], "complete")
 
 

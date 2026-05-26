@@ -706,8 +706,14 @@ def marginal_evidence_evaluator_node(state: dict[str, Any]) -> dict[str, Any]:
     plan = dict(state.get("research_action_plan", {}) or {})
     result = dict(state.get("research_action_result", {}) or {})
     metrics = dict(result.get("metrics", {}) or {})
+    diagnostics = dict(result.get("diagnostics", {}) or {})
     raw = dict(result.get("raw_summary", {}) or {})
     source = dict(raw.get("accepted_trial", {}) or raw.get("best_trial", {}) or {})
+    state_gate = dict(raw.get("best_variant", {}) or {})
+    continuation_gate = dict(raw.get("best_gate", {}) or {})
+    best_ablation = dict(raw.get("best_ablation", {}) or {})
+    execution_stress = dict(raw.get("execution_stress_summary", {}) or {})
+    robust_window = dict(raw.get("robust_window_summary", {}) or {})
     evidence = MarginalEvidence(
         proposal_id=str(plan.get("proposal_id", "")),
         action_id=str(plan.get("action_id", "")),
@@ -726,8 +732,26 @@ def marginal_evidence_evaluator_node(state: dict[str, Any]) -> dict[str, Any]:
         worst_path_loss_delta=_float_or_none(
             metrics.get("worst_path_loss_delta", source.get("worst_path_loss_delta"))
         ),
+        regime_stability_delta=_regime_stability_delta(
+            state_gate=state_gate,
+            continuation_gate=continuation_gate,
+            robust_window=robust_window,
+        ),
+        cost_resilience_delta=_float_or_none(
+            execution_stress.get("profit_factor") or execution_stress.get("sharpe")
+        ),
+        ablation_dependence_score=_float_or_none(
+            raw.get("ablation_dependence_score")
+            or diagnostics.get("best_ablation", {}).get("total_pnl_r")
+            or best_ablation.get("total_pnl_r")
+        ),
         notes=[
             "Evidence is advisory only; governor graph remains validation and promotion authority.",
+            *(
+                [f"Robust-window leader: {robust_window.get('best_name')}"]
+                if robust_window.get("best_name")
+                else []
+            ),
         ],
     ).to_dict()
     return {
@@ -835,6 +859,30 @@ def _float_or_none(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _regime_stability_delta(
+    *,
+    state_gate: dict[str, Any],
+    continuation_gate: dict[str, Any],
+    robust_window: dict[str, Any],
+) -> float | None:
+    if robust_window.get("best_name"):
+        return 1.0
+    values = []
+    for row in (state_gate, continuation_gate):
+        if row:
+            values.append(_worst_path_total(row))
+    if not values:
+        return None
+    return max(values)
+
+
+def _worst_path_total(row: dict[str, Any]) -> float:
+    worst = list(row.get("worst_3_cpcv_paths", []) or [])
+    if not worst:
+        return 0.0
+    return float(worst[0].get("total_pnl_r", 0.0) or 0.0)
 
 
 def _select_desk_node(top_cluster: dict[str, Any], state: dict[str, Any]) -> str:

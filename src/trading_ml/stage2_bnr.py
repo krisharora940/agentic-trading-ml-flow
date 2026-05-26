@@ -118,6 +118,17 @@ def _bar_completion_time(index: Any, timeframe: str) -> Any:
     return index + timedelta(seconds=seconds)
 
 
+def _is_opposite_pullback_bar(row: Any, direction: Direction, zone: BNRZone) -> bool:
+    open_price = float(row["open"])
+    close_price = float(row["close"])
+    in_zone = float(row["low"]) <= zone.high and float(row["high"]) >= zone.low
+    if not in_zone:
+        return False
+    if direction == "long":
+        return close_price < open_price
+    return close_price > open_price
+
+
 def generate_breakout_candidates(
     bars: Any,
     zones: list[BNRZone],
@@ -225,7 +236,10 @@ def _candidate_from_break_state(
     latest_entry_dt = pd.Timestamp.combine(
         pd.Timestamp(zone.session_date).date(), pd.Timestamp(latest_trigger_time).time()
     ).tz_localize(day_bars.index.tz)
-    post_break_bars = day_bars[day_bars.index >= break_ts]
+    post_break_bars = day_bars[
+        day_bars.index.map(lambda idx: _bar_completion_time(idx, timeframe))
+        > break_decision_time
+    ]
     if post_break_bars.empty:
         return None
 
@@ -235,7 +249,9 @@ def _candidate_from_break_state(
     pivot_time: Any = None
     reentry_count = 0
     reclaim_count = 0
-    inside_zone_prev = False
+    pullback_bar_seen = False
+    pullback_pivot_locked = False
+    last_pullback_bar_time: Any = None
     above_boundary_prev = float(break_row["close"]) > zone.high
     below_boundary_prev = float(break_row["close"]) < zone.low
 
@@ -262,12 +278,13 @@ def _candidate_from_break_state(
         ):
             return None
 
-        in_zone = float(row["low"]) <= zone.high and float(row["high"]) >= zone.low
-        if in_zone and not inside_zone_prev:
+        is_pullback_bar = _is_opposite_pullback_bar(row, direction, zone)
+        if is_pullback_bar:
+            pullback_bar_seen = True
             reentry_count += 1
-        inside_zone_prev = in_zone
+            last_pullback_bar_time = bar_close_time
 
-        if reentry_count > 0:
+        if pullback_bar_seen:
             if direction == "long":
                 if pivot_price is None or float(row["low"]) < pivot_price:
                     pivot_price = float(row["low"])
@@ -276,9 +293,16 @@ def _candidate_from_break_state(
                 if pivot_price is None or float(row["high"]) > pivot_price:
                     pivot_price = float(row["high"])
                     pivot_time = bar_close_time
+            pullback_pivot_locked = pivot_price is not None
 
         if direction == "long":
-            reclaimed = reentry_count > 0 and float(row["close"]) > zone.high
+            reclaimed = (
+                pullback_bar_seen
+                and pullback_pivot_locked
+                and last_pullback_bar_time is not None
+                and bar_close_time > last_pullback_bar_time
+                and float(row["close"]) > zone.high
+            )
             if reclaimed and not above_boundary_prev:
                 reclaim_count += 1
             above_boundary_prev = float(row["close"]) > zone.high
@@ -303,7 +327,13 @@ def _candidate_from_break_state(
                     reclaim_count=reclaim_count,
                 )
         else:
-            reclaimed = reentry_count > 0 and float(row["close"]) < zone.low
+            reclaimed = (
+                pullback_bar_seen
+                and pullback_pivot_locked
+                and last_pullback_bar_time is not None
+                and bar_close_time > last_pullback_bar_time
+                and float(row["close"]) < zone.low
+            )
             if reclaimed and not below_boundary_prev:
                 reclaim_count += 1
             below_boundary_prev = float(row["close"]) < zone.low

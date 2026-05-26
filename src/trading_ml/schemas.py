@@ -236,14 +236,22 @@ class ResearchActionPlan:
     family: str
     objective: str
     target_failure_cluster: str | None = None
+    target_market_state: str | None = None
+    target_setup_state: str | None = None
+    target_environment_state: str | None = None
+    target_path_class: str | None = None
     expected_metric_delta: dict[str, Any] = field(default_factory=dict)
     allowable_knobs: list[str] = field(default_factory=list)
     forbidden_knobs: list[str] = field(default_factory=list)
+    allowed_policy_atoms: list[str] = field(default_factory=list)
     support_requirements: list[str] = field(default_factory=list)
+    robustness_target: dict[str, Any] = field(default_factory=dict)
+    search_mechanics: list[str] = field(default_factory=list)
     falsification_rule: str = ""
     kill_criteria: list[str] = field(default_factory=list)
     controller_state: dict[str, Any] = field(default_factory=dict)
     base_config_overrides: dict[str, Any] = field(default_factory=dict)
+    doctrine: dict[str, Any] = field(default_factory=dict)
     validation_scope: str = "governor_only"
     requires_governor_validation: bool = True
     created_at: str = field(default_factory=utc_now_iso)
@@ -264,6 +272,7 @@ class ResearchActionResult:
     batch_decision: str = ""
     metrics: dict[str, Any] = field(default_factory=dict)
     artifacts: dict[str, Any] = field(default_factory=dict)
+    diagnostics: dict[str, Any] = field(default_factory=dict)
     raw_summary: dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=utc_now_iso)
     schema_version: int = 1
@@ -284,6 +293,9 @@ class MarginalEvidence:
     dsr_delta: float | None = None
     calibration_delta: float | None = None
     worst_path_loss_delta: float | None = None
+    regime_stability_delta: float | None = None
+    cost_resilience_delta: float | None = None
+    ablation_dependence_score: float | None = None
     sample_delta: int | None = None
     notes: list[str] = field(default_factory=list)
     created_at: str = field(default_factory=utc_now_iso)

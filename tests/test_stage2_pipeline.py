@@ -63,6 +63,28 @@ class Stage2PipelineTests(unittest.TestCase):
             or {"reg_vol_10", "reg_trend_10"} <= set(features.columns)
         )
 
+    def test_candidate_requires_opposite_pullback_bar_before_reclaim(self) -> None:
+        index = pd.date_range(
+            "2026-01-02 09:30:00", periods=8, freq="30s", tz="America/New_York"
+        )
+        bars = pd.DataFrame(
+            {
+                "open": [100.0, 101.0, 102.0, 103.0, 104.0, 104.2, 104.4, 104.6],
+                "high": [102.0, 103.0, 104.0, 105.0, 105.2, 105.0, 105.4, 105.6],
+                "low": [99.0, 100.0, 101.0, 102.0, 102.8, 103.4, 103.8, 104.2],
+                "close": [101.0, 102.0, 103.0, 104.0, 104.2, 104.4, 104.6, 105.0],
+                "volume": [1000, 950, 925, 900, 875, 850, 825, 800],
+            },
+            index=index,
+        )
+
+        zones = calculate_bnr_zones(bars)
+        candidates = generate_breakout_candidates(
+            bars, zones, earliest_trigger_time="09:32:00"
+        )
+
+        self.assertEqual(candidates, [])
+
 
 if __name__ == "__main__":
     unittest.main()

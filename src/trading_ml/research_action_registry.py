@@ -10,11 +10,11 @@ from trading_ml.schemas import ResearchActionPlan, ResearchActionResult, utc_now
 
 
 PROPOSAL_FAMILY_ACTIONS = {
-    "feature": "market_state_setup_quality",
-    "setup": "market_state_setup_quality",
-    "eligibility": "candidate_universe_expansion",
-    "path_modeling": "exit_behavior_research",
-    "exit_behavior_research": "exit_behavior_research",
+    "feature": "state_gate_search",
+    "setup": "state_gate_search",
+    "eligibility": "failure_reduction_search",
+    "path_modeling": "continuation_policy_search",
+    "exit_behavior_research": "continuation_policy_search",
 }
 
 
@@ -51,6 +51,9 @@ def build_research_action_plan(
         "target_setup_state": proposal.get("target_setup_state"),
         "target_environment_state": proposal.get("target_environment_state"),
         "target_path_class": proposal.get("target_path_class"),
+        "focus_setup_state": proposal.get("target_setup_state"),
+        "focus_environment_state": proposal.get("target_environment_state"),
+        "focus_path_class": proposal.get("target_path_class"),
         "validation_authority": "governor_graph",
     }
     plan = ResearchActionPlan(
@@ -64,6 +67,10 @@ def build_research_action_plan(
             or "market-state research action"
         ),
         target_failure_cluster=cluster_id,
+        target_market_state=proposal.get("target_market_state"),
+        target_setup_state=proposal.get("target_setup_state"),
+        target_environment_state=proposal.get("target_environment_state"),
+        target_path_class=proposal.get("target_path_class"),
         expected_metric_delta=dict(
             proposal.get("expected_metric_delta", {}) or _default_metric_delta(family)
         ),
@@ -73,10 +80,16 @@ def build_research_action_plan(
         forbidden_knobs=list(
             proposal.get("forbidden_knobs", []) or _default_forbidden_knobs()
         ),
+        allowed_policy_atoms=list(
+            proposal.get("allowed_policy_atoms", [])
+            or _default_allowed_policy_atoms(action_id, family)
+        ),
         support_requirements=list(
             proposal.get("support_requirements", [])
             or _default_support_requirements(family)
         ),
+        robustness_target=_default_robustness_target(action_id),
+        search_mechanics=_default_search_mechanics(action_id, family),
         falsification_rule=str(
             proposal.get("falsification_rule", "")
             or "Reject if the expected robustness or continuation-validity delta does not appear in exploration evidence."
@@ -88,6 +101,12 @@ def build_research_action_plan(
             key: value for key, value in controller_state.items() if value is not None
         },
         base_config_overrides=dict(state.get("stage2_config_overrides", {}) or {}),
+        doctrine={
+            "primary_modeling_target": "auction_state_continuation_validity",
+            "bnr_role": "event_trigger_within_state_machine",
+            "search_style": "state_first_bounded_system_search",
+            "validation_authority": "governor_graph_only",
+        },
     )
     return plan.to_dict()
 
@@ -129,6 +148,7 @@ def execute_research_action_plan(
         batch_decision=str(raw.get("batch_decision", "") or ""),
         metrics=_extract_metrics(raw),
         artifacts=dict(raw.get("artifacts", {}) or {}),
+        diagnostics=_extract_diagnostics(raw),
         raw_summary=raw,
     )
 
@@ -160,6 +180,22 @@ def _extract_metrics(raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _extract_diagnostics(raw: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: raw.get(key)
+        for key in (
+            "best_variant",
+            "best_gate",
+            "best_ablation",
+            "robust_window_summary",
+            "execution_stress_summary",
+            "state_gate_summary",
+            "continuation_gate_summary",
+        )
+        if key in raw
+    }
+
+
 def _default_metric_delta(family: str) -> dict[str, Any]:
     return {
         "primary": "auction_state_continuation_validity",
@@ -182,6 +218,33 @@ def _default_allowable_knobs(family: str) -> list[str]:
     return mapping.get(family, ["state_conditioned_research_axis"])
 
 
+def _default_allowed_policy_atoms(action_id: str, family: str) -> list[str]:
+    mapping = {
+        "state_gate_search": [
+            "market_state_weight",
+            "state_exclusion_rule",
+            "state_size_haircut",
+        ],
+        "continuation_policy_search": [
+            "tempo_persistence_gate",
+            "breakout_quality_gate",
+            "liquidity_veto",
+            "delayed_followthrough_confirmation",
+        ],
+        "failure_reduction_search": [
+            "failure_cluster_filter",
+            "state_gate",
+            "continuation_gate",
+        ],
+        "ablation_pack": [
+            "state_gate_ablation",
+            "continuation_gate_ablation",
+        ],
+        "robust_window_rescore": ["worst_path_penalty", "positive_path_rate_floor"],
+    }
+    return mapping.get(action_id, _default_allowable_knobs(family))
+
+
 def _default_forbidden_knobs() -> list[str]:
     return [
         "holdout_access",
@@ -202,6 +265,45 @@ def _default_support_requirements(family: str) -> list[str]:
     ]
 
 
+def _default_robustness_target(action_id: str) -> dict[str, Any]:
+    target = {
+        "worst_path_direction": "improve",
+        "positive_path_rate_direction": "non_degrading",
+        "sample_floor": "minimum_state_sample_support",
+    }
+    if action_id in {"state_gate_search", "continuation_policy_search"}:
+        target["pooled_pnl_direction"] = "improve"
+    if action_id == "execution_stress_search":
+        target["cost_resilience_direction"] = "non_degrading"
+    return target
+
+
+def _default_search_mechanics(action_id: str, family: str) -> list[str]:
+    if action_id == "state_gate_search":
+        return [
+            "state_partitioned_policy_search",
+            "worst_path_rescore",
+            "state_support_floor",
+        ]
+    if action_id == "continuation_policy_search":
+        return [
+            "continuation_lifecycle_gate_search",
+            "component_ablation",
+            "worst_path_rescore",
+        ]
+    if action_id == "failure_reduction_search":
+        return [
+            "failure_cluster_targeting",
+            "state_first_filter_search",
+            "marginal_evidence_tracking",
+        ]
+    if action_id == "ablation_pack":
+        return ["component_ablation", "dominance_pruning"]
+    if action_id == "robust_window_rescore":
+        return ["weak_window_penalty", "positive_path_rate_floor"]
+    return [f"{family}_governed_cycle"]
+
+
 def _default_kill_criteria(family: str) -> list[str]:
     return [
         f"kill {family} branch after two accepted cycles without robustness improvement",
@@ -220,6 +322,7 @@ def _result(
     batch_decision: str = "",
     metrics: dict[str, Any] | None = None,
     artifacts: dict[str, Any] | None = None,
+    diagnostics: dict[str, Any] | None = None,
     raw_summary: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return ResearchActionResult(
@@ -232,5 +335,6 @@ def _result(
         batch_decision=batch_decision,
         metrics=metrics or {},
         artifacts=artifacts or {},
+        diagnostics=diagnostics or {},
         raw_summary=raw_summary or {},
     ).to_dict()

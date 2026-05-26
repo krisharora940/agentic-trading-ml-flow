@@ -124,8 +124,9 @@ def _build_shap_analysis(
     *,
     model_family: str,
 ) -> dict[str, Any]:
-    if os.environ.get("TRADING_ML_DISABLE_SHAP") == "1":
-        return {"status": "pending", "reason": "shap_disabled"}
+    enable_shap = os.environ.get("TRADING_ML_ENABLE_SHAP", "")
+    if enable_shap.lower() not in {"1", "true", "yes", "on"}:
+        return {"status": "pending", "reason": "shap_not_enabled"}
     try:
         import pandas as pd
         import shap

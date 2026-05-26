@@ -5,7 +5,12 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from trading_ml.market_state_quality import build_market_state_setup_quality_diagnostic
+from trading_ml.market_state_quality import (
+    _followthrough_confirmation_policy_gate,
+    _require_pandas,
+    build_market_state_setup_quality_diagnostic,
+    run_market_state_policy_simulation,
+)
 from trading_ml.paths import REPORTS_DIR
 from trading_ml.research_controller import run_governed_research_cycle
 from trading_ml.setup_redesign import build_setup_redesign_plan
@@ -111,6 +116,42 @@ def available_research_actions() -> dict[str, ResearchActionSpec]:
             "market_state_setup_quality",
             "Callable market-state/setup-quality cycle.",
             "governed_research_cycle",
+        ),
+        "state_gate_search": ResearchActionSpec(
+            "state_gate_search",
+            "market_state_setup_quality",
+            "Bounded state-gate search over auction-state policy variants.",
+            "stateful_diagnostic_action",
+        ),
+        "continuation_policy_search": ResearchActionSpec(
+            "continuation_policy_search",
+            "exit_behavior_research",
+            "Bounded continuation-lifecycle gate search over follow-through policy variants.",
+            "stateful_diagnostic_action",
+        ),
+        "failure_reduction_search": ResearchActionSpec(
+            "failure_reduction_search",
+            "market_state_setup_quality",
+            "Bounded failure-cluster reduction pack combining state and continuation gates.",
+            "stateful_diagnostic_action",
+        ),
+        "execution_stress_search": ResearchActionSpec(
+            "execution_stress_search",
+            "research_diagnostics",
+            "Replay the governed benchmark through the execution path to measure implementation resilience.",
+            "stateful_diagnostic_action",
+        ),
+        "ablation_pack": ResearchActionSpec(
+            "ablation_pack",
+            "research_diagnostics",
+            "Produce component ablations for state and continuation policy candidates.",
+            "stateful_diagnostic_action",
+        ),
+        "robust_window_rescore": ResearchActionSpec(
+            "robust_window_rescore",
+            "research_diagnostics",
+            "Rescore policy variants with a weak-window penalty and positive-path floor.",
+            "stateful_diagnostic_action",
         ),
         "exit_behavior_research": ResearchActionSpec(
             "exit_behavior_research",
@@ -244,6 +285,18 @@ def _execute_stateful_action(
         return _validation_failure_analysis(state)
     if action_id == "cpcv_attribution":
         return _cpcv_attribution()
+    if action_id == "state_gate_search":
+        return _state_gate_search(state, base_config, controller_state)
+    if action_id == "continuation_policy_search":
+        return _continuation_policy_search(state, base_config, controller_state)
+    if action_id == "failure_reduction_search":
+        return _failure_reduction_search(state, base_config, controller_state)
+    if action_id == "execution_stress_search":
+        return _execution_stress_search(controller_state)
+    if action_id == "ablation_pack":
+        return _ablation_pack(state, base_config, controller_state)
+    if action_id == "robust_window_rescore":
+        return _robust_window_rescore(state, base_config, controller_state)
     if action_id == "ml4t_backtest":
         from trading_ml.ml4t_backtest_adapter import run_market_state_v1_ml4t_backtest
 
@@ -263,6 +316,254 @@ def _execute_stateful_action(
             },
         }
     raise ValueError(f"Unsupported stateful research action: {action_id}")
+
+
+def _stateful_action_state(
+    state: dict[str, Any], base_config: dict[str, Any]
+) -> dict[str, Any]:
+    next_state = dict(state)
+    next_state["stage2_config"] = dict(base_config)
+    return next_state
+
+
+def _state_gate_search(
+    state: dict[str, Any],
+    base_config: dict[str, Any],
+    controller_state: dict[str, Any],
+) -> dict[str, Any]:
+    simulation = run_market_state_policy_simulation(
+        _stateful_action_state(state, base_config)
+    )
+    variants = list(simulation.get("policy_variants", []) or [])
+    ranked = sorted(
+        variants,
+        key=lambda row: (_worst_path_total(row), _float(row.get("total_pnl_r"))),
+        reverse=True,
+    )
+    best = dict(ranked[0]) if ranked else {}
+    return {
+        "family": "market_state_setup_quality",
+        "status": str(simulation.get("status", "pending")),
+        "trial_count": int(simulation.get("trial_count", len(variants)) or 0),
+        "batch_decision": "inform",
+        "state_gate_summary": {
+            "target_market_state": controller_state.get("target_market_state"),
+            "target_environment_state": controller_state.get(
+                "target_environment_state"
+            ),
+            "variant_count": len(variants),
+            "best_variant": best.get("variant"),
+        },
+        "best_variant": best,
+        "policy_variants": ranked,
+        "diagnostic_summary": simulation.get("diagnostic_summary", {}),
+    }
+
+
+def _continuation_policy_search(
+    state: dict[str, Any],
+    base_config: dict[str, Any],
+    controller_state: dict[str, Any],
+) -> dict[str, Any]:
+    diagnostic = build_market_state_setup_quality_diagnostic(
+        _stateful_action_state(state, base_config)
+    )
+    rows = list(diagnostic.get("_labeled_rows", []) or [])
+    if not rows:
+        return {
+            "family": "exit_behavior_research",
+            "status": "pending",
+            "trial_count": 0,
+            "batch_decision": "inform",
+            "reason": "labeled_rows_not_available",
+        }
+    pd = _require_pandas()
+    gate_summary = _followthrough_confirmation_policy_gate(pd.DataFrame(rows))
+    variants = list(gate_summary.get("policy_variants", []) or [])
+    ranked = sorted(
+        variants,
+        key=lambda row: (_worst_path_total(row), _float(row.get("total_pnl_r"))),
+        reverse=True,
+    )
+    best = dict(ranked[0]) if ranked else {}
+    return {
+        "family": "exit_behavior_research",
+        "status": "complete",
+        "trial_count": len(variants),
+        "batch_decision": "inform",
+        "continuation_gate_summary": {
+            "target_path_class": controller_state.get("target_path_class"),
+            "target_setup_state": controller_state.get("target_setup_state"),
+            "best_gate": best.get("gate"),
+        },
+        "best_gate": best,
+        "policy_variants": ranked,
+    }
+
+
+def _failure_reduction_search(
+    state: dict[str, Any],
+    base_config: dict[str, Any],
+    controller_state: dict[str, Any],
+) -> dict[str, Any]:
+    state_gate = _state_gate_search(state, base_config, controller_state)
+    continuation = _continuation_policy_search(state, base_config, controller_state)
+    return {
+        "family": "market_state_setup_quality",
+        "status": "complete",
+        "trial_count": int(state_gate.get("trial_count", 0) or 0)
+        + int(continuation.get("trial_count", 0) or 0),
+        "batch_decision": "inform",
+        "failure_reduction_summary": {
+            "target_failure_cluster": controller_state.get("target_failure_cluster"),
+            "state_gate_variant": dict(state_gate.get("best_variant", {}) or {}).get(
+                "variant"
+            ),
+            "continuation_gate": dict(continuation.get("best_gate", {}) or {}).get(
+                "gate"
+            ),
+        },
+        "state_gate_summary": state_gate.get("state_gate_summary", {}),
+        "continuation_gate_summary": continuation.get("continuation_gate_summary", {}),
+        "state_gate_variants": state_gate.get("policy_variants", []),
+        "continuation_gate_variants": continuation.get("policy_variants", []),
+    }
+
+
+def _execution_stress_search(controller_state: dict[str, Any]) -> dict[str, Any]:
+    from trading_ml.ml4t_backtest_adapter import run_market_state_v1_ml4t_backtest
+
+    boundary_role = str(
+        controller_state.get("boundary_role", "exploration") or "exploration"
+    )
+    bundle = run_market_state_v1_ml4t_backtest(boundary_role=boundary_role)
+    summary = dict(bundle.report.get("backtest", {}) or {})
+    return {
+        "family": "research_diagnostics",
+        "status": "complete",
+        "trial_count": 1,
+        "batch_decision": "inform",
+        "execution_stress_summary": {
+            "sharpe": summary.get("sharpe"),
+            "max_drawdown_pct": summary.get("max_drawdown_pct"),
+            "total_costs": summary.get("total_costs"),
+            "profit_factor": summary.get("profit_factor"),
+        },
+        "artifacts": {
+            "output_path": str(bundle.output_path),
+            "run_dir": str(bundle.run_dir),
+        },
+    }
+
+
+def _ablation_pack(
+    state: dict[str, Any],
+    base_config: dict[str, Any],
+    controller_state: dict[str, Any],
+) -> dict[str, Any]:
+    state_gate = _state_gate_search(state, base_config, controller_state)
+    continuation = _continuation_policy_search(state, base_config, controller_state)
+    ablations = []
+    state_best = dict(state_gate.get("best_variant", {}) or {})
+    continuation_best = dict(continuation.get("best_gate", {}) or {})
+    if state_best:
+        ablations.append(
+            {
+                "component": "state_gate",
+                "variant": state_best.get("variant"),
+                "total_pnl_r": state_best.get("total_pnl_r"),
+                "worst_path_pnl_r": _worst_path_total(state_best),
+            }
+        )
+    if continuation_best:
+        ablations.append(
+            {
+                "component": "continuation_gate",
+                "variant": continuation_best.get("variant"),
+                "gate": continuation_best.get("gate"),
+                "total_pnl_r": continuation_best.get("total_pnl_r"),
+                "worst_path_pnl_r": _worst_path_total(continuation_best),
+            }
+        )
+    dependence = 0.0
+    if len(ablations) == 2:
+        dependence = abs(
+            _float(ablations[0].get("total_pnl_r"))
+            - _float(ablations[1].get("total_pnl_r"))
+        )
+    return {
+        "family": "research_diagnostics",
+        "status": "complete",
+        "trial_count": len(ablations),
+        "batch_decision": "inform",
+        "best_ablation": max(
+            ablations,
+            key=lambda row: (
+                _float(row.get("worst_path_pnl_r")),
+                _float(row.get("total_pnl_r")),
+            ),
+            default={},
+        ),
+        "ablation_dependence_score": dependence,
+        "ablations": ablations,
+    }
+
+
+def _robust_window_rescore(
+    state: dict[str, Any],
+    base_config: dict[str, Any],
+    controller_state: dict[str, Any],
+) -> dict[str, Any]:
+    candidates = []
+    for row in _state_gate_search(state, base_config, controller_state).get(
+        "policy_variants", []
+    ):
+        candidates.append(_rescored_variant("state_gate", row))
+    for row in _continuation_policy_search(state, base_config, controller_state).get(
+        "policy_variants", []
+    ):
+        candidates.append(_rescored_variant("continuation_gate", row))
+    ranked = sorted(candidates, key=lambda row: row["robust_score"], reverse=True)
+    return {
+        "family": "research_diagnostics",
+        "status": "complete",
+        "trial_count": len(ranked),
+        "batch_decision": "inform",
+        "robust_window_summary": {
+            "best_name": ranked[0]["name"] if ranked else None,
+            "best_kind": ranked[0]["kind"] if ranked else None,
+            "scoring_rule": "total_pnl_r + worst_path_pnl_r + 5 * positive_path_rate",
+        },
+        "ranked_variants": ranked,
+    }
+
+
+def _rescored_variant(kind: str, row: dict[str, Any]) -> dict[str, Any]:
+    total = _float(row.get("total_pnl_r"))
+    positive_path_rate = _float(row.get("positive_path_rate"))
+    worst_path = _worst_path_total(row)
+    return {
+        "name": row.get("variant"),
+        "kind": kind,
+        "total_pnl_r": total,
+        "positive_path_rate": positive_path_rate,
+        "worst_path_pnl_r": worst_path,
+        "robust_score": total + worst_path + 5.0 * positive_path_rate,
+    }
+
+
+def _worst_path_total(row: dict[str, Any]) -> float:
+    worst = list(row.get("worst_3_cpcv_paths", []) or [])
+    if not worst:
+        return 0.0
+    return _float(worst[0].get("total_pnl_r"))
+
+
+def _float(value: Any) -> float:
+    try:
+        return float(value or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _read_json(path: Path) -> dict[str, Any]:

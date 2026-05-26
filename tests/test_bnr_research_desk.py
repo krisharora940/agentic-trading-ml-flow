@@ -520,7 +520,8 @@ class BNRResearchDeskTests(unittest.TestCase):
         compiled = proposal_compiler_node(state)
         reviewed = proposal_red_team_node({**state, **compiled})
         self.assertEqual(
-            compiled["research_action_plan"]["action_id"], "exit_behavior_research"
+            compiled["research_action_plan"]["action_id"],
+            "continuation_policy_search",
         )
         self.assertTrue(
             compiled["research_action_plan"]["requires_governor_validation"]
@@ -528,6 +529,7 @@ class BNRResearchDeskTests(unittest.TestCase):
         self.assertEqual(
             compiled["research_action_plan"]["validation_scope"], "governor_only"
         )
+        self.assertTrue(compiled["research_action_plan"]["search_mechanics"])
         self.assertEqual(reviewed["red_team_review"]["status"], "pass")
 
     def test_marginal_evidence_is_advisory_only(self) -> None:
