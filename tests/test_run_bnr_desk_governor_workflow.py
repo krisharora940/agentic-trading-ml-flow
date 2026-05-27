@@ -30,7 +30,23 @@ def test_build_combined_summary_links_desk_and_governor(tmp_path):
             "desk_director": {"selected_node": "path_modeler"},
             "desk_memory_update": {"status": "ready_for_governor_graph"},
         },
-        "desk_proposals": [{"proposal_id": "DPROP-1", "family": "path_modeling"}],
+        "desk_proposals": [
+            {
+                "proposal_id": "DPROP-1",
+                "family": "path_modeling",
+                "action_id": "continuation_policy_search",
+                "claim": "Continuation validity depends on follow-through shape.",
+                "allowable_knobs": ["continuation_gate"],
+            }
+        ],
+        "research_action_plan": {
+            "plan_id": "PLAN-1",
+            "proposal_id": "DPROP-1",
+            "action_id": "continuation_policy_search",
+            "objective": "Tighten continuation gating.",
+            "search_mechanics": ["ablation_pack", "robust_window_rescore"],
+            "controller_state": {"active_family": "exit_behavior_research"},
+        },
     }
     governor_result = {
         "run_id": "bnr-governor",
@@ -41,7 +57,16 @@ def test_build_combined_summary_links_desk_and_governor(tmp_path):
         },
         "promotion_decision": "freeze",
         "research_action_history": [
-            {"action_id": "exit_behavior_research", "proposal_id": "DPROP-1"}
+            {
+                "action_id": "exit_behavior_research",
+                "proposal_id": "DPROP-1",
+                "batch_decision": "revise",
+                "best_trial": {
+                    "trial_id": "trial-1",
+                    "overrides": {"continuation_policy": "combined_conservative"},
+                    "positive_path_rate": 0.6,
+                },
+            }
         ],
         "blocking_issues": [],
         "run_log": [
@@ -55,6 +80,16 @@ def test_build_combined_summary_links_desk_and_governor(tmp_path):
     assert summary["desk_proposal_id"] == "DPROP-1"
     assert summary["governor_selected_family"] == "exit_behavior_research"
     assert summary["governor_assigned_action"] == "exit_behavior_research"
+    assert (
+        summary["run_review"]["proposal"]["action_id"] == "continuation_policy_search"
+    )
+    assert summary["run_review"]["plan"]["plan_id"] == "PLAN-1"
+    assert (
+        summary["run_review"]["latest_action"]["best_trial"]["overrides"][
+            "continuation_policy"
+        ]
+        == "combined_conservative"
+    )
     assert summary["suppressed_runtime_stderr"]["line_count"] == 2
 
 

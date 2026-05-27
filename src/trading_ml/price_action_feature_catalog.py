@@ -21,6 +21,9 @@ DEFAULT_GROUP_ORDER = [
     "structure",
     "liquidity",
     "auction",
+    "higher_timeframe",
+    "premarket",
+    "prior_levels",
     "continuation_lifecycle",
 ]
 
@@ -47,6 +50,22 @@ KEYWORD_GROUP_MAP: dict[str, tuple[str, ...]] = {
     "momentum": ("momentum",),
     "volatility": ("volatility",),
     "candle": ("candles",),
+    "hod": ("liquidity", "prior_levels"),
+    "lod": ("liquidity", "prior_levels"),
+    "yesterday": ("prior_levels",),
+    "weekly": ("higher_timeframe", "prior_levels"),
+    "week": ("higher_timeframe", "prior_levels"),
+    "15m": ("higher_timeframe",),
+    "5m": ("higher_timeframe",),
+    "30m": ("higher_timeframe",),
+    "higher": ("higher_timeframe",),
+    "timeframe": ("higher_timeframe",),
+    "premarket": ("premarket", "prior_levels"),
+    "pm": ("premarket", "prior_levels"),
+    "level": ("prior_levels", "liquidity"),
+    "levels": ("prior_levels", "liquidity"),
+    "resistance": ("prior_levels", "liquidity"),
+    "support": ("prior_levels", "liquidity"),
 }
 
 CLUSTER_GROUP_MAP: dict[str, tuple[str, ...]] = {
@@ -60,6 +79,8 @@ CLUSTER_GROUP_MAP: dict[str, tuple[str, ...]] = {
     ),
     "no_reclaim_edge": ("liquidity", "structure", "momentum"),
     "failed_breakout": ("liquidity", "momentum", "structure", "continuation_lifecycle"),
+    "setup": ("auction", "structure", "higher_timeframe", "prior_levels"),
+    "feature": ("auction", "higher_timeframe", "premarket", "prior_levels"),
 }
 
 GROUP_LABS: dict[str, str] = {
@@ -69,6 +90,9 @@ GROUP_LABS: dict[str, str] = {
     "structure": "structure_repair_lab",
     "liquidity": "liquidity_context_lab",
     "auction": "auction_context_lab",
+    "higher_timeframe": "higher_timeframe_context_lab",
+    "premarket": "premarket_context_lab",
+    "prior_levels": "reference_level_context_lab",
     "continuation_lifecycle": "continuation_lifecycle_lab",
 }
 

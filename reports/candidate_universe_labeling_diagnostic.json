@@ -3,526 +3,40 @@
   "family": "candidate_universe_expansion",
   "diagnostic_type": "downstream_labeling_model_diagnostic",
   "variants_tested": [
-    "first_reclaim_only_baseline",
-    "allow_wick_through_breaks",
-    "allow_delayed_reclaim"
+    "allow_delayed_reclaim",
+    "first_reclaim_only_baseline"
   ],
+  "inventory_gate": {
+    "status": "applied",
+    "selected_from_inventory": [
+      "allow_delayed_reclaim",
+      "first_reclaim_only_baseline"
+    ],
+    "artifact_path": "/Users/radhikaarora/Documents/Trading ML V4/reports/candidate_universe_expansion.json"
+  },
+  "runtime": {
+    "candidate_source": "cached_candidate_event_ledger",
+    "ledger_key": "6eb9a4aeb56b5716",
+    "ledger_cache_hit": false
+  },
   "variant_diagnostics": [
     {
       "variant": "first_reclaim_only_baseline",
       "description": "Current canonical universe: first valid break-reentry-reclaim per direction.",
-      "candidate_count": 501,
+      "candidate_count": 398,
       "label_summary": {
-        "rows": 501,
-        "positive_rate": 0.2634730538922156,
-        "avg_pnl_r": 0.03773126939631528
+        "rows": 398,
+        "positive_rate": 0.21105527638190955,
+        "avg_pnl_r": -0.0653368773796678
       },
       "model_metrics": {
-        "precision": 0.36065573770491804,
-        "recall": 0.5945945945945946,
-        "brier": 0.234201516621104,
-        "roc_auc": 0.6394025604551921
+        "precision": 0.27419354838709675,
+        "recall": 0.68,
+        "brier": 0.26429492108400665,
+        "roc_auc": 0.671578947368421
       },
       "feature_audit": {
-        "rows": 501,
-        "failed": 0
-      },
-      "feature_validation": {
-        "status": "complete",
-        "feature_count": 36,
-        "failed_count": 2,
-        "failed_features": [
-          {
-            "feature": "opposite_boundary_close_violation",
-            "missing_rate": 0.0,
-            "unique_count": 1,
-            "label_corr": null,
-            "is_constant": true
-          },
-          {
-            "feature": "reclaim_failure_count",
-            "missing_rate": 0.0,
-            "unique_count": 1,
-            "label_corr": null,
-            "is_constant": true
-          }
-        ],
-        "top_abs_label_corr": [
-          {
-            "feature": "zone_width",
-            "missing_rate": 0.0,
-            "unique_count": 148,
-            "label_corr": -0.15249069366812906,
-            "is_constant": false
-          },
-          {
-            "feature": "zone_width_bps",
-            "missing_rate": 0.0,
-            "unique_count": 315,
-            "label_corr": -0.14865595235528065,
-            "is_constant": false
-          },
-          {
-            "feature": "break_close_distance_to_zone",
-            "missing_rate": 0.0,
-            "unique_count": 263,
-            "label_corr": 0.13367287820275284,
-            "is_constant": false
-          },
-          {
-            "feature": "reclaim_body_strength",
-            "missing_rate": 0.0,
-            "unique_count": 269,
-            "label_corr": -0.10206685035757201,
-            "is_constant": false
-          },
-          {
-            "feature": "reclaim_close_location",
-            "missing_rate": 0.0,
-            "unique_count": 268,
-            "label_corr": -0.09702823687516444,
-            "is_constant": false
-          },
-          {
-            "feature": "reentry_count",
-            "missing_rate": 0.0,
-            "unique_count": 2,
-            "label_corr": -0.0947138547965814,
-            "is_constant": false
-          },
-          {
-            "feature": "reclaim_count",
-            "missing_rate": 0.0,
-            "unique_count": 2,
-            "label_corr": -0.0947138547965814,
-            "is_constant": false
-          },
-          {
-            "feature": "first_break_close_confirmed",
-            "missing_rate": 0.0,
-            "unique_count": 2,
-            "label_corr": 0.0916428001226533,
-            "is_constant": false
-          },
-          {
-            "feature": "entry_distance_from_zone_low",
-            "missing_rate": 0.0,
-            "unique_count": 238,
-            "label_corr": -0.09054568873118499,
-            "is_constant": false
-          },
-          {
-            "feature": "trigger_seconds_after_open",
-            "missing_rate": 0.0,
-            "unique_count": 96,
-            "label_corr": -0.08673236180937724,
-            "is_constant": false
-          },
-          {
-            "feature": "break_speed_bars",
-            "missing_rate": 0.0,
-            "unique_count": 64,
-            "label_corr": -0.08543503776467386,
-            "is_constant": false
-          },
-          {
-            "feature": "first_break_wick_excess_points",
-            "missing_rate": 0.0,
-            "unique_count": 112,
-            "label_corr": 0.08393357918689405,
-            "is_constant": false
-          },
-          {
-            "feature": "direction_long",
-            "missing_rate": 0.0,
-            "unique_count": 2,
-            "label_corr": -0.08275306434088306,
-            "is_constant": false
-          },
-          {
-            "feature": "pre_trigger_volume",
-            "missing_rate": 0.0,
-            "unique_count": 496,
-            "label_corr": -0.07728641110880893,
-            "is_constant": false
-          },
-          {
-            "feature": "reclaim_latency_bars",
-            "missing_rate": 0.0,
-            "unique_count": 2,
-            "label_corr": 0.07477238187264965,
-            "is_constant": false
-          }
-        ]
-      },
-      "market_structure_lab": {
-        "status": "complete",
-        "candidate_count": 501,
-        "structure_families": [
-          {
-            "family": "close_break:shallow:single_reclaim:weak_cont",
-            "count": 152,
-            "positive_rate": 0.24342105263157895,
-            "avg_pnl_r": 0.1879190705917221,
-            "reclaim_mean": 0.25,
-            "retrace_mean": 0.20201833356628604,
-            "continuation_strength_mean": 0.2199411199757579
-          },
-          {
-            "family": "close_break:shallow:single_reclaim:strong_cont",
-            "count": 52,
-            "positive_rate": 0.28846153846153844,
-            "avg_pnl_r": 0.11480210686279878,
-            "reclaim_mean": 0.07692307692307693,
-            "retrace_mean": 0.18530820909977663,
-            "continuation_strength_mean": 0.7632000775052515
-          },
-          {
-            "family": "close_break:deep:single_reclaim:strong_cont",
-            "count": 65,
-            "positive_rate": 0.3384615384615385,
-            "avg_pnl_r": -0.040783467785253776,
-            "reclaim_mean": 0.4,
-            "retrace_mean": 0.7325884420961246,
-            "continuation_strength_mean": 0.8243281863662644
-          },
-          {
-            "family": "close_break:deep:single_reclaim:weak_cont",
-            "count": 232,
-            "positive_rate": 0.25,
-            "avg_pnl_r": -0.05594446945349935,
-            "reclaim_mean": 0.6896551724137931,
-            "retrace_mean": 0.6972314116994213,
-            "continuation_strength_mean": 0.1976442506689339
-          }
-        ],
-        "failure_taxonomy": [
-          {
-            "failure_reason": "no_follow_through",
-            "count": 159,
-            "avg_pnl_r": 0.194360792248767,
-            "common_family": "close_break:shallow:single_reclaim:weak_cont"
-          },
-          {
-            "failure_reason": "no_reclaim_edge",
-            "count": 69,
-            "avg_pnl_r": -1.0,
-            "common_family": "close_break:shallow:single_reclaim:weak_cont"
-          },
-          {
-            "failure_reason": "deep_retrace_failure",
-            "count": 60,
-            "avg_pnl_r": -1.0,
-            "common_family": "close_break:deep:single_reclaim:weak_cont"
-          },
-          {
-            "failure_reason": "weak_continuation",
-            "count": 49,
-            "avg_pnl_r": -1.0,
-            "common_family": "close_break:deep:single_reclaim:weak_cont"
-          },
-          {
-            "failure_reason": "stop_before_target",
-            "count": 32,
-            "avg_pnl_r": -1.0,
-            "common_family": "close_break:deep:single_reclaim:weak_cont"
-          }
-        ],
-        "market_structure_questions": [
-          "How can the setup filter reduce no_follow_through without collapsing trade count?",
-          "Which pre-open and reclaim conditions best explain strength in close_break:deep:single_reclaim:strong_cont?"
-        ]
-      },
-      "model_diagnostics": {
-        "status": "complete",
-        "bucket_rows": [
-          {
-            "bucket": 0,
-            "count": 31,
-            "probability_mean": 0.14222627530344392,
-            "positive_rate": 0.12903225806451613,
-            "avg_pnl_r": -0.046199966824022796
-          },
-          {
-            "bucket": 1,
-            "count": 30,
-            "probability_mean": 0.2929740315249648,
-            "positive_rate": 0.13333333333333333,
-            "avg_pnl_r": -0.0969621311051042
-          },
-          {
-            "bucket": 2,
-            "count": 30,
-            "probability_mean": 0.44023587460905345,
-            "positive_rate": 0.23333333333333334,
-            "avg_pnl_r": -0.0412608804417144
-          },
-          {
-            "bucket": 3,
-            "count": 30,
-            "probability_mean": 0.5663834086559362,
-            "positive_rate": 0.4666666666666667,
-            "avg_pnl_r": 0.37047884401864944
-          },
-          {
-            "bucket": 4,
-            "count": 30,
-            "probability_mean": 0.7537765813288265,
-            "positive_rate": 0.26666666666666666,
-            "avg_pnl_r": -0.02562237724454732
-          }
-        ],
-        "bucket_monotonicity": false,
-        "uncertainty_review": {
-          "probability_mean": 0.437153055748147,
-          "probability_std": 0.21930186460609566,
-          "high_confidence_share": 0.13245033112582782,
-          "low_confidence_share": 0.31788079470198677
-        },
-        "calibration_review": {
-          "status": "fail",
-          "ece": 0.1933804517348749,
-          "brier_decomposition": {
-            "uncertainty": 0.1849918863207754,
-            "reliability": 0.0693163922422263,
-            "resolution": 0.019842879698258844
-          },
-          "reliability_rows": [
-            {
-              "bucket": 0,
-              "count": 16,
-              "probability_mean": 0.09401143321279526,
-              "hit_rate": 0.0625,
-              "abs_gap": 0.03151143321279526
-            },
-            {
-              "bucket": 1,
-              "count": 15,
-              "probability_mean": 0.19365544020013578,
-              "hit_rate": 0.2,
-              "abs_gap": 0.00634455979986423
-            },
-            {
-              "bucket": 2,
-              "count": 15,
-              "probability_mean": 0.24744943649157955,
-              "hit_rate": 0.13333333333333333,
-              "abs_gap": 0.11411610315824622
-            },
-            {
-              "bucket": 3,
-              "count": 15,
-              "probability_mean": 0.3384986265583502,
-              "hit_rate": 0.13333333333333333,
-              "abs_gap": 0.2051652932250169
-            },
-            {
-              "bucket": 4,
-              "count": 15,
-              "probability_mean": 0.4069489632326923,
-              "hit_rate": 0.13333333333333333,
-              "abs_gap": 0.27361562989935895
-            },
-            {
-              "bucket": 5,
-              "count": 15,
-              "probability_mean": 0.47352278598541464,
-              "hit_rate": 0.3333333333333333,
-              "abs_gap": 0.14018945265208133
-            },
-            {
-              "bucket": 6,
-              "count": 15,
-              "probability_mean": 0.5376355878690047,
-              "hit_rate": 0.5333333333333333,
-              "abs_gap": 0.004302254535671346
-            },
-            {
-              "bucket": 7,
-              "count": 15,
-              "probability_mean": 0.5951312294428674,
-              "hit_rate": 0.4,
-              "abs_gap": 0.19513122944286743
-            },
-            {
-              "bucket": 8,
-              "count": 15,
-              "probability_mean": 0.6892851921593129,
-              "hit_rate": 0.3333333333333333,
-              "abs_gap": 0.35595185882597963
-            },
-            {
-              "bucket": 9,
-              "count": 15,
-              "probability_mean": 0.8182679704983398,
-              "hit_rate": 0.2,
-              "abs_gap": 0.6182679704983398
-            }
-          ]
-        },
-        "shap_analysis": {
-          "status": "complete",
-          "backend": "shap",
-          "model_name": "logistic_regression",
-          "top_features": [
-            {
-              "feature": "first_break_close_excess_points",
-              "mean_abs_shap": 0.19410480246717687
-            },
-            {
-              "feature": "first_break_wick_excess_points",
-              "mean_abs_shap": 0.1471094298424038
-            },
-            {
-              "feature": "reclaim_body_strength",
-              "mean_abs_shap": 0.11882424988354975
-            },
-            {
-              "feature": "first_break_close_confirmed",
-              "mean_abs_shap": 0.11573836526384428
-            },
-            {
-              "feature": "break_close_distance_to_zone",
-              "mean_abs_shap": 0.1057000863615055
-            },
-            {
-              "feature": "zone_width",
-              "mean_abs_shap": 0.08269417211169718
-            },
-            {
-              "feature": "direction_long",
-              "mean_abs_shap": 0.07658141059466114
-            },
-            {
-              "feature": "prior_close_gap",
-              "mean_abs_shap": 0.0711472317901809
-            },
-            {
-              "feature": "continuation_displacement_ratio",
-              "mean_abs_shap": 0.06120582416523576
-            },
-            {
-              "feature": "break_efficiency_ratio",
-              "mean_abs_shap": 0.06041101349207234
-            }
-          ],
-          "worst_trade_explanations": [
-            {
-              "candidate_id": "MNQ-2025-02-18-break_reentry_reclaim_short-2025-02-18T09:31:30-05:00",
-              "session_date": "2025-02-18",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "first_break_close_confirmed",
-                  "shap_value": 0.15937603205582068
-                },
-                {
-                  "feature": "first_break_close_excess_points",
-                  "shap_value": 0.13631057481439332
-                },
-                {
-                  "feature": "first_break_wick_excess_points",
-                  "shap_value": -0.1083281234629854
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-19-break_reentry_reclaim_short-2025-02-19T09:32:00-05:00",
-              "session_date": "2025-02-19",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "first_break_wick_excess_points",
-                  "shap_value": 0.23140056542709592
-                },
-                {
-                  "feature": "break_close_distance_to_zone",
-                  "shap_value": 0.1709047228691191
-                },
-                {
-                  "feature": "reclaim_body_strength",
-                  "shap_value": 0.11975726150450926
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-19-break_reentry_reclaim_long-2025-02-19T09:35:30-05:00",
-              "session_date": "2025-02-19",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "reclaim_body_strength",
-                  "shap_value": -0.19734961524987507
-                },
-                {
-                  "feature": "first_break_close_confirmed",
-                  "shap_value": 0.14647926280057755
-                },
-                {
-                  "feature": "first_break_close_excess_points",
-                  "shap_value": 0.12223848005899536
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-21-break_reentry_reclaim_short-2025-02-21T09:31:30-05:00",
-              "session_date": "2025-02-21",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "first_break_close_confirmed",
-                  "shap_value": -0.11352838124571767
-                },
-                {
-                  "feature": "first_break_close_excess_points",
-                  "shap_value": -0.08947039975144007
-                },
-                {
-                  "feature": "direction_long",
-                  "shap_value": 0.07537466481471955
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-25-break_reentry_reclaim_short-2025-02-25T09:31:30-05:00",
-              "session_date": "2025-02-25",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "continuation_displacement_ratio",
-                  "shap_value": 0.2201069070762925
-                },
-                {
-                  "feature": "post_reclaim_close_strength",
-                  "shap_value": 0.19449942973661163
-                },
-                {
-                  "feature": "first_break_wick_excess_points",
-                  "shap_value": 0.1915575780132707
-                }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    {
-      "variant": "allow_wick_through_breaks",
-      "description": "Allow wick-through break states to seed later reentry/reclaim candidates.",
-      "candidate_count": 512,
-      "label_summary": {
-        "rows": 512,
-        "positive_rate": 0.25,
-        "avg_pnl_r": -0.016366023378470464
-      },
-      "model_metrics": {
-        "precision": 0.3108108108108108,
-        "recall": 0.6388888888888888,
-        "brier": 0.252690497868216,
-        "roc_auc": 0.6101694915254237
-      },
-      "feature_audit": {
-        "rows": 512,
+        "rows": 398,
         "failed": 0
       },
       "feature_validation": {
@@ -532,246 +46,183 @@
         "failed_features": [],
         "top_abs_label_corr": [
           {
-            "feature": "reclaim_failure_count",
+            "feature": "pivot_symmetry",
             "missing_rate": 0.0,
-            "unique_count": 19,
-            "label_corr": -0.11142711708463723,
+            "unique_count": 377,
+            "label_corr": 0.19797702215975121,
             "is_constant": false
           },
           {
-            "feature": "break_close_distance_to_zone",
+            "feature": "post_reclaim_close_strength",
             "missing_rate": 0.0,
-            "unique_count": 205,
-            "label_corr": 0.11110872798549958,
+            "unique_count": 390,
+            "label_corr": 0.1589198274124298,
             "is_constant": false
           },
           {
-            "feature": "reentry_count",
+            "feature": "deepest_zone_retrace_fraction",
             "missing_rate": 0.0,
-            "unique_count": 20,
-            "label_corr": -0.1104237282620612,
-            "is_constant": false
-          },
-          {
-            "feature": "pivot_duration_bars",
-            "missing_rate": 0.0,
-            "unique_count": 20,
-            "label_corr": -0.10843927355692055,
-            "is_constant": false
-          },
-          {
-            "feature": "continuation_delay_bars",
-            "missing_rate": 0.0,
-            "unique_count": 20,
-            "label_corr": -0.10843927355692055,
-            "is_constant": false
-          },
-          {
-            "feature": "reclaim_latency_bars",
-            "missing_rate": 0.0,
-            "unique_count": 19,
-            "label_corr": -0.10792900040602074,
-            "is_constant": false
-          },
-          {
-            "feature": "trigger_seconds_after_open",
-            "missing_rate": 0.0,
-            "unique_count": 86,
-            "label_corr": -0.10765987261481015,
-            "is_constant": false
-          },
-          {
-            "feature": "first_break_wick_excess_points",
-            "missing_rate": 0.0,
-            "unique_count": 100,
-            "label_corr": 0.1035608888402333,
-            "is_constant": false
-          },
-          {
-            "feature": "break_speed_bars",
-            "missing_rate": 0.0,
-            "unique_count": 53,
-            "label_corr": -0.09661095558645805,
+            "unique_count": 378,
+            "label_corr": 0.15567743138071435,
             "is_constant": false
           },
           {
             "feature": "direction_long",
             "missing_rate": 0.0,
             "unique_count": 2,
-            "label_corr": -0.09472441934290145,
-            "is_constant": false
-          },
-          {
-            "feature": "prior_close_gap",
-            "missing_rate": 0.0,
-            "unique_count": 315,
-            "label_corr": -0.09391069835350062,
+            "label_corr": -0.14142865253225245,
             "is_constant": false
           },
           {
             "feature": "zone_width",
             "missing_rate": 0.0,
-            "unique_count": 149,
-            "label_corr": -0.0938305592018627,
-            "is_constant": false
-          },
-          {
-            "feature": "entry_distance_from_zone_low",
-            "missing_rate": 0.0,
-            "unique_count": 237,
-            "label_corr": -0.09186702134504979,
-            "is_constant": false
-          },
-          {
-            "feature": "first_break_close_confirmed",
-            "missing_rate": 0.0,
-            "unique_count": 2,
-            "label_corr": 0.0892233620092308,
+            "unique_count": 139,
+            "label_corr": -0.13436867521501394,
             "is_constant": false
           },
           {
             "feature": "zone_width_bps",
             "missing_rate": 0.0,
-            "unique_count": 316,
-            "label_corr": -0.0878676114505901,
+            "unique_count": 271,
+            "label_corr": -0.13194535932265783,
+            "is_constant": false
+          },
+          {
+            "feature": "continuation_displacement_ratio",
+            "missing_rate": 0.0,
+            "unique_count": 373,
+            "label_corr": 0.12495978317791648,
+            "is_constant": false
+          },
+          {
+            "feature": "opposite_boundary_close_violation",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": 0.10141590331117321,
+            "is_constant": false
+          },
+          {
+            "feature": "break_speed_bars",
+            "missing_rate": 0.0,
+            "unique_count": 64,
+            "label_corr": -0.09152636840546578,
+            "is_constant": false
+          },
+          {
+            "feature": "entry_distance_from_zone_low",
+            "missing_rate": 0.0,
+            "unique_count": 214,
+            "label_corr": -0.09028096902151901,
+            "is_constant": false
+          },
+          {
+            "feature": "pivot_duration_bars",
+            "missing_rate": 0.0,
+            "unique_count": 60,
+            "label_corr": 0.08159578692058411,
+            "is_constant": false
+          },
+          {
+            "feature": "continuation_delay_bars",
+            "missing_rate": 0.0,
+            "unique_count": 60,
+            "label_corr": 0.08159578692058411,
+            "is_constant": false
+          },
+          {
+            "feature": "reclaim_latency_bars",
+            "missing_rate": 0.0,
+            "unique_count": 60,
+            "label_corr": 0.08159578692058411,
+            "is_constant": false
+          },
+          {
+            "feature": "break_close_distance_to_zone",
+            "missing_rate": 0.0,
+            "unique_count": 197,
+            "label_corr": 0.07873079355741487,
+            "is_constant": false
+          },
+          {
+            "feature": "first_break_wick_only",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.0779276075223766,
             "is_constant": false
           }
         ]
       },
       "market_structure_lab": {
         "status": "complete",
-        "candidate_count": 512,
+        "candidate_count": 398,
         "structure_families": [
           {
-            "family": "wick_break:shallow:single_reclaim:strong_cont",
-            "count": 1,
-            "positive_rate": 1.0,
-            "avg_pnl_r": 1.5,
-            "reclaim_mean": 1.0,
-            "retrace_mean": 0.34074074074074073,
-            "continuation_strength_mean": 0.5037037037037037
-          },
-          {
-            "family": "wick_break:deep:multi_reclaim:weak_cont",
-            "count": 21,
-            "positive_rate": 0.42857142857142855,
-            "avg_pnl_r": 0.49322096943798627,
-            "reclaim_mean": 2.0,
-            "retrace_mean": 0.6987715536928492,
-            "continuation_strength_mean": 0.1962528140011392
-          },
-          {
-            "family": "close_break:shallow:single_reclaim:weak_cont",
-            "count": 64,
-            "positive_rate": 0.28125,
-            "avg_pnl_r": 0.28208552743512394,
-            "reclaim_mean": 0.265625,
-            "retrace_mean": 0.23362827103215417,
-            "continuation_strength_mean": 0.2142193118352382
+            "family": "close_break:deep:single_reclaim:strong_cont",
+            "count": 19,
+            "positive_rate": 0.42105263157894735,
+            "avg_pnl_r": 0.14521242866201653,
+            "reclaim_mean": 0.7894736842105263,
+            "retrace_mean": 0.7474171805531732,
+            "continuation_strength_mean": 0.7042280323679965
           },
           {
             "family": "close_break:shallow:single_reclaim:strong_cont",
-            "count": 27,
-            "positive_rate": 0.25925925925925924,
-            "avg_pnl_r": 0.08868416774103755,
-            "reclaim_mean": 0.1111111111111111,
-            "retrace_mean": 0.1998430856297045,
-            "continuation_strength_mean": 0.852433760562166
+            "count": 37,
+            "positive_rate": 0.2972972972972973,
+            "avg_pnl_r": 0.0029824302132635135,
+            "reclaim_mean": 0.1891891891891892,
+            "retrace_mean": 0.14805457036715544,
+            "continuation_strength_mean": 0.6710645612947583
           },
           {
-            "family": "close_break:deep:single_reclaim:strong_cont",
-            "count": 54,
-            "positive_rate": 0.35185185185185186,
-            "avg_pnl_r": 0.015723603591824124,
-            "reclaim_mean": 0.37037037037037035,
-            "retrace_mean": 0.7339500549553359,
-            "continuation_strength_mean": 0.8526643643095347
-          },
-          {
-            "family": "wick_break:shallow:single_reclaim:weak_cont",
-            "count": 17,
-            "positive_rate": 0.058823529411764705,
-            "avg_pnl_r": -0.02086043635753419,
-            "reclaim_mean": 1.0,
-            "retrace_mean": 0.2573337530867591,
-            "continuation_strength_mean": 0.11811212560493824
+            "family": "close_break:shallow:single_reclaim:weak_cont",
+            "count": 172,
+            "positive_rate": 0.1686046511627907,
+            "avg_pnl_r": -0.050306269151270906,
+            "reclaim_mean": 0.5232558139534884,
+            "retrace_mean": 0.1588710070598273,
+            "continuation_strength_mean": 0.2098920124718
           },
           {
             "family": "close_break:deep:single_reclaim:weak_cont",
-            "count": 186,
-            "positive_rate": 0.26344086021505375,
-            "avg_pnl_r": -0.04942200364547007,
-            "reclaim_mean": 0.7150537634408602,
-            "retrace_mean": 0.738829034916698,
-            "continuation_strength_mean": 0.17705850974842893
-          },
-          {
-            "family": "wick_break:deep:single_reclaim:strong_cont",
-            "count": 14,
-            "positive_rate": 0.2857142857142857,
-            "avg_pnl_r": -0.08792357522719231,
-            "reclaim_mean": 1.0,
-            "retrace_mean": 0.8575941627712215,
-            "continuation_strength_mean": 0.7302966215686055
-          },
-          {
-            "family": "wick_break:deep:single_reclaim:weak_cont",
-            "count": 124,
-            "positive_rate": 0.16129032258064516,
-            "avg_pnl_r": -0.21577431497961957,
-            "reclaim_mean": 1.0,
-            "retrace_mean": 0.8426124630397508,
-            "continuation_strength_mean": 0.17778192552396785
-          },
-          {
-            "family": "wick_break:deep:multi_reclaim:strong_cont",
-            "count": 2,
-            "positive_rate": 0.0,
-            "avg_pnl_r": -1.0,
-            "reclaim_mean": 2.0,
-            "retrace_mean": 0.9805555555555556,
-            "continuation_strength_mean": 0.9472222222222222
-          },
-          {
-            "family": "wick_break:shallow:multi_reclaim:weak_cont",
-            "count": 2,
-            "positive_rate": 0.0,
-            "avg_pnl_r": -1.0,
-            "reclaim_mean": 2.0,
-            "retrace_mean": 0.31856540084388185,
-            "continuation_strength_mean": 0.29770946353224836
+            "count": 170,
+            "positive_rate": 0.21176470588235294,
+            "avg_pnl_r": -0.11894579391504859,
+            "reclaim_mean": 0.9470588235294117,
+            "retrace_mean": 0.7175040333347023,
+            "continuation_strength_mean": 0.17203961133568405
           }
         ],
         "failure_taxonomy": [
           {
             "failure_reason": "no_follow_through",
-            "count": 157,
-            "avg_pnl_r": 0.16955793649823642,
-            "common_family": "close_break:deep:single_reclaim:weak_cont"
+            "count": 143,
+            "avg_pnl_r": 0.13283862099924623,
+            "common_family": "close_break:shallow:single_reclaim:weak_cont"
           },
           {
-            "failure_reason": "deep_retrace_failure",
-            "count": 98,
+            "failure_reason": "weak_continuation",
+            "count": 59,
             "avg_pnl_r": -1.0,
             "common_family": "close_break:deep:single_reclaim:weak_cont"
           },
           {
-            "failure_reason": "weak_continuation",
-            "count": 57,
+            "failure_reason": "deep_retrace_failure",
+            "count": 40,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "stop_before_target",
+            "count": 38,
             "avg_pnl_r": -1.0,
             "common_family": "close_break:deep:single_reclaim:weak_cont"
           },
           {
             "failure_reason": "no_reclaim_edge",
-            "count": 38,
-            "avg_pnl_r": -1.0,
-            "common_family": "close_break:deep:single_reclaim:strong_cont"
-          },
-          {
-            "failure_reason": "stop_before_target",
             "count": 34,
             "avg_pnl_r": -1.0,
-            "common_family": "wick_break:deep:single_reclaim:weak_cont"
+            "common_family": "close_break:shallow:single_reclaim:weak_cont"
           }
         ],
         "market_structure_questions": [
@@ -784,492 +235,337 @@
         "bucket_rows": [
           {
             "bucket": 0,
-            "count": 31,
-            "probability_mean": 0.11431559505050343,
-            "positive_rate": 0.06451612903225806,
-            "avg_pnl_r": -0.24528293842113139
+            "count": 24,
+            "probability_mean": 0.12991113452020162,
+            "positive_rate": 0.08333333333333333,
+            "avg_pnl_r": 0.03357518281199806
           },
           {
             "bucket": 1,
-            "count": 31,
-            "probability_mean": 0.30469161267151496,
-            "positive_rate": 0.16129032258064516,
-            "avg_pnl_r": -0.19689427651262298
+            "count": 24,
+            "probability_mean": 0.3367675364072489,
+            "positive_rate": 0.08333333333333333,
+            "avg_pnl_r": -0.29817926324021876
           },
           {
             "bucket": 2,
-            "count": 30,
-            "probability_mean": 0.47785639425977305,
-            "positive_rate": 0.4666666666666667,
-            "avg_pnl_r": 0.4014555010955822
+            "count": 24,
+            "probability_mean": 0.5034708852319842,
+            "positive_rate": 0.2916666666666667,
+            "avg_pnl_r": 0.09165523413186825
           },
           {
             "bucket": 3,
-            "count": 31,
-            "probability_mean": 0.6025909272704906,
-            "positive_rate": 0.22580645161290322,
-            "avg_pnl_r": -0.12317663209217933
+            "count": 24,
+            "probability_mean": 0.6453259074197278,
+            "positive_rate": 0.2916666666666667,
+            "avg_pnl_r": -0.1419773416159431
           },
           {
             "bucket": 4,
-            "count": 31,
-            "probability_mean": 0.7826728681884636,
-            "positive_rate": 0.25806451612903225,
-            "avg_pnl_r": -0.1606527104914202
+            "count": 24,
+            "probability_mean": 0.8665181929494228,
+            "positive_rate": 0.2916666666666667,
+            "avg_pnl_r": -0.20959865542066627
           }
         ],
-        "bucket_monotonicity": false,
+        "bucket_monotonicity": true,
         "uncertainty_review": {
-          "probability_mean": 0.4562863177039178,
-          "probability_std": 0.2403500376036357,
-          "high_confidence_share": 0.16233766233766234,
-          "low_confidence_share": 0.3051948051948052
+          "probability_mean": 0.49639873130571704,
+          "probability_std": 0.258881265018387,
+          "high_confidence_share": 0.21666666666666667,
+          "low_confidence_share": 0.26666666666666666
         },
         "calibration_review": {
           "status": "fail",
-          "ece": 0.24394551393741862,
+          "ece": 0.2897048775116215,
           "brier_decomposition": {
-            "uncertainty": 0.1791195817169843,
-            "reliability": 0.09376772514542951,
-            "resolution": 0.02522347782088042
+            "uncertainty": 0.16493055555555555,
+            "reliability": 0.11573832548358669,
+            "resolution": 0.015625
           },
           "reliability_rows": [
             {
               "bucket": 0,
-              "count": 16,
-              "probability_mean": 0.04962191848237879,
-              "hit_rate": 0.0,
-              "abs_gap": 0.04962191848237879
+              "count": 12,
+              "probability_mean": 0.0751359356371444,
+              "hit_rate": 0.08333333333333333,
+              "abs_gap": 0.008197397696188935
             },
             {
               "bucket": 1,
-              "count": 15,
-              "probability_mean": 0.18332218338983636,
-              "hit_rate": 0.13333333333333333,
-              "abs_gap": 0.049988850056503026
+              "count": 12,
+              "probability_mean": 0.18468633340325882,
+              "hit_rate": 0.08333333333333333,
+              "abs_gap": 0.1013530000699255
             },
             {
               "bucket": 2,
-              "count": 16,
-              "probability_mean": 0.2646851727616574,
-              "hit_rate": 0.125,
-              "abs_gap": 0.13968517276165737
+              "count": 12,
+              "probability_mean": 0.2888140688923495,
+              "hit_rate": 0.0,
+              "abs_gap": 0.2888140688923495
             },
             {
               "bucket": 3,
-              "count": 15,
-              "probability_mean": 0.347365148575363,
-              "hit_rate": 0.2,
-              "abs_gap": 0.14736514857536298
+              "count": 12,
+              "probability_mean": 0.3847210039221481,
+              "hit_rate": 0.16666666666666666,
+              "abs_gap": 0.21805433725548143
             },
             {
               "bucket": 4,
-              "count": 15,
-              "probability_mean": 0.435785732641338,
-              "hit_rate": 0.26666666666666666,
-              "abs_gap": 0.16911906597467136
+              "count": 12,
+              "probability_mean": 0.4795440510751756,
+              "hit_rate": 0.3333333333333333,
+              "abs_gap": 0.1462107177418423
             },
             {
               "bucket": 5,
-              "count": 16,
-              "probability_mean": 0.5218901181262772,
-              "hit_rate": 0.625,
-              "abs_gap": 0.10310988187372283
+              "count": 12,
+              "probability_mean": 0.527397719388793,
+              "hit_rate": 0.25,
+              "abs_gap": 0.277397719388793
             },
             {
               "bucket": 6,
-              "count": 15,
-              "probability_mean": 0.5761214354485295,
-              "hit_rate": 0.2,
-              "abs_gap": 0.37612143544852944
+              "count": 12,
+              "probability_mean": 0.6108083967201177,
+              "hit_rate": 0.25,
+              "abs_gap": 0.36080839672011766
             },
             {
               "bucket": 7,
-              "count": 16,
-              "probability_mean": 0.6339444276155025,
-              "hit_rate": 0.25,
-              "abs_gap": 0.3839444276155025
+              "count": 12,
+              "probability_mean": 0.6798434181193378,
+              "hit_rate": 0.3333333333333333,
+              "abs_gap": 0.3465100847860045
             },
             {
               "bucket": 8,
-              "count": 15,
-              "probability_mean": 0.7210903797625279,
-              "hit_rate": 0.3333333333333333,
-              "abs_gap": 0.38775704642919456
+              "count": 12,
+              "probability_mean": 0.7989412077238072,
+              "hit_rate": 0.16666666666666666,
+              "abs_gap": 0.6322745410571405
             },
             {
               "bucket": 9,
-              "count": 15,
-              "probability_mean": 0.8527035691577575,
-              "hit_rate": 0.2,
-              "abs_gap": 0.6527035691577574
+              "count": 12,
+              "probability_mean": 0.9340951781750384,
+              "hit_rate": 0.4166666666666667,
+              "abs_gap": 0.5174285115083717
             }
           ]
         },
         "shap_analysis": {
-          "status": "complete",
-          "backend": "shap",
-          "model_name": "logistic_regression",
-          "top_features": [
-            {
-              "feature": "first_break_wick_excess_points",
-              "mean_abs_shap": 0.14312330571975174
-            },
-            {
-              "feature": "first_break_close_excess_points",
-              "mean_abs_shap": 0.1215793902900233
-            },
-            {
-              "feature": "pivot_symmetry",
-              "mean_abs_shap": 0.10208171412655365
-            },
-            {
-              "feature": "zone_width",
-              "mean_abs_shap": 0.10147367055541505
-            },
-            {
-              "feature": "post_reclaim_close_strength",
-              "mean_abs_shap": 0.09844843572211186
-            },
-            {
-              "feature": "break_efficiency_ratio",
-              "mean_abs_shap": 0.09340794380539087
-            },
-            {
-              "feature": "prior_close_gap",
-              "mean_abs_shap": 0.07923272024804716
-            },
-            {
-              "feature": "reclaim_close_location",
-              "mean_abs_shap": 0.07576091713564517
-            },
-            {
-              "feature": "break_close_distance_to_zone",
-              "mean_abs_shap": 0.0721976335598905
-            },
-            {
-              "feature": "reclaim_count",
-              "mean_abs_shap": 0.06684182106102597
-            }
-          ],
-          "worst_trade_explanations": [
-            {
-              "candidate_id": "MNQ-2025-02-19-break_reentry_reclaim_short-2025-02-19T09:32:00-05:00",
-              "session_date": "2025-02-19",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "break_efficiency_ratio",
-                  "shap_value": -0.18552576896148448
-                },
-                {
-                  "feature": "break_close_distance_to_zone",
-                  "shap_value": 0.10412854959338125
-                },
-                {
-                  "feature": "post_reclaim_close_strength",
-                  "shap_value": 0.0867045955080686
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-19-break_reentry_reclaim_long-2025-02-19T09:35:30-05:00",
-              "session_date": "2025-02-19",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "post_reclaim_close_strength",
-                  "shap_value": 0.15993959849002895
-                },
-                {
-                  "feature": "pivot_symmetry",
-                  "shap_value": -0.13938434705740496
-                },
-                {
-                  "feature": "reclaim_close_location",
-                  "shap_value": -0.09386425087169885
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-21-break_reentry_reclaim_short-2025-02-21T09:31:30-05:00",
-              "session_date": "2025-02-21",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "post_reclaim_close_strength",
-                  "shap_value": 0.16702675223255997
-                },
-                {
-                  "feature": "break_efficiency_ratio",
-                  "shap_value": -0.12707897952511416
-                },
-                {
-                  "feature": "first_break_close_excess_points",
-                  "shap_value": -0.10867614621763726
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-25-break_reentry_reclaim_short-2025-02-25T09:31:30-05:00",
-              "session_date": "2025-02-25",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "post_reclaim_close_strength",
-                  "shap_value": 0.39533661059909886
-                },
-                {
-                  "feature": "first_break_wick_excess_points",
-                  "shap_value": 0.16910550935385602
-                },
-                {
-                  "feature": "pivot_symmetry",
-                  "shap_value": -0.1203808643860842
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-25-break_reentry_reclaim_long-2025-02-25T09:36:00-05:00",
-              "session_date": "2025-02-25",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "break_range_expansion",
-                  "shap_value": -0.2967411249445901
-                },
-                {
-                  "feature": "reclaim_close_location",
-                  "shap_value": 0.15765334696285646
-                },
-                {
-                  "feature": "pivot_symmetry",
-                  "shap_value": 0.15101124760053955
-                }
-              ]
-            }
-          ]
+          "status": "pending",
+          "reason": "shap_not_enabled"
         }
       }
     },
     {
       "variant": "allow_delayed_reclaim",
       "description": "Keep first canonical break but allow reclaim through the full regular session.",
-      "candidate_count": 510,
+      "candidate_count": 409,
       "label_summary": {
-        "rows": 510,
-        "positive_rate": 0.2627450980392157,
-        "avg_pnl_r": 0.030958062488614314
+        "rows": 409,
+        "positive_rate": 0.21271393643031786,
+        "avg_pnl_r": -0.06535534874407904
       },
       "model_metrics": {
-        "precision": 0.359375,
-        "recall": 0.6052631578947368,
-        "brier": 0.2299043429911167,
-        "roc_auc": 0.6581235697940504
+        "precision": 0.29508196721311475,
+        "recall": 0.6923076923076923,
+        "brier": 0.2613456512276503,
+        "roc_auc": 0.6526566217287867
       },
       "feature_audit": {
-        "rows": 510,
+        "rows": 409,
         "failed": 0
       },
       "feature_validation": {
         "status": "complete",
         "feature_count": 36,
-        "failed_count": 2,
-        "failed_features": [
+        "failed_count": 0,
+        "failed_features": [],
+        "top_abs_label_corr": [
           {
-            "feature": "opposite_boundary_close_violation",
+            "feature": "pivot_symmetry",
             "missing_rate": 0.0,
-            "unique_count": 1,
-            "label_corr": null,
-            "is_constant": true
+            "unique_count": 387,
+            "label_corr": 0.19112213933484207,
+            "is_constant": false
           },
           {
-            "feature": "reclaim_failure_count",
+            "feature": "post_reclaim_close_strength",
             "missing_rate": 0.0,
-            "unique_count": 1,
-            "label_corr": null,
-            "is_constant": true
-          }
-        ],
-        "top_abs_label_corr": [
+            "unique_count": 401,
+            "label_corr": 0.17351476437611632,
+            "is_constant": false
+          },
+          {
+            "feature": "deepest_zone_retrace_fraction",
+            "missing_rate": 0.0,
+            "unique_count": 385,
+            "label_corr": 0.14339001080301012,
+            "is_constant": false
+          },
+          {
+            "feature": "direction_long",
+            "missing_rate": 0.0,
+            "unique_count": 2,
+            "label_corr": -0.1394979054101322,
+            "is_constant": false
+          },
           {
             "feature": "zone_width",
             "missing_rate": 0.0,
-            "unique_count": 148,
-            "label_corr": -0.14617457119989294,
+            "unique_count": 139,
+            "label_corr": -0.13359892254642755,
             "is_constant": false
           },
           {
             "feature": "zone_width_bps",
             "missing_rate": 0.0,
-            "unique_count": 315,
-            "label_corr": -0.14170395429908358,
+            "unique_count": 271,
+            "label_corr": -0.1321105444390792,
             "is_constant": false
           },
           {
-            "feature": "break_close_distance_to_zone",
+            "feature": "continuation_displacement_ratio",
             "missing_rate": 0.0,
-            "unique_count": 267,
-            "label_corr": 0.1338315452781569,
+            "unique_count": 384,
+            "label_corr": 0.12447817616213211,
             "is_constant": false
           },
           {
-            "feature": "pivot_overlap_ratio",
+            "feature": "pivot_duration_bars",
             "missing_rate": 0.0,
-            "unique_count": 3,
-            "label_corr": 0.10387838760169829,
+            "unique_count": 63,
+            "label_corr": 0.10440426553213385,
             "is_constant": false
           },
           {
-            "feature": "reclaim_body_strength",
+            "feature": "continuation_delay_bars",
             "missing_rate": 0.0,
-            "unique_count": 274,
-            "label_corr": -0.10241350668467088,
-            "is_constant": false
-          },
-          {
-            "feature": "reclaim_close_location",
-            "missing_rate": 0.0,
-            "unique_count": 272,
-            "label_corr": -0.10046651597798292,
-            "is_constant": false
-          },
-          {
-            "feature": "first_break_close_confirmed",
-            "missing_rate": 0.0,
-            "unique_count": 2,
-            "label_corr": 0.09802654261506756,
-            "is_constant": false
-          },
-          {
-            "feature": "reentry_count",
-            "missing_rate": 0.0,
-            "unique_count": 2,
-            "label_corr": -0.09426374574268422,
-            "is_constant": false
-          },
-          {
-            "feature": "reclaim_count",
-            "missing_rate": 0.0,
-            "unique_count": 2,
-            "label_corr": -0.09426374574268422,
+            "unique_count": 63,
+            "label_corr": 0.10440426553213385,
             "is_constant": false
           },
           {
             "feature": "reclaim_latency_bars",
             "missing_rate": 0.0,
-            "unique_count": 3,
-            "label_corr": 0.08739998405105394,
+            "unique_count": 63,
+            "label_corr": 0.10440426553213385,
             "is_constant": false
           },
           {
-            "feature": "first_break_wick_excess_points",
+            "feature": "opposite_boundary_close_violation",
             "missing_rate": 0.0,
-            "unique_count": 112,
-            "label_corr": 0.08645492684969286,
+            "unique_count": 2,
+            "label_corr": 0.0991569390262866,
             "is_constant": false
           },
           {
             "feature": "entry_distance_from_zone_low",
             "missing_rate": 0.0,
-            "unique_count": 240,
-            "label_corr": -0.08371078477518404,
+            "unique_count": 216,
+            "label_corr": -0.08785138578535633,
             "is_constant": false
           },
           {
-            "feature": "break_efficiency_ratio",
+            "feature": "break_close_distance_to_zone",
             "missing_rate": 0.0,
-            "unique_count": 255,
-            "label_corr": 0.07624718629011355,
+            "unique_count": 205,
+            "label_corr": 0.07952174323972025,
             "is_constant": false
           },
           {
             "feature": "break_speed_bars",
             "missing_rate": 0.0,
-            "unique_count": 71,
-            "label_corr": -0.07424603317854786,
+            "unique_count": 69,
+            "label_corr": -0.07853438959048918,
             "is_constant": false
           },
           {
-            "feature": "trigger_seconds_after_open",
+            "feature": "pivot_overlap_ratio",
             "missing_rate": 0.0,
-            "unique_count": 103,
-            "label_corr": -0.07421492845692099,
+            "unique_count": 64,
+            "label_corr": 0.07744063758995405,
             "is_constant": false
           }
         ]
       },
       "market_structure_lab": {
         "status": "complete",
-        "candidate_count": 510,
+        "candidate_count": 409,
         "structure_families": [
           {
-            "family": "close_break:shallow:single_reclaim:weak_cont",
-            "count": 157,
-            "positive_rate": 0.2484076433121019,
-            "avg_pnl_r": 0.1875728957425548,
-            "reclaim_mean": 0.2484076433121019,
-            "retrace_mean": 0.20241662608535113,
-            "continuation_strength_mean": 0.21754835719455354
+            "family": "close_break:deep:single_reclaim:strong_cont",
+            "count": 20,
+            "positive_rate": 0.4,
+            "avg_pnl_r": 0.08795180722891568,
+            "reclaim_mean": 0.8,
+            "retrace_mean": 0.7322685437477368,
+            "continuation_strength_mean": 0.6943252727249052
           },
           {
             "family": "close_break:shallow:single_reclaim:strong_cont",
-            "count": 52,
-            "positive_rate": 0.28846153846153844,
-            "avg_pnl_r": 0.11480210686279878,
-            "reclaim_mean": 0.07692307692307693,
-            "retrace_mean": 0.18530820909977663,
-            "continuation_strength_mean": 0.7632000775052515
+            "count": 39,
+            "positive_rate": 0.3076923076923077,
+            "avg_pnl_r": 0.015649997894634615,
+            "reclaim_mean": 0.1794871794871795,
+            "retrace_mean": 0.14612690605494594,
+            "continuation_strength_mean": 0.6790481317948481
           },
           {
-            "family": "close_break:deep:single_reclaim:strong_cont",
-            "count": 65,
-            "positive_rate": 0.3384615384615385,
-            "avg_pnl_r": -0.040783467785253776,
-            "reclaim_mean": 0.4,
-            "retrace_mean": 0.7325884420961246,
-            "continuation_strength_mean": 0.8243281863662644
+            "family": "close_break:shallow:single_reclaim:weak_cont",
+            "count": 178,
+            "positive_rate": 0.16853932584269662,
+            "avg_pnl_r": -0.06090563418080072,
+            "reclaim_mean": 0.5280898876404494,
+            "retrace_mean": 0.15832244716375715,
+            "continuation_strength_mean": 0.20894767775997447
           },
           {
             "family": "close_break:deep:single_reclaim:weak_cont",
-            "count": 236,
-            "positive_rate": 0.2457627118644068,
-            "avg_pnl_r": -0.07194541064920276,
-            "reclaim_mean": 0.690677966101695,
-            "retrace_mean": 0.6969356920200629,
-            "continuation_strength_mean": 0.1993793741218593
+            "count": 172,
+            "positive_rate": 0.21511627906976744,
+            "avg_pnl_r": -0.10615419078264454,
+            "reclaim_mean": 0.9476744186046512,
+            "retrace_mean": 0.7221978254764057,
+            "continuation_strength_mean": 0.17084225527116548
           }
         ],
         "failure_taxonomy": [
           {
             "failure_reason": "no_follow_through",
-            "count": 160,
-            "avg_pnl_r": 0.19242882418245813,
+            "count": 145,
+            "avg_pnl_r": 0.13634249905980464,
             "common_family": "close_break:shallow:single_reclaim:weak_cont"
-          },
-          {
-            "failure_reason": "no_reclaim_edge",
-            "count": 70,
-            "avg_pnl_r": -1.0,
-            "common_family": "close_break:shallow:single_reclaim:weak_cont"
-          },
-          {
-            "failure_reason": "deep_retrace_failure",
-            "count": 62,
-            "avg_pnl_r": -1.0,
-            "common_family": "close_break:deep:single_reclaim:weak_cont"
           },
           {
             "failure_reason": "weak_continuation",
-            "count": 51,
+            "count": 61,
             "avg_pnl_r": -1.0,
             "common_family": "close_break:deep:single_reclaim:weak_cont"
           },
           {
             "failure_reason": "stop_before_target",
-            "count": 33,
+            "count": 41,
             "avg_pnl_r": -1.0,
             "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "deep_retrace_failure",
+            "count": 40,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:deep:single_reclaim:weak_cont"
+          },
+          {
+            "failure_reason": "no_reclaim_edge",
+            "count": 35,
+            "avg_pnl_r": -1.0,
+            "common_family": "close_break:shallow:single_reclaim:weak_cont"
           }
         ],
         "market_structure_questions": [
@@ -1282,302 +578,153 @@
         "bucket_rows": [
           {
             "bucket": 0,
-            "count": 31,
-            "probability_mean": 0.12413096669955026,
-            "positive_rate": 0.06451612903225806,
-            "avg_pnl_r": -0.21315458679380264
+            "count": 25,
+            "probability_mean": 0.1261438284203675,
+            "positive_rate": 0.12,
+            "avg_pnl_r": 0.13509633571111837
           },
           {
             "bucket": 1,
-            "count": 30,
-            "probability_mean": 0.28009762579225045,
-            "positive_rate": 0.2,
-            "avg_pnl_r": 0.12855953143417048
+            "count": 24,
+            "probability_mean": 0.3258298081660623,
+            "positive_rate": 0.041666666666666664,
+            "avg_pnl_r": -0.38029533146851624
           },
           {
             "bucket": 2,
-            "count": 31,
-            "probability_mean": 0.4347994489467928,
-            "positive_rate": 0.22580645161290322,
-            "avg_pnl_r": -0.10833802428663128
+            "count": 25,
+            "probability_mean": 0.499173757527814,
+            "positive_rate": 0.36,
+            "avg_pnl_r": 0.11253151635420995
           },
           {
             "bucket": 3,
-            "count": 30,
-            "probability_mean": 0.5709891285646699,
-            "positive_rate": 0.4666666666666667,
-            "avg_pnl_r": 0.37047884401864944
+            "count": 24,
+            "probability_mean": 0.6323384501980094,
+            "positive_rate": 0.20833333333333334,
+            "avg_pnl_r": -0.2149821960558548
           },
           {
             "bucket": 4,
-            "count": 31,
-            "probability_mean": 0.7658415994958743,
-            "positive_rate": 0.2903225806451613,
-            "avg_pnl_r": 0.0235912478278574
+            "count": 25,
+            "probability_mean": 0.8464294875461867,
+            "positive_rate": 0.32,
+            "avg_pnl_r": -0.14121470920383963
           }
         ],
         "bucket_monotonicity": false,
         "uncertainty_review": {
-          "probability_mean": 0.43529761503344006,
-          "probability_std": 0.23114001329086917,
-          "high_confidence_share": 0.13725490196078433,
-          "low_confidence_share": 0.3333333333333333
+          "probability_mean": 0.4860952442121701,
+          "probability_std": 0.2558067466180684,
+          "high_confidence_share": 0.2032520325203252,
+          "low_confidence_share": 0.2682926829268293
         },
         "calibration_review": {
           "status": "fail",
-          "ece": 0.1912084846497448,
+          "ece": 0.2747131303910319,
           "brier_decomposition": {
-            "uncertainty": 0.1866803366226665,
-            "reliability": 0.06709827992210758,
-            "resolution": 0.0256236917424922
+            "uncertainty": 0.16669971577764559,
+            "reliability": 0.11458176639072648,
+            "resolution": 0.020045556928364783
           },
           "reliability_rows": [
             {
               "bucket": 0,
-              "count": 16,
-              "probability_mean": 0.07797505586231204,
-              "hit_rate": 0.0,
-              "abs_gap": 0.07797505586231204
+              "count": 13,
+              "probability_mean": 0.07770973290539542,
+              "hit_rate": 0.07692307692307693,
+              "abs_gap": 0.0007866559823184877
             },
             {
               "bucket": 1,
-              "count": 15,
-              "probability_mean": 0.17336393825927102,
-              "hit_rate": 0.13333333333333333,
-              "abs_gap": 0.040030604925937685
+              "count": 12,
+              "probability_mean": 0.17861409856158728,
+              "hit_rate": 0.16666666666666666,
+              "abs_gap": 0.011947431894920618
             },
             {
               "bucket": 2,
-              "count": 15,
-              "probability_mean": 0.23975237817218156,
-              "hit_rate": 0.2,
-              "abs_gap": 0.03975237817218155
+              "count": 12,
+              "probability_mean": 0.27311038227776446,
+              "hit_rate": 0.0,
+              "abs_gap": 0.27311038227776446
             },
             {
               "bucket": 3,
-              "count": 16,
-              "probability_mean": 0.3230036017360424,
-              "hit_rate": 0.1875,
-              "abs_gap": 0.13550360173604242
+              "count": 13,
+              "probability_mean": 0.38402473835546974,
+              "hit_rate": 0.07692307692307693,
+              "abs_gap": 0.3071016614323928
             },
             {
               "bucket": 4,
-              "count": 15,
-              "probability_mean": 0.3989206981724586,
-              "hit_rate": 0.06666666666666667,
-              "abs_gap": 0.33225403150579197
+              "count": 12,
+              "probability_mean": 0.4749533650906977,
+              "hit_rate": 0.3333333333333333,
+              "abs_gap": 0.14162003175736437
             },
             {
               "bucket": 5,
-              "count": 15,
-              "probability_mean": 0.4755705278781203,
-              "hit_rate": 0.4,
-              "abs_gap": 0.0755705278781203
+              "count": 12,
+              "probability_mean": 0.527514397261516,
+              "hit_rate": 0.4166666666666667,
+              "abs_gap": 0.11084773059484937
             },
             {
               "bucket": 6,
-              "count": 16,
-              "probability_mean": 0.5420511546470437,
-              "hit_rate": 0.5625,
-              "abs_gap": 0.020448845352956324
+              "count": 13,
+              "probability_mean": 0.5991248791473753,
+              "hit_rate": 0.15384615384615385,
+              "abs_gap": 0.4452787253012215
             },
             {
               "bucket": 7,
-              "count": 15,
-              "probability_mean": 0.6072521953568456,
+              "count": 12,
+              "probability_mean": 0.6741571331745974,
               "hit_rate": 0.3333333333333333,
-              "abs_gap": 0.2739188620235123
+              "abs_gap": 0.34082379984126404
             },
             {
               "bucket": 8,
-              "count": 15,
-              "probability_mean": 0.6970317707044977,
-              "hit_rate": 0.3333333333333333,
-              "abs_gap": 0.3636984373711644
+              "count": 12,
+              "probability_mean": 0.7791301787108602,
+              "hit_rate": 0.16666666666666666,
+              "abs_gap": 0.6124635120441936
             },
             {
               "bucket": 9,
-              "count": 15,
-              "probability_mean": 0.8422456984026236,
-              "hit_rate": 0.26666666666666666,
-              "abs_gap": 0.575579031735957
+              "count": 12,
+              "probability_mean": 0.9257324018221268,
+              "hit_rate": 0.4166666666666667,
+              "abs_gap": 0.5090657351554602
             }
           ]
         },
         "shap_analysis": {
-          "status": "complete",
-          "backend": "shap",
-          "model_name": "logistic_regression",
-          "top_features": [
-            {
-              "feature": "first_break_close_excess_points",
-              "mean_abs_shap": 0.19438177092028344
-            },
-            {
-              "feature": "first_break_wick_excess_points",
-              "mean_abs_shap": 0.1399802277811192
-            },
-            {
-              "feature": "reclaim_body_strength",
-              "mean_abs_shap": 0.11381762262157374
-            },
-            {
-              "feature": "first_break_close_confirmed",
-              "mean_abs_shap": 0.10777088558308374
-            },
-            {
-              "feature": "break_close_distance_to_zone",
-              "mean_abs_shap": 0.10150182532573364
-            },
-            {
-              "feature": "zone_width",
-              "mean_abs_shap": 0.08817789630146933
-            },
-            {
-              "feature": "direction_long",
-              "mean_abs_shap": 0.07441099483207181
-            },
-            {
-              "feature": "prior_close_gap",
-              "mean_abs_shap": 0.0676344545111859
-            },
-            {
-              "feature": "continuation_displacement_ratio",
-              "mean_abs_shap": 0.06055816279315438
-            },
-            {
-              "feature": "break_efficiency_ratio",
-              "mean_abs_shap": 0.05934340444927768
-            }
-          ],
-          "worst_trade_explanations": [
-            {
-              "candidate_id": "MNQ-2025-02-18-break_reentry_reclaim_short-2025-02-18T09:31:30-05:00",
-              "session_date": "2025-02-18",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "first_break_close_confirmed",
-                  "shap_value": 0.15181991776978387
-                },
-                {
-                  "feature": "first_break_close_excess_points",
-                  "shap_value": 0.13551935566955478
-                },
-                {
-                  "feature": "break_close_distance_to_zone",
-                  "shap_value": -0.11241304533877852
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-19-break_reentry_reclaim_short-2025-02-19T09:32:00-05:00",
-              "session_date": "2025-02-19",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "first_break_wick_excess_points",
-                  "shap_value": 0.23076879795744443
-                },
-                {
-                  "feature": "break_close_distance_to_zone",
-                  "shap_value": 0.1523646469078224
-                },
-                {
-                  "feature": "reclaim_body_strength",
-                  "shap_value": 0.12149789955310801
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-19-break_reentry_reclaim_long-2025-02-19T09:35:30-05:00",
-              "session_date": "2025-02-19",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "reclaim_body_strength",
-                  "shap_value": -0.19953916626754237
-                },
-                {
-                  "feature": "first_break_close_confirmed",
-                  "shap_value": 0.13786274181000202
-                },
-                {
-                  "feature": "first_break_wick_excess_points",
-                  "shap_value": -0.09771317153748124
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-21-break_reentry_reclaim_short-2025-02-21T09:31:30-05:00",
-              "session_date": "2025-02-21",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "first_break_close_confirmed",
-                  "shap_value": -0.1013257683481967
-                },
-                {
-                  "feature": "first_break_close_excess_points",
-                  "shap_value": -0.10058313630919635
-                },
-                {
-                  "feature": "post_reclaim_close_strength",
-                  "shap_value": 0.07413884517116928
-                }
-              ]
-            },
-            {
-              "candidate_id": "MNQ-2025-02-25-break_reentry_reclaim_short-2025-02-25T09:31:30-05:00",
-              "session_date": "2025-02-25",
-              "pnl_r": -1.0,
-              "top_contributors": [
-                {
-                  "feature": "continuation_displacement_ratio",
-                  "shap_value": 0.21955391469153343
-                },
-                {
-                  "feature": "post_reclaim_close_strength",
-                  "shap_value": 0.1864765109146613
-                },
-                {
-                  "feature": "first_break_wick_excess_points",
-                  "shap_value": 0.1702156903611463
-                }
-              ]
-            }
-          ]
+          "status": "pending",
+          "reason": "shap_not_enabled"
         }
       }
     }
   ],
   "ranked_variants": [
     {
-      "variant": "allow_delayed_reclaim",
-      "candidate_count": 510,
-      "positive_rate": 0.2627450980392157,
-      "avg_pnl_r": 0.030958062488614314,
-      "roc_auc": 0.6581235697940504,
-      "precision": 0.359375,
-      "recall": 0.6052631578947368
-    },
-    {
       "variant": "first_reclaim_only_baseline",
-      "candidate_count": 501,
-      "positive_rate": 0.2634730538922156,
-      "avg_pnl_r": 0.03773126939631528,
-      "roc_auc": 0.6394025604551921,
-      "precision": 0.36065573770491804,
-      "recall": 0.5945945945945946
+      "candidate_count": 398,
+      "positive_rate": 0.21105527638190955,
+      "avg_pnl_r": -0.0653368773796678,
+      "roc_auc": 0.671578947368421,
+      "precision": 0.27419354838709675,
+      "recall": 0.68
     },
     {
-      "variant": "allow_wick_through_breaks",
-      "candidate_count": 512,
-      "positive_rate": 0.25,
-      "avg_pnl_r": -0.016366023378470464,
-      "roc_auc": 0.6101694915254237,
-      "precision": 0.3108108108108108,
-      "recall": 0.6388888888888888
+      "variant": "allow_delayed_reclaim",
+      "candidate_count": 409,
+      "positive_rate": 0.21271393643031786,
+      "avg_pnl_r": -0.06535534874407904,
+      "roc_auc": 0.6526566217287867,
+      "precision": 0.29508196721311475,
+      "recall": 0.6923076923076923
     }
   ]
 }

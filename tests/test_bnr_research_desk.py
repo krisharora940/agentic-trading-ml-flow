@@ -189,7 +189,7 @@ class BNRResearchDeskTests(unittest.TestCase):
         statuses = {row["family"]: row for row in update["research_branch_status"]}
         self.assertEqual(statuses["path_modeling"]["status"], "exhausted")
 
-    def test_desk_director_routes_no_follow_through_to_path_modeler(self) -> None:
+    def test_desk_director_routes_no_follow_through_to_feature_engineer(self) -> None:
         state = {
             "run_id": "bnr-desk-test",
             "research_cycle": 1,
@@ -208,11 +208,57 @@ class BNRResearchDeskTests(unittest.TestCase):
         }
         update = desk_director_node(state)
         self.assertEqual(
-            update["desk_summary"]["desk_director"]["selected_node"], "path_modeler"
+            update["desk_summary"]["desk_director"]["selected_node"],
+            "feature_engineer",
         )
-        self.assertEqual(route_after_desk_director({**state, **update}), "path_modeler")
+        self.assertEqual(
+            route_after_desk_director({**state, **update}), "feature_engineer"
+        )
 
-    def test_desk_director_avoids_repeating_prior_proposal_family(self) -> None:
+    def test_desk_director_escalates_upstream_after_repeated_path_failures_on_broad_event_inventory(
+        self,
+    ) -> None:
+        state = {
+            "run_id": "bnr-desk-test",
+            "research_cycle": 1,
+            "phase": "exploration",
+            "failure_clusters": [
+                {
+                    "family": "no_follow_through",
+                    "recommended_family": "exit_behavior_research",
+                    "cluster_id": "fc-1",
+                    "dominant_setup_state": "failed_reclaim",
+                    "dominant_environment_state": "mixed_auction",
+                    "evidence": {"path_class_mode": "chop"},
+                }
+            ],
+            "stage2_result": {
+                "config": {"candidate_engine": "event_driven_v1"},
+                "candidate_inventory": {
+                    "by_engine": {"event_driven_v1": 1128},
+                },
+            },
+            "research_action_history": [
+                {
+                    "family": "exit_behavior_research",
+                    "status": "complete",
+                    "action_id": "exit_behavior_research",
+                }
+            ],
+            "price_action_expert": {},
+            "desk_memory": [],
+            "desk_summary": {},
+            "run_log": [],
+        }
+        update = desk_director_node(state)
+        self.assertEqual(
+            update["desk_summary"]["desk_director"]["selected_node"],
+            "eligibility_modeler",
+        )
+
+    def test_desk_director_allows_feature_branch_persistence_across_proposals(
+        self,
+    ) -> None:
         state = {
             "run_id": "bnr-desk-test",
             "research_cycle": 1,
@@ -225,16 +271,14 @@ class BNRResearchDeskTests(unittest.TestCase):
                 }
             ],
             "price_action_expert": {},
-            "desk_memory": [
-                {"proposal_family": "path_modeling", "proposal_id": "DPROP-old"}
-            ],
+            "desk_memory": [{"proposal_family": "feature", "proposal_id": "DPROP-old"}],
             "desk_summary": {},
             "run_log": [],
         }
         update = desk_director_node(state)
         self.assertEqual(
             update["desk_summary"]["desk_director"]["selected_node"],
-            "exit_research_agent",
+            "feature_engineer",
         )
 
     def test_desk_director_avoids_repeating_family_already_executed_by_governor(
@@ -361,7 +405,7 @@ class BNRResearchDeskTests(unittest.TestCase):
         }
         update = price_action_expert_node(state)
         expert = update["price_action_expert"]
-        self.assertEqual(expert["recommended_family"], "setup")
+        self.assertEqual(expert["recommended_family"], "feature")
         self.assertEqual(expert["recommended_node"], "setup_spec_agent")
         self.assertEqual(expert["target_setup_state"], "late_followthrough")
         self.assertEqual(expert["target_environment_state"], "mixed_auction")
@@ -428,8 +472,8 @@ class BNRResearchDeskTests(unittest.TestCase):
         }
         update = price_action_expert_node(state, llm=FakeLLM())
         expert = update["price_action_expert"]
-        self.assertEqual(expert["recommended_family"], "setup")
-        self.assertEqual(expert["recommended_node"], "setup_spec_agent")
+        self.assertEqual(expert["recommended_family"], "feature")
+        self.assertEqual(expert["recommended_node"], "feature_engineer")
 
     def test_bnr_research_desk_graph_runs_to_handoff(self) -> None:
         graph = compile_bnr_research_desk_graph(use_llm=False)

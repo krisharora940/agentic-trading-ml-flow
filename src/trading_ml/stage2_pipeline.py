@@ -13,6 +13,9 @@ from trading_ml.feature_validation import build_feature_validation
 from trading_ml.feature_families import apply_feature_family
 from trading_ml.market_structure_lab import build_market_structure_lab
 from trading_ml.model_diagnostics_lab import build_model_diagnostics_lab
+from trading_ml.manual_validity_prior import (
+    augment_features_with_manual_validity_prior,
+)
 from trading_ml.stage2_bnr import calculate_bnr_zones, generate_breakout_candidates
 from trading_ml.stage2_data import (
     build_data_quality_report,
@@ -36,6 +39,8 @@ class Stage2Config:
     stop_multiple: float = 1.0
     target_multiple: float = 1.5
     break_buffer_points: float = 0.0
+    candidate_engine: str = "event_driven_v1"
+    max_candidates_per_direction: int = 0
     spec_name: str = "BNR"
     model_family: str = "linear_baseline"
     feature_family: str = "all_features"
@@ -58,6 +63,8 @@ class Stage2Config:
             "stop_multiple": label_v1["stop_r"],
             "target_multiple": label_v1["target_r"],
             "break_buffer_points": 0.0,
+            "candidate_engine": "event_driven_v1",
+            "max_candidates_per_direction": 0,
             "spec_name": setup["name"],
         }
         payload.update(overrides)
@@ -88,6 +95,8 @@ def run_stage2_research_engine(config: Stage2Config) -> dict[str, Any]:
         earliest_trigger_time=config.earliest_trigger_time,
         latest_trigger_time=config.latest_trigger_time,
         break_buffer_points=config.break_buffer_points,
+        max_candidates_per_direction=config.max_candidates_per_direction,
+        candidate_engine=config.candidate_engine,
     )
     candidates = filter_candidates_by_subtype(candidates, config.setup_subtype)
     labels = label_candidates(
@@ -104,6 +113,9 @@ def run_stage2_research_engine(config: Stage2Config) -> dict[str, Any]:
             for candidate in candidates
         }
         features["setup_subtype"] = features["candidate_id"].map(subtype_map)
+    features, manual_validity_prior = augment_features_with_manual_validity_prior(
+        features, candidates
+    )
     features = apply_feature_family(features, config.feature_family)
     labels_df = pd.DataFrame([label.to_dict() for label in labels])
     model_summary = (
@@ -131,9 +143,11 @@ def run_stage2_research_engine(config: Stage2Config) -> dict[str, Any]:
         "data_quality": report.to_dict(),
         "zone_count": len(zones),
         "candidate_count": len(candidates),
+        "candidate_inventory": _candidate_inventory_summary(candidates),
         "label_summary": _label_summary(labels_df),
         "feature_audit": _feature_audit_summary(feature_audits),
         "feature_validation": feature_validation,
+        "manual_validity_prior": manual_validity_prior.to_dict(),
         "market_structure_lab": market_structure_lab,
         "model_summary": (
             model_summary.to_dict() if model_summary else {"status": "no_labels"}
@@ -193,3 +207,25 @@ def _subtype_counts(candidates: list[Any]) -> dict[str, int]:
         subtype = classify_candidate_subtype(candidate)
         counts[subtype] = counts.get(subtype, 0) + 1
     return counts
+
+
+def _candidate_inventory_summary(candidates: list[Any]) -> dict[str, Any]:
+    pd = _require_pandas()
+    if not candidates:
+        return {"rows": 0}
+    trigger_times = [pd.Timestamp(candidate.trigger_time) for candidate in candidates]
+    by_bucket: dict[str, int] = {}
+    by_engine: dict[str, int] = {}
+    for candidate, trigger_time in zip(candidates, trigger_times):
+        bucket = trigger_time.strftime("%H:%M")
+        bucket = f"{bucket[:4]}0"
+        by_bucket[bucket] = by_bucket.get(bucket, 0) + 1
+        engine = str((candidate.trace or {}).get("candidate_engine", "canonical"))
+        by_engine[engine] = by_engine.get(engine, 0) + 1
+    return {
+        "rows": len(candidates),
+        "earliest_trigger_time": min(trigger_times).isoformat(),
+        "latest_trigger_time": max(trigger_times).isoformat(),
+        "by_ten_minute_bucket": dict(sorted(by_bucket.items())),
+        "by_engine": by_engine,
+    }

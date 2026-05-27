@@ -591,8 +591,8 @@ def _map_desk_proposal(proposal: dict[str, Any]) -> dict[str, Any]:
     family = str(proposal.get("family", "") or "")
     mapping = {
         "feature": ("feature", "feature"),
-        "setup": ("setup", "market_state_setup_quality"),
-        "eligibility": ("candidate_universe_expansion", "candidate_universe_expansion"),
+        "setup": ("feature", "feature"),
+        "eligibility": ("feature", "feature"),
         "path_modeling": ("exit_behavior_research", "exit_behavior_research"),
         "exit_behavior_research": ("exit_behavior_research", "exit_behavior_research"),
     }
@@ -707,13 +707,16 @@ def _same_family_loop_guard(state: dict[str, Any], family: str) -> dict[str, Any
             family, f"{family} ran {same_family_streak} consecutive cycles"
         )
     if family == "feature":
-        accepted = [
+        trailing_feature_rows: list[dict[str, Any]] = []
+        for row in reversed(history):
+            if str(row.get("family")) != "feature":
+                break
+            trailing_feature_rows.append(row)
+        recent = [
             row
-            for row in history
-            if str(row.get("family")) == "feature"
-            and str(row.get("batch_decision")) == "accept"
-        ]
-        recent = accepted[-MAX_FEATURE_CYCLES_WITHOUT_ROBUSTNESS_IMPROVEMENT:]
+            for row in reversed(trailing_feature_rows)
+            if str(row.get("batch_decision")) == "accept"
+        ][-MAX_FEATURE_CYCLES_WITHOUT_ROBUSTNESS_IMPROVEMENT:]
         if len(recent) >= MAX_FEATURE_CYCLES_WITHOUT_ROBUSTNESS_IMPROVEMENT and not any(
             _has_robustness_improvement(row) for row in recent
         ):

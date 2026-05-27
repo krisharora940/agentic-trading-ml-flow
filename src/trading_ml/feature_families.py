@@ -46,6 +46,21 @@ FAMILY_COLUMNS: dict[str, list[str]] = {
         "pre_trigger_volume",
         "prior_close_gap",
     ],
+    "sequence_structure": [
+        "retrace_at_entry",
+        "pivot_flem_dist",
+        "time_since_pivot_sec",
+        "body_last",
+        "body_sum",
+        "body_mean",
+        "in_dir_ratio",
+        "max_in_dir_run",
+        "bars_since_pivot",
+        "zone_over_range",
+        "pivot_over_range",
+        "dist_to_extrema_atr",
+        "zone_to_extrema_atr",
+    ],
     "regime_features": [
         "reg_vol_10",
         "reg_vol_30",
@@ -61,6 +76,11 @@ FAMILY_COLUMNS: dict[str, list[str]] = {
         "reg_pretrigger_bar_count",
         "reg_high_vol_state",
         "reg_trending_state",
+    ],
+    "manual_quality_prior": [
+        "manual_validity_probability",
+        "manual_high_quality_probability",
+        "manual_example_matched",
     ],
 }
 
@@ -100,29 +120,42 @@ def apply_feature_family(features: Any, family: str) -> Any:
         keep.update(FAMILY_COLUMNS["bnr_geometry"])
         keep.update(FAMILY_COLUMNS["pivot_reclaim"])
         keep.update(FAMILY_COLUMNS["pre_trigger_context"])
+        keep.update(FAMILY_COLUMNS["sequence_structure"])
+        keep.update(FAMILY_COLUMNS["manual_quality_prior"])
     elif family == "bnr_plus_engineer":
         keep.update(FAMILY_COLUMNS["bnr_geometry"])
         keep.update(FAMILY_COLUMNS["pivot_reclaim"])
+        keep.update(FAMILY_COLUMNS["sequence_structure"])
+        keep.update(FAMILY_COLUMNS["manual_quality_prior"])
         keep.update(
             column for column in features.columns if str(column).startswith("eng_")
         )
     elif family == "context_plus_reclaim":
         keep.update(FAMILY_COLUMNS["pre_trigger_context"])
         keep.update(FAMILY_COLUMNS["pivot_reclaim"])
+        keep.update(FAMILY_COLUMNS["sequence_structure"])
+        keep.update(FAMILY_COLUMNS["manual_quality_prior"])
     elif family == "context_plus_geometry":
         keep.update(FAMILY_COLUMNS["pre_trigger_context"])
         keep.update(FAMILY_COLUMNS["bnr_geometry"])
+        keep.update(FAMILY_COLUMNS["sequence_structure"])
+        keep.update(FAMILY_COLUMNS["manual_quality_prior"])
     elif family == "reclaim_plus_engineer":
         keep.update(FAMILY_COLUMNS["pivot_reclaim"])
+        keep.update(FAMILY_COLUMNS["manual_quality_prior"])
         keep.update(
             column for column in features.columns if str(column).startswith("eng_")
         )
     elif family == "context_plus_regime":
         keep.update(FAMILY_COLUMNS["pre_trigger_context"])
+        keep.update(FAMILY_COLUMNS["sequence_structure"])
         keep.update(FAMILY_COLUMNS["regime_features"])
+        keep.update(FAMILY_COLUMNS["manual_quality_prior"])
     elif family == "reclaim_plus_regime":
         keep.update(FAMILY_COLUMNS["pivot_reclaim"])
+        keep.update(FAMILY_COLUMNS["sequence_structure"])
         keep.update(FAMILY_COLUMNS["regime_features"])
+        keep.update(FAMILY_COLUMNS["manual_quality_prior"])
     else:
         keep.update(FAMILY_COLUMNS.get(family, []))
 

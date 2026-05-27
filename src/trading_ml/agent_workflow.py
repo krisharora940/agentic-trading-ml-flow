@@ -135,6 +135,8 @@ def build_agent_loop_state(
                     "setup_break_buffer_points",
                     bnr_config["phases"]["break"]["minimum_break_magnitude_points"],
                 ),
+                "candidate_engine": "event_driven_v1",
+                "max_candidates_per_direction": 0,
                 "spec_name": bnr_config["setup"]["name"],
                 "model_family": bnr_config.get("frozen_benchmark", {}).get(
                     "model_family", "linear_baseline"

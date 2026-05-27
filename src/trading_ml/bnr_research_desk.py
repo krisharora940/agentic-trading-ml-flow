@@ -363,14 +363,20 @@ def setup_spec_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     proposal = {
         "proposal_id": f"DPROP-{utc_now_iso()}-setup",
         "node": "setup_spec_agent",
-        "family": "setup",
-        "claim": f"Refine BNR setup tolerances to reduce {top_cluster.get('family', 'unknown')}.",
+        "family": "feature",
+        "claim": f"Add setup-state context features to explain {top_cluster.get('family', 'unknown')}.",
         "target_setup_state": top_cluster.get("dominant_setup_state"),
         "target_environment_state": top_cluster.get("dominant_environment_state"),
-        "parameter_knobs": [
-            "max_retrace_depth",
-            "min_confirmation_close_strength",
-            "max_reclaim_failures",
+        "feature_catalog_groups": [
+            "structure",
+            "auction",
+            "continuation_lifecycle",
+        ],
+        "proposed_features": [
+            "pivot_cleanliness",
+            "repair_depth_fraction",
+            "opening_auction_acceptance",
+            "continuation_health_score",
         ],
         "derived_from_cluster": top_cluster.get("cluster_id"),
     }
@@ -378,7 +384,7 @@ def setup_spec_agent_node(state: dict[str, Any]) -> dict[str, Any]:
         state,
         "setup_spec_agent",
         proposal,
-        "Proposed parameterized BNR setup adjustments.",
+        "Proposed setup-state feature additions.",
     )
 
 
@@ -388,14 +394,28 @@ def eligibility_modeler_node(state: dict[str, Any]) -> dict[str, Any]:
     proposal = {
         "proposal_id": f"DPROP-{utc_now_iso()}-eligibility",
         "node": "eligibility_modeler",
-        "family": "eligibility",
-        "claim": "Model tradeable vs non-tradeable BNR attempts before entry.",
+        "family": "feature",
+        "claim": "Add broader context features to separate tradeable vs non-tradeable BNR attempts.",
         "objective": "trade_no_trade",
         "candidate_state_axes": [
             "setup_state",
             "environment_state",
             "time_bucket",
             "probability_bucket",
+        ],
+        "feature_catalog_groups": [
+            "auction",
+            "higher_timeframe",
+            "premarket",
+            "prior_levels",
+            "liquidity",
+        ],
+        "proposed_features": [
+            "trend_alignment_5m_15m",
+            "distance_to_hod_lod",
+            "distance_to_premarket_extremes",
+            "distance_to_yesterday_extremes",
+            "distance_to_weekly_extremes",
         ],
         "setup_states": sorted(
             {str(row.get("setup_state", "unknown")) for row in attempts}
@@ -889,33 +909,24 @@ def _select_desk_node(top_cluster: dict[str, Any], state: dict[str, Any]) -> str
     family = str(top_cluster.get("family", "") or "")
     recommended_family = str(top_cluster.get("recommended_family", "") or "")
     expert = dict(state.get("price_action_expert", {}) or {})
-    proposal_history = {
-        str(row.get("proposal_family"))
-        for row in list(state.get("desk_memory", []) or [])
-        if row.get("proposal_family")
-    }
     governed_records = list(state.get("research_action_history", []) or [])
-    governed_history = {
-        str(row.get("family")) for row in governed_records if row.get("family")
-    }
     preferred_node = str(expert.get("recommended_node", "") or "")
     preferred_family = str(expert.get("recommended_family", "") or "")
     if preferred_node and preferred_family:
         if (
-            preferred_family not in proposal_history
-            and not _proposal_family_already_executed(
-                preferred_family, governed_history
-            )
-            and not _proposal_family_loop_blocked(preferred_family, governed_records)
+            not _proposal_family_loop_blocked(preferred_family, governed_records)
             and not _branch_family_exhausted(preferred_family, state)
         ):
             return preferred_node
-    candidates = _candidate_proposal_families(family, recommended_family)
+    candidates = _candidate_proposal_families(
+        family,
+        recommended_family,
+        state=state,
+        top_cluster=top_cluster,
+    )
     for proposal_family in candidates:
         if (
-            proposal_family not in proposal_history
-            and not _proposal_family_already_executed(proposal_family, governed_history)
-            and not _proposal_family_loop_blocked(proposal_family, governed_records)
+            not _proposal_family_loop_blocked(proposal_family, governed_records)
             and not _branch_family_exhausted(proposal_family, state)
         ):
             return _node_for_proposal_family(proposal_family)
@@ -924,7 +935,6 @@ def _select_desk_node(top_cluster: dict[str, Any], state: dict[str, Any]) -> str
         key=lambda proposal_family: (
             _proposal_family_loop_blocked(proposal_family, governed_records),
             _branch_family_exhausted(proposal_family, state),
-            _proposal_family_already_executed(proposal_family, governed_history),
             _proposal_family_last_seen_index(
                 proposal_family, list(state.get("desk_memory", []) or [])
             ),
@@ -940,27 +950,73 @@ def _selection_reason(top_cluster: dict[str, Any], selected_node: str) -> str:
 
 
 def _candidate_proposal_families(
-    failure_family: str, recommended_family: str
+    failure_family: str,
+    recommended_family: str,
+    *,
+    state: dict[str, Any] | None = None,
+    top_cluster: dict[str, Any] | None = None,
 ) -> list[str]:
     if failure_family == "no_follow_through":
-        return ["path_modeling", "exit_behavior_research", "feature"]
-    if failure_family == "deep_retrace_failure":
-        return ["setup", "feature", "eligibility"]
-    if failure_family == "no_reclaim_edge":
-        return ["eligibility", "setup", "feature"]
-    if failure_family == "weak_continuation":
+        if _should_escalate_upstream_from_path_failure(state or {}, top_cluster or {}):
+            return ["eligibility", "setup", "feature", "path_modeling"]
         return ["feature", "path_modeling", "exit_behavior_research"]
+    if failure_family == "deep_retrace_failure":
+        return ["feature", "setup", "eligibility"]
+    if failure_family == "no_reclaim_edge":
+        return ["feature", "eligibility", "setup"]
+    if failure_family == "weak_continuation":
+        return ["feature", "setup", "path_modeling"]
     mapping = {
         "exit_behavior_research": [
-            "exit_behavior_research",
-            "path_modeling",
             "feature",
+            "path_modeling",
+            "exit_behavior_research",
         ],
-        "setup": ["setup", "feature", "eligibility"],
-        "feature": ["feature", "path_modeling", "setup"],
-        "candidate_universe_expansion": ["eligibility", "setup", "feature"],
+        "setup": ["feature", "setup", "eligibility"],
+        "feature": ["feature", "setup", "eligibility"],
+        "candidate_universe_expansion": ["feature", "eligibility", "setup"],
     }
     return mapping.get(recommended_family, ["feature", "setup"])
+
+
+def _should_escalate_upstream_from_path_failure(
+    state: dict[str, Any], top_cluster: dict[str, Any]
+) -> bool:
+    if str(top_cluster.get("family", "") or "") != "no_follow_through":
+        return False
+
+    setup_state = str(top_cluster.get("dominant_setup_state", "") or "")
+    environment_state = str(top_cluster.get("dominant_environment_state", "") or "")
+    path_class = str(
+        dict(top_cluster.get("evidence", {}) or {}).get("path_class_mode", "") or ""
+    )
+    if setup_state not in {"failed_reclaim", "late_followthrough"}:
+        return False
+    if environment_state not in {"mixed_auction", "volatile_chop", "balanced_chop"}:
+        return False
+    if path_class not in {"chop", "failure"}:
+        return False
+
+    stage2 = dict(state.get("stage2_result", {}) or {})
+    inventory = dict(stage2.get("candidate_inventory", {}) or {})
+    engine_counts = dict(inventory.get("by_engine", {}) or {})
+    if str(stage2.get("config", {}).get("candidate_engine", "")) != "event_driven_v1":
+        return False
+    if int(engine_counts.get("event_driven_v1", 0) or 0) < 800:
+        return False
+
+    history = list(state.get("research_action_history", []) or [])
+    exit_cycles = [
+        row
+        for row in history
+        if str(row.get("family")) == "exit_behavior_research"
+        and str(row.get("status", row.get("batch_decision", "")) or "")
+        in {"complete", "reject", "revise"}
+    ]
+    if not exit_cycles:
+        return False
+
+    return True
 
 
 def _node_for_proposal_family(proposal_family: str) -> str:
@@ -1073,15 +1129,17 @@ def _heuristic_price_action_expert(top_cluster: dict[str, Any]) -> dict[str, Any
     )
     if family == "no_follow_through":
         return {
-            "recommended_family": "path_modeling",
-            "recommended_node": "path_modeler",
-            "hypothesis": f"{setup_state} setups in {environment_state} are path-class problems, not entry-geometry problems.",
+            "recommended_family": "feature",
+            "recommended_node": "feature_engineer",
+            "hypothesis": f"{setup_state} setups in {environment_state} need broader context features before path logic can separate good continuation from chop.",
             "proposed_feature_concepts": [
                 "followthrough_strength",
                 "opening_drive_strength",
                 "candle_tempo_decay",
+                "distance_to_hod_lod",
+                "trend_alignment_5m_15m",
             ],
-            "proposed_parameter_knobs": ["scratch_timing", "trail_activation"],
+            "proposed_parameter_knobs": [],
             "exit_focus": ["runner_vs_chop", "late_reversal"],
             "kill_criteria": [
                 "reject if focused path classes do not improve CPCV tail behavior"
@@ -1089,19 +1147,17 @@ def _heuristic_price_action_expert(top_cluster: dict[str, Any]) -> dict[str, Any
         }
     if family == "no_reclaim_edge":
         return {
-            "recommended_family": "setup",
+            "recommended_family": "feature",
             "recommended_node": "setup_spec_agent",
-            "hypothesis": f"{setup_state} attempts in {environment_state} need tighter reclaim confirmation rather than broader candidate expansion.",
+            "hypothesis": f"{setup_state} attempts in {environment_state} need state and level-context features around the reclaim, not more mechanical reclaim tightening.",
             "proposed_feature_concepts": [
                 "reclaim_body_strength",
                 "reclaim_close_location",
                 "opening_drive_strength",
+                "distance_to_premarket_extremes",
+                "distance_to_yesterday_extremes",
             ],
-            "proposed_parameter_knobs": [
-                "min_confirmation_close_strength",
-                "max_retrace_depth",
-                "max_reclaim_failures",
-            ],
+            "proposed_parameter_knobs": [],
             "exit_focus": [],
             "kill_criteria": [
                 "reject if setup tightening reduces candidates without improving worst-path loss"

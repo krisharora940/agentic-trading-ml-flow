@@ -1,0 +1,14 @@
+{
+  "trades_path": "/Users/radhikaarora/Documents/Trading ML V4/reports/manual_labels/trades_20260526092550_normalized.csv",
+  "bars_path": "/Users/radhikaarora/Documents/Trading ML V4/data/cache/mnq_30s_exploration_opening.parquet",
+  "sequence_index_path": "/Users/radhikaarora/Documents/Trading ML V4/reports/manual_labels/trades_20260526092550_sequence_index.csv",
+  "sequences_path": "/Users/radhikaarora/Documents/Trading ML V4/reports/manual_labels/trades_20260526092550_sequences.jsonl",
+  "example_count": 219,
+  "matched_count": 176,
+  "unmatched_count": 43,
+  "quality_bucket_counts": {
+    "valid": 130,
+    "avoid": 47,
+    "high_quality": 42
+  }
+}

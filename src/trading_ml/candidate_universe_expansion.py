@@ -7,6 +7,13 @@ from typing import Any
 from uuid import uuid4
 
 from trading_ml.bnr_subtypes import classify_candidate_subtype
+from trading_ml.candidate_event_ledger import (
+    build_candidate_event_ledger_key,
+    candidate_from_ledger_record,
+    candidate_to_ledger_record,
+    load_candidate_event_ledger,
+    write_candidate_event_ledger,
+)
 from trading_ml.feature_families import apply_feature_family
 from trading_ml.feature_validation import build_feature_validation
 from trading_ml.market_structure_lab import build_market_structure_lab
@@ -102,6 +109,8 @@ VARIANTS = [
     },
 ]
 
+LEDGER_GENERATOR_VERSION = "candidate_event_ledger_v1"
+
 
 def _resolve_variant_subset(
     controller_state: dict[str, Any] | None = None,
@@ -185,8 +194,11 @@ def run_candidate_universe_expansion_cycle(state: dict[str, Any]) -> dict[str, A
     baseline_rows: list[dict[str, Any]] = []
     rows = []
     variants = _resolve_variant_subset(controller_state)
+    ledger = _load_or_build_candidate_event_ledger(bars, cfg, variants)
     for idx, variant in enumerate(variants, start=1):
-        candidates = _generate_variant_candidates(bars, cfg, variant)
+        candidates = _generate_variant_candidates(
+            bars, cfg, variant, ledger=ledger, use_ledger_cache=True
+        )
         records = [_lineage_record(candidate, variant) for candidate in candidates]
         records, dedup = _deduplicate(records)
         if variant["name"] == "first_reclaim_only_baseline":
@@ -212,6 +224,12 @@ def run_candidate_universe_expansion_cycle(state: dict[str, Any]) -> dict[str, A
             "symbol": cfg.symbol,
             "timeframe": cfg.timeframe,
             "timezone": cfg.timezone,
+        },
+        "runtime": {
+            "candidate_source": "cached_candidate_event_ledger",
+            "ledger_key": ledger.get("ledger_key"),
+            "ledger_cache_hit": bool(ledger.get("cache_hit")),
+            "ledger_variant_count": len(list(ledger.get("variants", []) or [])),
         },
         "trial_count": len(rows),
         "trial_accounting": {
@@ -242,6 +260,7 @@ def run_candidate_universe_expansion_cycle(state: dict[str, Any]) -> dict[str, A
     artifact.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     payload["artifact_path"] = str(artifact)
     payload["run_artifact_path"] = str(output_dir / "summary.json")
+    payload["ledger_artifact_path"] = str(ledger.get("artifact_path", ""))
     return payload
 
 
@@ -259,35 +278,43 @@ def run_candidate_universe_labeling_diagnostic(
             timezone=cfg.timezone,
         )
     )
+    inventory = _read_latest_candidate_universe_inventory()
     selected = list(
         variant_names
+        or _selected_variants_from_inventory(inventory)
         or [
             "first_reclaim_only_baseline",
-            "allow_wick_through_breaks",
             "allow_delayed_reclaim",
         ]
     )
     variant_specs = [variant for variant in VARIANTS if variant["name"] in selected]
+    ledger = _load_or_build_candidate_event_ledger(bars, cfg, variant_specs)
+    baseline_variant = next(
+        (
+            variant
+            for variant in variant_specs
+            if variant["name"] == "first_reclaim_only_baseline"
+        ),
+        None,
+    )
+    baseline_bundle = (
+        _build_variant_diagnostic_bundle(bars, cfg, baseline_variant, ledger=ledger)
+        if baseline_variant is not None
+        else None
+    )
     rows: list[dict[str, Any]] = []
     for variant in variant_specs:
-        candidates = _generate_variant_candidates(bars, cfg, variant)
-        labels = label_candidates(
+        bundle = _build_variant_diagnostic_bundle(
             bars,
-            candidates,
-            horizon_bars=cfg.horizon_bars,
-            stop_multiple=cfg.stop_multiple,
-            target_multiple=cfg.target_multiple,
+            cfg,
+            variant,
+            ledger=ledger,
+            baseline_bundle=baseline_bundle,
         )
-        features, feature_audits = build_feature_matrix(bars, candidates)
-        if not features.empty:
-            subtype_map = {
-                candidate.candidate_id: classify_candidate_subtype(candidate)
-                for candidate in candidates
-            }
-            features["setup_subtype"] = features["candidate_id"].map(subtype_map)
-        features = apply_feature_family(features, cfg.feature_family)
-        pd = _require_pandas()
-        labels_df = pd.DataFrame([label.to_dict() for label in labels])
+        candidates = list(bundle["candidates"])
+        features = bundle["features"]
+        labels_df = bundle["labels_df"]
+        feature_audits = list(bundle["feature_audits"])
         model_summary = (
             train_baseline_classifier(
                 features, labels_df, model_family=cfg.model_family
@@ -301,6 +328,7 @@ def run_candidate_universe_labeling_diagnostic(
                 "variant": variant["name"],
                 "description": variant["description"],
                 "candidate_count": len(candidates),
+                "runtime": dict(bundle["runtime"]),
                 "label_summary": {
                     "rows": int(len(labels_df)),
                     "positive_rate": (
@@ -351,6 +379,18 @@ def run_candidate_universe_labeling_diagnostic(
         "family": "candidate_universe_expansion",
         "diagnostic_type": "downstream_labeling_model_diagnostic",
         "variants_tested": selected,
+        "inventory_gate": {
+            "status": "applied" if inventory else "missing_inventory_artifact",
+            "selected_from_inventory": _selected_variants_from_inventory(inventory),
+            "artifact_path": (
+                str(inventory.get("artifact_path", "")) if inventory else ""
+            ),
+        },
+        "runtime": {
+            "candidate_source": "cached_candidate_event_ledger",
+            "ledger_key": ledger.get("ledger_key"),
+            "ledger_cache_hit": bool(ledger.get("cache_hit")),
+        },
         "variant_diagnostics": rows,
         "ranked_variants": [
             {
@@ -380,9 +420,149 @@ def run_candidate_universe_labeling_diagnostic(
     return payload
 
 
+def run_candidate_universe_shortlist_diagnostic(
+    state: dict[str, Any],
+) -> dict[str, Any]:
+    inventory = _read_latest_candidate_universe_inventory()
+    selected = _selected_variants_from_inventory(inventory)
+    if not selected:
+        return {
+            "status": "pending",
+            "reason": "missing_inventory_shortlist",
+            "inventory_artifact_path": (
+                str(inventory.get("artifact_path", "")) if inventory else ""
+            ),
+        }
+    result = run_candidate_universe_labeling_diagnostic(
+        state,
+        variant_names=selected,
+    )
+    result["inventory_gate"] = {
+        **dict(result.get("inventory_gate", {}) or {}),
+        "shortlist_only": True,
+    }
+    return result
+
+
+def _build_variant_diagnostic_bundle(
+    bars: Any,
+    cfg: Stage2Config,
+    variant: dict[str, Any],
+    *,
+    ledger: dict[str, Any],
+    baseline_bundle: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    pd = _require_pandas()
+    candidates = _generate_variant_candidates(
+        bars, cfg, variant, ledger=ledger, use_ledger_cache=True
+    )
+    if not candidates:
+        empty = pd.DataFrame()
+        return {
+            "candidates": [],
+            "features": empty,
+            "labels_df": empty,
+            "feature_audits": [],
+            "runtime": {
+                "reuse_mode": "empty",
+                "reused_candidate_count": 0,
+                "new_candidate_count": 0,
+            },
+        }
+
+    baseline_ids: set[str] = set()
+    reused_features = pd.DataFrame()
+    reused_labels = pd.DataFrame()
+    reused_audits: list[Any] = []
+    if (
+        baseline_bundle is not None
+        and variant["name"] != "first_reclaim_only_baseline"
+        and baseline_bundle.get("candidates")
+    ):
+        baseline_ids = {
+            candidate.candidate_id for candidate in baseline_bundle["candidates"]
+        }
+        features_frame = baseline_bundle["features"]
+        labels_frame = baseline_bundle["labels_df"]
+        audit_by_id = {
+            audit.candidate_id: audit
+            for audit in list(baseline_bundle["feature_audits"] or [])
+        }
+        overlap_ids = {
+            candidate.candidate_id
+            for candidate in candidates
+            if candidate.candidate_id in baseline_ids
+        }
+        if not features_frame.empty:
+            reused_features = features_frame[
+                features_frame["candidate_id"].isin(overlap_ids)
+            ].copy()
+        if not labels_frame.empty:
+            reused_labels = labels_frame[
+                labels_frame["candidate_id"].isin(overlap_ids)
+            ].copy()
+        reused_audits = [
+            audit_by_id[candidate_id]
+            for candidate_id in overlap_ids
+            if candidate_id in audit_by_id
+        ]
+
+    new_candidates = [
+        candidate
+        for candidate in candidates
+        if candidate.candidate_id not in baseline_ids
+    ]
+    new_labels = label_candidates(
+        bars,
+        new_candidates,
+        horizon_bars=cfg.horizon_bars,
+        stop_multiple=cfg.stop_multiple,
+        target_multiple=cfg.target_multiple,
+    )
+    new_features, new_feature_audits = build_feature_matrix(bars, new_candidates)
+    if not new_features.empty:
+        subtype_map = {
+            candidate.candidate_id: classify_candidate_subtype(candidate)
+            for candidate in new_candidates
+        }
+        new_features["setup_subtype"] = new_features["candidate_id"].map(subtype_map)
+    new_features = apply_feature_family(new_features, cfg.feature_family)
+    new_labels_df = pd.DataFrame([label.to_dict() for label in new_labels])
+
+    features = pd.concat([reused_features, new_features], ignore_index=True)
+    labels_df = pd.concat([reused_labels, new_labels_df], ignore_index=True)
+    feature_audits = [*reused_audits, *list(new_feature_audits)]
+    return {
+        "candidates": candidates,
+        "features": features,
+        "labels_df": labels_df,
+        "feature_audits": feature_audits,
+        "runtime": {
+            "reuse_mode": (
+                "baseline_full"
+                if variant["name"] == "first_reclaim_only_baseline"
+                else "delta_vs_baseline"
+            ),
+            "reused_candidate_count": int(len(reused_labels)),
+            "new_candidate_count": int(len(new_candidates)),
+        },
+    }
+
+
 def _generate_variant_candidates(
-    bars: Any, cfg: Stage2Config, variant: dict[str, Any]
+    bars: Any,
+    cfg: Stage2Config,
+    variant: dict[str, Any],
+    *,
+    ledger: dict[str, Any] | None = None,
+    use_ledger_cache: bool = False,
 ) -> list[CandidateSetup]:
+    if use_ledger_cache and ledger is not None:
+        records = list(
+            dict(ledger.get("records_by_variant", {}) or {}).get(variant["name"], [])
+        )
+        if records:
+            return [candidate_from_ledger_record(record) for record in records]
     zones = _zones_for_variant(bars, cfg, variant)
     if variant["name"] == "first_reclaim_only_baseline":
         return generate_breakout_candidates(
@@ -395,6 +575,62 @@ def _generate_variant_candidates(
             max_candidates_per_direction=1,
         )
     return _generate_custom_candidates(bars, cfg, zones, variant)
+
+
+def _load_or_build_candidate_event_ledger(
+    bars: Any, cfg: Stage2Config, variants: list[dict[str, Any]]
+) -> dict[str, Any]:
+    session_dates = sorted({idx.date().isoformat() for idx in bars.index})
+    variant_names = [str(variant["name"]) for variant in variants]
+    ledger_key = build_candidate_event_ledger_key(
+        source_path=cfg.source_path,
+        symbol=cfg.symbol,
+        timeframe=cfg.timeframe,
+        variant_names=variant_names,
+        session_dates=session_dates,
+        generator_version=LEDGER_GENERATOR_VERSION,
+    )
+    cached = load_candidate_event_ledger(ledger_key)
+    if cached is not None:
+        cached["cache_hit"] = True
+        return cached
+
+    records_by_variant: dict[str, list[dict[str, Any]]] = {}
+    variant_summaries: list[dict[str, Any]] = []
+    for variant in variants:
+        candidates = _generate_variant_candidates(
+            bars, cfg, variant, ledger=None, use_ledger_cache=False
+        )
+        records = [
+            candidate_to_ledger_record(candidate, variant_name=str(variant["name"]))
+            for candidate in candidates
+        ]
+        records_by_variant[str(variant["name"])] = records
+        variant_summaries.append(
+            {
+                "variant": str(variant["name"]),
+                "candidate_count": len(records),
+            }
+        )
+
+    payload = {
+        "status": "complete",
+        "ledger_key": ledger_key,
+        "schema_version": 1,
+        "generator_version": LEDGER_GENERATOR_VERSION,
+        "source": {
+            "source_path": cfg.source_path,
+            "symbol": cfg.symbol,
+            "timeframe": cfg.timeframe,
+        },
+        "session_dates": session_dates,
+        "variants": variant_names,
+        "variant_summaries": variant_summaries,
+        "records_by_variant": records_by_variant,
+        "cache_hit": False,
+    }
+    payload["artifact_path"] = write_candidate_event_ledger(payload)
+    return payload
 
 
 def _zones_for_variant(
@@ -655,3 +891,22 @@ def _require_pandas():
     except ImportError as exc:
         raise RuntimeError("candidate universe expansion requires pandas") from exc
     return pd
+
+
+def _read_latest_candidate_universe_inventory() -> dict[str, Any] | None:
+    artifact = REPORTS_DIR / "candidate_universe_expansion.json"
+    if not artifact.exists():
+        return None
+    payload = json.loads(artifact.read_text(encoding="utf-8"))
+    payload["artifact_path"] = str(artifact)
+    return payload
+
+
+def _selected_variants_from_inventory(inventory: dict[str, Any] | None) -> list[str]:
+    if not inventory:
+        return []
+    return [
+        str(row.get("variant"))
+        for row in list(inventory.get("selected_for_next_stage", []) or [])
+        if row.get("variant")
+    ]

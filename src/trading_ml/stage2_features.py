@@ -58,6 +58,7 @@ def build_feature_matrix(
         reclaim_lab = _reclaim_microstructure_lab(
             session, pre_trigger, candidate, break_stats
         )
+        sequence_lab = _sequence_snapshot_lab(session, pre_trigger, candidate)
         row = {
             "candidate_id": candidate.candidate_id,
             "session_date": candidate.session_date,
@@ -103,6 +104,7 @@ def build_feature_matrix(
         }
         row.update(break_lab)
         row.update(reclaim_lab)
+        row.update(sequence_lab)
         row.update(build_regime_features(session, pre_trigger, candidate))
         if engineer_config.get("backend", "hybrid") != "bnr_only":
             row.update(engineer_feature_snapshot(engineer_frame, cutoff))
@@ -396,6 +398,108 @@ def _reclaim_microstructure_lab(
     }
 
 
+def _sequence_snapshot_lab(
+    session: Any, pre_trigger: Any, candidate: CandidateSetup
+) -> dict[str, float]:
+    pd = _require_pandas()
+    default = {
+        "retrace_at_entry": 0.0,
+        "pivot_flem_dist": 0.0,
+        "time_since_pivot_sec": 0.0,
+        "body_last": 0.0,
+        "body_sum": 0.0,
+        "body_mean": 0.0,
+        "in_dir_ratio": 0.0,
+        "max_in_dir_run": 0.0,
+        "bars_since_pivot": 0.0,
+        "zone_over_range": 0.0,
+        "pivot_over_range": 0.0,
+        "dist_to_extrema_atr": 0.0,
+        "zone_to_extrema_atr": 0.0,
+    }
+    if pre_trigger.empty:
+        return default
+
+    pivot_time = pd.Timestamp(candidate.pivot_time)
+    trigger_time = pd.Timestamp(candidate.trigger_time)
+    pivot_window = pre_trigger[
+        (pre_trigger.index >= pivot_time) & (pre_trigger.index <= trigger_time)
+    ]
+    if pivot_window.empty:
+        return default
+
+    bodies = (pivot_window["close"] - pivot_window["open"]).abs()
+    direction_mask = (
+        pivot_window["close"] > pivot_window["open"]
+        if candidate.direction == "long"
+        else pivot_window["close"] < pivot_window["open"]
+    )
+    run = 0
+    max_run = 0
+    for in_direction in direction_mask.tolist():
+        if in_direction:
+            run += 1
+            max_run = max(max_run, run)
+        else:
+            run = 0
+
+    entry_price = float(candidate.entry_reference_price)
+    pivot_price = float(candidate.pivot_price)
+    flem_price = float(candidate.flem_price)
+    pivot_flem_dist = abs(flem_price - pivot_price)
+    if candidate.direction == "long":
+        retrace = (
+            (entry_price - pivot_price) / (flem_price - pivot_price)
+            if flem_price != pivot_price
+            else 0.0
+        )
+        zone_price = candidate.zone.high
+        session_extrema_dist = float(pre_trigger["high"].max()) - entry_price
+        zone_extrema_dist = float(pre_trigger["high"].max()) - zone_price
+    else:
+        retrace = (
+            (pivot_price - entry_price) / (pivot_price - flem_price)
+            if flem_price != pivot_price
+            else 0.0
+        )
+        zone_price = candidate.zone.low
+        session_extrema_dist = entry_price - float(pre_trigger["low"].min())
+        zone_extrema_dist = zone_price - float(pre_trigger["low"].min())
+
+    day_range = _range(pre_trigger)
+    atr = _atr_snapshot(pre_trigger)
+    default.update(
+        {
+            "retrace_at_entry": float(max(retrace, 0.0)),
+            "pivot_flem_dist": float(pivot_flem_dist),
+            "time_since_pivot_sec": float(
+                max((trigger_time - pivot_time).total_seconds(), 0.0)
+            ),
+            "body_last": float(bodies.iloc[-1]) if not bodies.empty else 0.0,
+            "body_sum": float(bodies.sum()),
+            "body_mean": float(bodies.mean()) if not bodies.empty else 0.0,
+            "in_dir_ratio": (
+                float(direction_mask.mean()) if len(direction_mask) else 0.0
+            ),
+            "max_in_dir_run": float(max_run),
+            "bars_since_pivot": float(len(pivot_window)),
+            "zone_over_range": (
+                float(abs(flem_price - zone_price) / day_range)
+                if day_range > 0
+                else 0.0
+            ),
+            "pivot_over_range": (
+                float(pivot_flem_dist / day_range) if day_range > 0 else 0.0
+            ),
+            "dist_to_extrema_atr": (
+                float(session_extrema_dist / atr) if atr > 0 else 0.0
+            ),
+            "zone_to_extrema_atr": (float(zone_extrema_dist / atr) if atr > 0 else 0.0),
+        }
+    )
+    return default
+
+
 def _find_first_break(
     pre_trigger: Any, candidate: CandidateSetup
 ) -> tuple[Any, Any] | None:
@@ -409,6 +513,20 @@ def _find_first_break(
         if candidate.direction == "short" and float(row["low"]) < candidate.zone.low:
             return ts, row
     return None
+
+
+def _atr_snapshot(df: Any, period: int = 14) -> float:
+    if df.empty:
+        return 0.0
+    high = df["high"]
+    low = df["low"]
+    close = df["close"]
+    prev_close = close.shift(1)
+    tr = (high - low).to_frame("hl")
+    tr["hc"] = (high - prev_close).abs()
+    tr["lc"] = (low - prev_close).abs()
+    atr = tr.max(axis=1).rolling(period, min_periods=1).mean()
+    return float(atr.iloc[-1]) if not atr.empty else 0.0
 
 
 def _require_pandas():

@@ -61,9 +61,7 @@ description = "First governed exploration batch. Small search space only."
 max_batch_trials = 6
 
 [search_v1.space]
-earliest_trigger_time = ["09:32:00", "09:33:00"]
 horizon_bars = [20, 30]
-target_multiple = [1.5, 2.0]
 break_buffer_points = [0.0, 1.0]
 
 [model_search_v1]
@@ -75,10 +73,10 @@ model_family = ["linear_baseline", "gbm"]
 
 [feature_search_v1]
 description = "Frozen-benchmark feature-family comparison batch."
-max_batch_trials = 3
+max_batch_trials = 6
 
 [feature_search_v1.space]
-feature_family = ["context_plus_reclaim", "context_plus_geometry", "context_plus_regime"]
+feature_family = ["bnr_plus_context", "bnr_plus_engineer", "context_plus_reclaim", "context_plus_geometry", "context_plus_regime", "reclaim_plus_regime"]
 
 [feature_threshold_search_v1]
 description = "Frozen-benchmark joint feature-family x threshold comparison batch."
@@ -145,7 +143,6 @@ description = "BNR sample-expansion batch constrained to trigger-window breadth 
 max_batch_trials = 4
 
 [sample_expansion_search_v1.space]
-earliest_trigger_time = ["09:31:00", "09:32:00"]
 latest_trigger_time = ["11:00:00", "16:00:00"]
 break_buffer_points = [0.0]
 
@@ -223,7 +220,7 @@ min_trade_count = 4
 
 [controller]
 spec_version = "bnr_spec_vA"
-active_family = "model"
+active_family = "feature"
 active_model_family = "linear_baseline"
 min_candidate_ratio_vs_baseline = 0.7
 require_positive_net_delta = true

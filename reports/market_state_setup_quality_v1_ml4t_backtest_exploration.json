@@ -8,9 +8,9 @@
   "threshold": 0.45,
   "walk_forward": {
     "status": "pass",
-    "mean_roc_auc": 0.5788326118326118,
-    "fold_count": 55,
-    "stitched_candidates": 437
+    "mean_roc_auc": 0.6361866969009826,
+    "fold_count": 42,
+    "stitched_candidates": 312
   },
   "gates": {
     "entry_gate": "breakout_quality",
@@ -18,10 +18,10 @@
     "holdout_locked": true
   },
   "planned_trade_stream": {
-    "count": 184,
+    "count": 124,
     "same_timestamp_entry_collisions": 0,
     "overlap_skips": 0,
-    "close_without_position": 3
+    "close_without_position": 5
   },
   "backtest": {
     "engine": "ml4t.backtest",
@@ -30,18 +30,18 @@
     "slippage_type": "fixed",
     "slippage_fixed_points_per_fill": 0.75,
     "contract_multiplier": 2.0,
-    "num_trades": 181,
-    "win_rate": 0.4861878453038674,
-    "total_return_pct": 0.4029999999999978,
-    "max_drawdown_pct": 0.7940941739824422,
-    "total_gross_pnl": 403.0,
-    "total_costs": 543.0,
-    "sharpe": 0.41241790642980375,
-    "sortino": 0.08648613814556984,
-    "profit_factor": 1.1000993541977149,
-    "avg_trade": 4.882806381077458e-05,
-    "largest_win": 0.004813726707217831,
-    "largest_loss": -0.004403679639060369
+    "num_trades": 119,
+    "win_rate": 0.42016806722689076,
+    "total_return_pct": -0.36199999999999566,
+    "max_drawdown_pct": 0.9065474531044646,
+    "total_gross_pnl": -362.0,
+    "total_costs": 357.0,
+    "sharpe": -0.4949152590213492,
+    "sortino": -0.08242281750363602,
+    "profit_factor": 0.8620952380952381,
+    "avg_trade": -5.617298546764815e-05,
+    "largest_win": 0.004425289567860854,
+    "largest_loss": -0.003143896657074401
   },
   "translation": {
     "status": "pass",
@@ -50,9 +50,9 @@
     "utility_gap": null
   },
   "artifacts": {
-    "trade_records": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-2bc1eba72b8c/ml4t_backtest/trade_records.json",
-    "fill_records": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-2bc1eba72b8c/ml4t_backtest/fill_records.json",
-    "equity_curve": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-2bc1eba72b8c/ml4t_backtest/equity_curve.json",
-    "planned_trades": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-2bc1eba72b8c/ml4t_backtest/planned_trades.json"
+    "trade_records": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-3671aa2e1dc6/ml4t_backtest/trade_records.json",
+    "fill_records": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-3671aa2e1dc6/ml4t_backtest/fill_records.json",
+    "equity_curve": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-3671aa2e1dc6/ml4t_backtest/equity_curve.json",
+    "planned_trades": "/Users/radhikaarora/Documents/Trading ML V4/reports/runs/ml4t-backtest-3671aa2e1dc6/ml4t_backtest/planned_trades.json"
   }
 }

@@ -65,12 +65,7 @@ DEFAULT_SEARCH_BUDGETS = {
         "max_trials": 12,
         "max_cycles": 1,
         "max_runtime": "bounded_by_batch",
-        "allowed_knobs": [
-            "earliest_trigger_time",
-            "horizon_bars",
-            "target_multiple",
-            "break_buffer_points",
-        ],
+        "allowed_knobs": ["horizon_bars", "break_buffer_points"],
         "disallowed_knobs": ["holdout data", "post-hoc threshold edits"],
     },
     "model": {
@@ -81,8 +76,8 @@ DEFAULT_SEARCH_BUDGETS = {
         "disallowed_knobs": ["label edits", "holdout data"],
     },
     "feature": {
-        "max_trials": 4,
-        "max_cycles": 2,
+        "max_trials": 8,
+        "max_cycles": 3,
         "max_runtime": "bounded_by_batch",
         "allowed_knobs": ["feature_family"],
         "disallowed_knobs": ["holdout data", "trial-specific thresholds"],
@@ -105,11 +100,7 @@ DEFAULT_SEARCH_BUDGETS = {
         "max_trials": 4,
         "max_cycles": 1,
         "max_runtime": "bounded_by_batch",
-        "allowed_knobs": [
-            "earliest_trigger_time",
-            "latest_trigger_time",
-            "break_buffer_points",
-        ],
+        "allowed_knobs": ["latest_trigger_time", "break_buffer_points"],
         "disallowed_knobs": [
             "holdout data",
             "model escalation",

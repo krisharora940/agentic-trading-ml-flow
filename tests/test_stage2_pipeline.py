@@ -58,6 +58,8 @@ class Stage2PipelineTests(unittest.TestCase):
         self.assertIn("continuation_displacement_ratio", features.columns)
         self.assertIn("break_close_distance_to_zone", features.columns)
         self.assertIn("reclaim_close_location", features.columns)
+        self.assertIn("retrace_at_entry", features.columns)
+        self.assertIn("zone_to_extrema_atr", features.columns)
         self.assertTrue(
             {"eng_rsi", "eng_atr"} <= set(features.columns)
             or {"reg_vol_10", "reg_trend_10"} <= set(features.columns)
@@ -84,6 +86,115 @@ class Stage2PipelineTests(unittest.TestCase):
         )
 
         self.assertEqual(candidates, [])
+
+    def test_event_driven_engine_can_emit_multiple_attempts_per_direction(self) -> None:
+        index = pd.date_range(
+            "2026-01-02 09:30:00", periods=18, freq="30s", tz="America/New_York"
+        )
+        bars = pd.DataFrame(
+            {
+                "open": [
+                    100.0,
+                    101.0,
+                    102.0,
+                    103.0,
+                    104.6,
+                    102.9,
+                    104.4,
+                    104.8,
+                    102.8,
+                    104.5,
+                    104.9,
+                    105.0,
+                    105.2,
+                    105.4,
+                    105.6,
+                    105.8,
+                    106.0,
+                    106.2,
+                ],
+                "high": [
+                    102.0,
+                    103.0,
+                    104.0,
+                    105.0,
+                    104.8,
+                    104.6,
+                    105.0,
+                    105.0,
+                    104.7,
+                    105.2,
+                    105.4,
+                    105.6,
+                    105.8,
+                    106.0,
+                    106.2,
+                    106.4,
+                    106.6,
+                    106.8,
+                ],
+                "low": [
+                    99.0,
+                    100.0,
+                    101.0,
+                    102.0,
+                    102.7,
+                    102.8,
+                    104.1,
+                    102.7,
+                    102.7,
+                    104.2,
+                    104.4,
+                    104.6,
+                    104.8,
+                    105.0,
+                    105.2,
+                    105.4,
+                    105.6,
+                    105.8,
+                ],
+                "close": [
+                    101.0,
+                    102.0,
+                    103.0,
+                    104.0,
+                    102.9,
+                    104.4,
+                    104.8,
+                    102.8,
+                    104.5,
+                    104.9,
+                    105.1,
+                    105.3,
+                    105.5,
+                    105.7,
+                    105.9,
+                    106.1,
+                    106.3,
+                    106.5,
+                ],
+                "volume": [1000] * 18,
+            },
+            index=index,
+        )
+
+        zones = calculate_bnr_zones(bars)
+        candidates = generate_breakout_candidates(
+            bars,
+            zones,
+            earliest_trigger_time="09:32:00",
+            latest_trigger_time="10:30:00",
+            max_candidates_per_direction=3,
+            candidate_engine="event_driven_v1",
+        )
+
+        self.assertGreaterEqual(len(candidates), 2)
+        self.assertTrue(
+            all(
+                candidate.trace.get("candidate_engine") == "event_driven_v1"
+                for candidate in candidates
+            )
+        )
 
 
 if __name__ == "__main__":

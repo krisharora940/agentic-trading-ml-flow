@@ -165,8 +165,11 @@ def _build_point_in_time_inputs(
         earliest_trigger_time=config.earliest_trigger_time,
         latest_trigger_time=config.latest_trigger_time,
         break_buffer_points=config.break_buffer_points,
+        max_candidates_per_direction=config.max_candidates_per_direction,
+        candidate_engine=config.candidate_engine,
     )
-    candidates = filter_candidates_by_subtype(candidates, config.setup_subtype)
+    if config.setup_subtype not in {"", "all", "all_subtypes"}:
+        candidates = filter_candidates_by_subtype(candidates, config.setup_subtype)
     labels = label_candidates(
         rth,
         candidates,

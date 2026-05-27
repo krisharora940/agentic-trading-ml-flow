@@ -46,6 +46,127 @@ def _latest_log_payload(result: dict[str, Any], actor: str) -> dict[str, Any]:
     return {}
 
 
+def _prune_empty(mapping: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in mapping.items()
+        if value not in (None, "", [], {}, ())
+    }
+
+
+def _proposal_review(desk_result: dict[str, Any]) -> dict[str, Any]:
+    proposal = dict((desk_result.get("desk_proposals", []) or [{}])[-1])
+    return _prune_empty(
+        {
+            "proposal_id": proposal.get("proposal_id"),
+            "node": proposal.get("node"),
+            "family": proposal.get("family"),
+            "action_id": proposal.get("action_id"),
+            "claim": proposal.get("claim"),
+            "hypothesis": proposal.get("hypothesis"),
+            "target_failure_cluster": proposal.get("target_failure_cluster"),
+            "target_market_state": proposal.get("target_market_state"),
+            "target_setup_state": proposal.get("target_setup_state"),
+            "target_environment_state": proposal.get("target_environment_state"),
+            "target_path_class": proposal.get("target_path_class"),
+            "allowable_knobs": proposal.get("allowable_knobs"),
+            "forbidden_knobs": proposal.get("forbidden_knobs"),
+            "expected_metric_delta": proposal.get("expected_metric_delta"),
+            "falsification_rule": proposal.get("falsification_rule"),
+            "kill_criteria": proposal.get("kill_criteria"),
+        }
+    )
+
+
+def _plan_review(desk_result: dict[str, Any]) -> dict[str, Any]:
+    plan = dict(desk_result.get("research_action_plan", {}) or {})
+    controller = dict(plan.get("controller_state", {}) or {})
+    return _prune_empty(
+        {
+            "plan_id": plan.get("plan_id"),
+            "proposal_id": plan.get("proposal_id"),
+            "action_id": plan.get("action_id"),
+            "family": plan.get("family"),
+            "objective": plan.get("objective"),
+            "target_failure_cluster": plan.get("target_failure_cluster"),
+            "target_market_state": plan.get("target_market_state"),
+            "target_setup_state": plan.get("target_setup_state"),
+            "target_environment_state": plan.get("target_environment_state"),
+            "target_path_class": plan.get("target_path_class"),
+            "allowed_policy_atoms": plan.get("allowed_policy_atoms"),
+            "allowable_knobs": plan.get("allowable_knobs"),
+            "forbidden_knobs": plan.get("forbidden_knobs"),
+            "search_mechanics": plan.get("search_mechanics"),
+            "robustness_target": plan.get("robustness_target"),
+            "falsification_rule": plan.get("falsification_rule"),
+            "kill_criteria": plan.get("kill_criteria"),
+            "controller_focus": _prune_empty(
+                {
+                    "active_family": controller.get("active_family"),
+                    "focus_setup_state": controller.get("focus_setup_state"),
+                    "focus_environment_state": controller.get(
+                        "focus_environment_state"
+                    ),
+                    "focus_path_class": controller.get("focus_path_class"),
+                }
+            ),
+        }
+    )
+
+
+def _trial_delta_review(trial: dict[str, Any]) -> dict[str, Any]:
+    return _prune_empty(
+        {
+            "trial_id": trial.get("trial_id"),
+            "variant": trial.get("variant"),
+            "overrides": trial.get("overrides"),
+            "candidate_count": trial.get("candidate_count"),
+            "trade_count": trial.get("trade_count"),
+            "total_pnl_r": trial.get("total_pnl_r"),
+            "net_avg_pnl_r": trial.get("net_avg_pnl_r"),
+            "roc_auc": trial.get("roc_auc"),
+            "profit_factor": trial.get("profit_factor"),
+            "mean_cpcv_path_pnl_r": trial.get("mean_cpcv_path_pnl_r"),
+            "median_cpcv_path_pnl_r": trial.get("median_cpcv_path_pnl_r"),
+            "worst_path_pnl_r": trial.get("worst_path_pnl_r"),
+            "positive_path_rate": trial.get("positive_path_rate"),
+            "retained_fraction": trial.get("retained_fraction"),
+            "decision": trial.get("decision"),
+        }
+    )
+
+
+def _summarize_research_action(action: dict[str, Any]) -> dict[str, Any]:
+    best_trial = dict(action.get("best_trial", {}) or {})
+    accepted_trial = dict(action.get("accepted_trial", {}) or {})
+    marginal = dict(action.get("marginal_evidence", {}) or {})
+    return _prune_empty(
+        {
+            "cycle": action.get("cycle"),
+            "family": action.get("family"),
+            "action_id": action.get("action_id"),
+            "proposal_id": action.get("proposal_id"),
+            "hypothesis_id": action.get("hypothesis_id"),
+            "status": action.get("status"),
+            "batch_decision": action.get("batch_decision"),
+            "callable_kind": action.get("callable_kind"),
+            "best_trial": _trial_delta_review(best_trial),
+            "accepted_trial": _trial_delta_review(accepted_trial),
+            "marginal_evidence": _prune_empty(
+                {
+                    "decision": marginal.get("decision"),
+                    "net_delta_vs_baseline": marginal.get("net_delta_vs_baseline"),
+                    "roc_auc_delta_vs_baseline": marginal.get(
+                        "roc_auc_delta_vs_baseline"
+                    ),
+                    "status": marginal.get("status"),
+                    "trial_id": marginal.get("trial_id"),
+                }
+            ),
+        }
+    )
+
+
 def _build_combined_summary(
     desk_result: dict[str, Any],
     governor_result: dict[str, Any],
@@ -56,6 +177,7 @@ def _build_combined_summary(
     latest_proposal = dict((desk_result.get("desk_proposals", []) or [{}])[-1])
     program = dict(governor_result.get("next_step_plan", {}) or {})
     promotion = _latest_log_payload(governor_result, "promotion_decision")
+    recent_actions = list(governor_result.get("research_action_history", []) or [])
     summary = {
         "desk_run_id": desk_result.get("run_id"),
         "governor_run_id": governor_result.get("run_id"),
@@ -72,9 +194,16 @@ def _build_combined_summary(
         "governor_search_batch_status": governor_result.get("search_batch_status"),
         "promotion_decision": promotion.get("decision")
         or governor_result.get("promotion_decision"),
-        "recent_research_actions": list(
-            governor_result.get("research_action_history", []) or []
-        )[-5:],
+        "run_review": {
+            "proposal": _proposal_review(desk_result),
+            "plan": _plan_review(desk_result),
+            "latest_action": (
+                _summarize_research_action(recent_actions[-1]) if recent_actions else {}
+            ),
+        },
+        "recent_research_actions": [
+            _summarize_research_action(action) for action in recent_actions[-5:]
+        ],
         "blocking_issues": governor_result.get("blocking_issues", []),
     }
     if stderr_path is not None and stderr_path.exists():

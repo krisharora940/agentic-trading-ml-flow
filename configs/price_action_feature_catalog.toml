@@ -59,6 +59,31 @@ features = [
   "opening_auction_acceptance",
 ]
 
+[groups.higher_timeframe]
+label = "Higher Timeframe"
+features = [
+  "trend_alignment_5m_15m",
+  "higher_timeframe_slope_bias",
+  "distance_from_higher_timeframe_mean",
+]
+
+[groups.premarket]
+label = "Premarket Context"
+features = [
+  "premarket_trend_strength",
+  "distance_to_premarket_extremes",
+  "premarket_range_position",
+]
+
+[groups.prior_levels]
+label = "Reference Levels"
+features = [
+  "distance_to_hod_lod",
+  "distance_to_yesterday_extremes",
+  "distance_to_weekly_extremes",
+  "distance_to_recent_session_close",
+]
+
 [groups.continuation_lifecycle]
 label = "Continuation Lifecycle"
 features = [
@@ -403,6 +428,116 @@ curve_fit_risk = "medium"
 support_requirement = "medium"
 related_clusters = ["no_follow_through", "failed_breakout"]
 description = "Time and distance from breakout failure to repair back into the prior auction area"
+
+[features.trend_alignment_5m_15m]
+category = "higher_timeframe"
+concept = "5m and 15m directional agreement"
+point_in_time = true
+inputs = ["ohlcv_5m", "ohlcv_15m"]
+families = ["market_state", "trend_context", "eligibility"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "medium"
+description = "Measures whether short higher-timeframe trends agree with BNR direction"
+
+[features.higher_timeframe_slope_bias]
+category = "higher_timeframe"
+concept = "Higher timeframe directional slope"
+point_in_time = true
+inputs = ["ohlcv_5m", "ohlcv_15m", "ohlcv_30m"]
+families = ["market_state", "trend_context"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Slope and directional extension of higher-timeframe trend measures"
+
+[features.distance_from_higher_timeframe_mean]
+category = "higher_timeframe"
+concept = "Extension from higher-timeframe mean"
+point_in_time = true
+inputs = ["ohlcv_15m", "ohlcv_30m"]
+families = ["trend_context", "mean_reversion_risk"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Distance from higher-timeframe rolling mean or anchored average"
+
+[features.premarket_trend_strength]
+category = "premarket"
+concept = "Overnight directional structure"
+point_in_time = true
+inputs = ["ohlcv_premarket"]
+families = ["premarket_context", "market_state"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "medium"
+description = "Strength and cleanliness of the premarket directional move"
+
+[features.distance_to_premarket_extremes]
+category = "premarket"
+concept = "Room to premarket levels"
+point_in_time = true
+inputs = ["ohlcv_premarket"]
+families = ["premarket_context", "liquidity_context"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "medium"
+description = "Distance from current trigger to premarket high and low"
+
+[features.premarket_range_position]
+category = "premarket"
+concept = "Location inside overnight range"
+point_in_time = true
+inputs = ["ohlcv_premarket"]
+families = ["premarket_context", "location"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "medium"
+description = "Position of current price relative to premarket range and midpoint"
+
+[features.distance_to_hod_lod]
+category = "prior_levels"
+concept = "Room to session extremes"
+point_in_time = true
+inputs = ["ohlcv_1m"]
+families = ["liquidity_context", "location", "eligibility"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "low"
+description = "Distance from trigger to current day high and low"
+
+[features.distance_to_yesterday_extremes]
+category = "prior_levels"
+concept = "Room to prior-day levels"
+point_in_time = true
+inputs = ["ohlcv_daily", "prior_session_levels"]
+families = ["location", "liquidity_context", "higher_timeframe_context"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "medium"
+description = "Distance from trigger to yesterday high and low"
+
+[features.distance_to_weekly_extremes]
+category = "prior_levels"
+concept = "Room to weekly levels"
+point_in_time = true
+inputs = ["ohlcv_daily", "weekly_levels"]
+families = ["higher_timeframe_context", "location"]
+risk = "medium"
+curve_fit_risk = "medium"
+support_requirement = "medium"
+description = "Distance from trigger to rolling weekly high and low"
+
+[features.distance_to_recent_session_close]
+category = "prior_levels"
+concept = "Distance to prior settle area"
+point_in_time = true
+inputs = ["prior_session_levels"]
+families = ["location", "auction_context"]
+risk = "low"
+curve_fit_risk = "low"
+support_requirement = "medium"
+description = "Distance from trigger to yesterday close or recent settlement area"
 
 [restricted]
 exact_time_buckets = ["14:32"]

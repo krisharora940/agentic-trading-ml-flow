@@ -202,7 +202,7 @@ def load_controller_config(override: dict[str, Any] | None = None) -> dict[str, 
     controller = dict(config.get("controller", {}))
     frozen = dict(config.get("frozen_benchmark", {}))
     controller.setdefault("spec_version", "bnr_spec_vA")
-    controller.setdefault("active_family", "setup")
+    controller.setdefault("active_family", "feature")
     controller.setdefault("active_model_family", "linear_baseline")
     controller.setdefault(
         "frozen_threshold", config.get("controller", {}).get("frozen_threshold", 0.45)
@@ -242,12 +242,7 @@ def generate_search_trials(
     if active_family == "setup":
         search_v1 = build_search_space()
         space = search_v1["space"]
-        ordered_keys = [
-            "earliest_trigger_time",
-            "horizon_bars",
-            "target_multiple",
-            "break_buffer_points",
-        ]
+        ordered_keys = ["horizon_bars", "break_buffer_points"]
         values = [space[key] for key in ordered_keys]
         for combo in product(*values):
             trial = dict(base_config)
@@ -337,11 +332,7 @@ def generate_search_trials(
         return trials[: int(search_v1["max_batch_trials"])]
     if active_family == "sample_expansion":
         search_v1 = build_sample_expansion_search_space()
-        ordered_keys = [
-            "earliest_trigger_time",
-            "latest_trigger_time",
-            "break_buffer_points",
-        ]
+        ordered_keys = ["latest_trigger_time", "break_buffer_points"]
         values = [search_v1["space"][key] for key in ordered_keys]
         for combo in product(*values):
             trial = dict(base_config)

@@ -443,10 +443,10 @@ class ResearchOSTests(unittest.TestCase):
             },
             {},
         )
-        self.assertEqual(plan["selected_family"], "setup")
-        self.assertEqual(plan["assigned_research_action"], "market_state_setup_quality")
+        self.assertEqual(plan["selected_family"], "feature")
+        self.assertEqual(plan["assigned_research_action"], "feature")
         self.assertEqual(
-            plan["controller_override"]["active_family"], "market_state_setup_quality"
+            plan["controller_override"]["active_family"], "feature"
         )
         self.assertTrue(plan["desk_handoff"]["first_governed_batch"])
         self.assertEqual(plan["search_budget"]["max_trials"], 1)

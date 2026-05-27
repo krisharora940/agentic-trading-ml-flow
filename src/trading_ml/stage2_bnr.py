@@ -137,8 +137,20 @@ def generate_breakout_candidates(
     earliest_trigger_time: str = "09:32:00",
     latest_trigger_time: str = "11:00:00",
     break_buffer_points: float = 0.0,
-    max_candidates_per_direction: int = 1,
+    max_candidates_per_direction: int = 0,
+    candidate_engine: str = "canonical",
 ) -> list[CandidateSetup]:
+    if candidate_engine == "event_driven_v1":
+        return _generate_event_driven_breakout_candidates(
+            bars,
+            zones,
+            timeframe=timeframe,
+            earliest_trigger_time=earliest_trigger_time,
+            latest_trigger_time=latest_trigger_time,
+            break_buffer_points=break_buffer_points,
+            max_candidates_per_direction=max_candidates_per_direction,
+        )
+
     pd = require_pandas()
     candidates: list[CandidateSetup] = []
     for zone in zones:
@@ -156,7 +168,9 @@ def generate_breakout_candidates(
                 continue
 
             if (
-                counts["long"] < max_candidates_per_direction
+                not _direction_limit_reached(
+                    counts["long"], max_candidates_per_direction
+                )
                 and float(break_row["close"]) > zone.high + break_buffer_points
             ):
                 candidate = _candidate_from_break_state(
@@ -175,7 +189,9 @@ def generate_breakout_candidates(
                     counts["long"] += 1
 
             if (
-                counts["short"] < max_candidates_per_direction
+                not _direction_limit_reached(
+                    counts["short"], max_candidates_per_direction
+                )
                 and float(break_row["close"]) < zone.low - break_buffer_points
             ):
                 candidate = _candidate_from_break_state(
@@ -193,9 +209,289 @@ def generate_breakout_candidates(
                     candidates.append(candidate)
                     counts["short"] += 1
 
-            if all(value >= max_candidates_per_direction for value in counts.values()):
+            if _all_direction_limits_reached(counts, max_candidates_per_direction):
                 break
     return candidates
+
+
+def _generate_event_driven_breakout_candidates(
+    bars: Any,
+    zones: list[BNRZone],
+    *,
+    timeframe: str,
+    earliest_trigger_time: str,
+    latest_trigger_time: str,
+    break_buffer_points: float,
+    max_candidates_per_direction: int,
+) -> list[CandidateSetup]:
+    pd = require_pandas()
+    candidates: list[CandidateSetup] = []
+    for zone in zones:
+        session_date = pd.Timestamp(zone.session_date).date()
+        day_bars = bars[bars.index.date == session_date].sort_index()
+        if day_bars.empty:
+            continue
+
+        one_minute = _build_one_minute_bars(day_bars)
+        earliest_entry_dt = pd.Timestamp.combine(
+            session_date, pd.Timestamp(earliest_trigger_time).time()
+        ).tz_localize(day_bars.index.tz)
+        latest_entry_dt = pd.Timestamp.combine(
+            session_date, pd.Timestamp(latest_trigger_time).time()
+        ).tz_localize(day_bars.index.tz)
+        events = _build_event_stream(day_bars, one_minute)
+        counts = {"long": 0, "short": 0}
+        break_sequence = 0
+        attempt_sequence = {"long": 0, "short": 0}
+
+        direction: Direction | None = None
+        break_ts: Any = None
+        break_row: Any = None
+        break_decision_time: Any = None
+        flem_price: float | None = None
+        flem_time: Any = None
+        pivot_price: float | None = None
+        pivot_time: Any = None
+        reentry_count = 0
+        reclaim_count = 0
+        pullback_bar_seen = False
+        last_pullback_bar_time: Any = None
+        above_boundary_prev = False
+        below_boundary_prev = False
+
+        def reset_break_state() -> None:
+            nonlocal direction
+            nonlocal break_ts
+            nonlocal break_row
+            nonlocal break_decision_time
+            nonlocal flem_price
+            nonlocal flem_time
+            reset_attempt_state()
+            direction = None
+            break_ts = None
+            break_row = None
+            break_decision_time = None
+            flem_price = None
+            flem_time = None
+
+        def reset_attempt_state() -> None:
+            nonlocal pivot_price
+            nonlocal pivot_time
+            nonlocal reentry_count
+            nonlocal reclaim_count
+            nonlocal pullback_bar_seen
+            nonlocal last_pullback_bar_time
+            nonlocal above_boundary_prev
+            nonlocal below_boundary_prev
+            pivot_price = None
+            pivot_time = None
+            reentry_count = 0
+            reclaim_count = 0
+            pullback_bar_seen = False
+            last_pullback_bar_time = None
+            above_boundary_prev = False
+            below_boundary_prev = False
+
+        def start_break(
+            active_direction: Direction, ts: Any, row: Any, event_time: Any
+        ) -> None:
+            nonlocal direction
+            nonlocal break_ts
+            nonlocal break_row
+            nonlocal break_decision_time
+            nonlocal flem_price
+            nonlocal flem_time
+            nonlocal above_boundary_prev
+            nonlocal below_boundary_prev
+            nonlocal break_sequence
+            reset_break_state()
+            direction = active_direction
+            break_ts = ts
+            break_row = row
+            break_decision_time = event_time
+            break_sequence += 1
+            flem_price = float(
+                row["high"] if active_direction == "long" else row["low"]
+            )
+            flem_time = event_time
+            above_boundary_prev = float(row["close"]) > zone.high
+            below_boundary_prev = float(row["close"]) < zone.low
+
+        for _, event in events.iterrows():
+            event_time = event["event_time"]
+            ts = event["timestamp"]
+            if event_time < pd.Timestamp(zone.decision_available_at):
+                continue
+
+            if event["kind"] == "1m":
+                close = float(event["close"])
+                if close > zone.high + break_buffer_points:
+                    if direction != "long" and not _direction_limit_reached(
+                        counts["long"], max_candidates_per_direction
+                    ):
+                        start_break("long", ts, event, event_time)
+                    continue
+                if close < zone.low - break_buffer_points:
+                    if direction != "short" and not _direction_limit_reached(
+                        counts["short"], max_candidates_per_direction
+                    ):
+                        start_break("short", ts, event, event_time)
+                    continue
+
+            if (
+                direction is None
+                or break_decision_time is None
+                or event["kind"] != timeframe
+                or event_time <= break_decision_time
+            ):
+                continue
+
+            if event_time > latest_entry_dt:
+                reset_break_state()
+                continue
+
+            close = float(event["close"])
+            high = float(event["high"])
+            low = float(event["low"])
+
+            if direction == "long" and close < zone.low:
+                reset_break_state()
+                continue
+            if direction == "short" and close > zone.high:
+                reset_break_state()
+                continue
+
+            if direction == "long":
+                if flem_price is None or high >= flem_price:
+                    flem_price = high
+                    flem_time = event_time
+            else:
+                if flem_price is None or low <= flem_price:
+                    flem_price = low
+                    flem_time = event_time
+
+            is_pullback_bar = _is_opposite_pullback_bar(event, direction, zone)
+            if is_pullback_bar:
+                pullback_bar_seen = True
+                reentry_count += 1
+                last_pullback_bar_time = event_time
+
+            if pullback_bar_seen:
+                if direction == "long":
+                    if pivot_price is None or low < pivot_price:
+                        pivot_price = low
+                        pivot_time = event_time
+                else:
+                    if pivot_price is None or high > pivot_price:
+                        pivot_price = high
+                        pivot_time = event_time
+
+            if direction == "long":
+                reclaimed = (
+                    pullback_bar_seen
+                    and last_pullback_bar_time is not None
+                    and event_time > last_pullback_bar_time
+                    and close > zone.high
+                )
+                if reclaimed and not above_boundary_prev:
+                    reclaim_count += 1
+                    above_boundary_prev = True
+                    if (
+                        event_time >= earliest_entry_dt
+                        and pivot_price is not None
+                        and not _direction_limit_reached(
+                            counts["long"], max_candidates_per_direction
+                        )
+                    ):
+                        attempt_sequence["long"] += 1
+                        candidates.append(
+                            _finalize_candidate(
+                                zone=zone,
+                                break_ts=break_ts,
+                                break_row=break_row,
+                                entry_ts=ts,
+                                entry_row=event,
+                                direction=direction,
+                                timeframe=timeframe,
+                                pivot_price=pivot_price,
+                                pivot_time=pivot_time,
+                                flem_price=float(flem_price),
+                                flem_time=flem_time,
+                                reentry_count=reentry_count,
+                                reclaim_count=reclaim_count,
+                                candidate_engine="event_driven_v1",
+                                break_sequence=break_sequence,
+                                attempt_sequence=attempt_sequence["long"],
+                            )
+                        )
+                        counts["long"] += 1
+                        reset_attempt_state()
+                        above_boundary_prev = close > zone.high
+                        continue
+                else:
+                    above_boundary_prev = close > zone.high
+            else:
+                reclaimed = (
+                    pullback_bar_seen
+                    and last_pullback_bar_time is not None
+                    and event_time > last_pullback_bar_time
+                    and close < zone.low
+                )
+                if reclaimed and not below_boundary_prev:
+                    reclaim_count += 1
+                    below_boundary_prev = True
+                    if (
+                        event_time >= earliest_entry_dt
+                        and pivot_price is not None
+                        and not _direction_limit_reached(
+                            counts["short"], max_candidates_per_direction
+                        )
+                    ):
+                        attempt_sequence["short"] += 1
+                        candidates.append(
+                            _finalize_candidate(
+                                zone=zone,
+                                break_ts=break_ts,
+                                break_row=break_row,
+                                entry_ts=ts,
+                                entry_row=event,
+                                direction=direction,
+                                timeframe=timeframe,
+                                pivot_price=pivot_price,
+                                pivot_time=pivot_time,
+                                flem_price=float(flem_price),
+                                flem_time=flem_time,
+                                reentry_count=reentry_count,
+                                reclaim_count=reclaim_count,
+                                candidate_engine="event_driven_v1",
+                                break_sequence=break_sequence,
+                                attempt_sequence=attempt_sequence["short"],
+                            )
+                        )
+                        counts["short"] += 1
+                        reset_attempt_state()
+                        below_boundary_prev = close < zone.low
+                        continue
+                else:
+                    below_boundary_prev = close < zone.low
+
+            if _all_direction_limits_reached(counts, max_candidates_per_direction):
+                break
+    return candidates
+
+
+def _direction_limit_reached(count: int, max_candidates_per_direction: int) -> bool:
+    return int(max_candidates_per_direction) > 0 and count >= int(
+        max_candidates_per_direction
+    )
+
+
+def _all_direction_limits_reached(
+    counts: dict[str, int], max_candidates_per_direction: int
+) -> bool:
+    return int(max_candidates_per_direction) > 0 and all(
+        value >= int(max_candidates_per_direction) for value in counts.values()
+    )
 
 
 def _build_one_minute_bars(day_bars: Any) -> Any:
@@ -213,6 +509,51 @@ def _build_one_minute_bars(day_bars: Any) -> Any:
         .dropna(subset=["open", "high", "low", "close"])
     )
     return agg
+
+
+def _build_event_stream(day_bars: Any, one_minute: Any) -> Any:
+    pd = require_pandas()
+    ev_1m = one_minute.copy()
+    ev_1m["timestamp"] = ev_1m.index
+    ev_1m["event_time"] = ev_1m.index + timedelta(minutes=1)
+    ev_1m["kind"] = "1m"
+    ev_30s = day_bars.copy()
+    ev_30s["timestamp"] = ev_30s.index
+    ev_30s["event_time"] = ev_30s.index + timedelta(seconds=30)
+    ev_30s["kind"] = "30s"
+    events = pd.concat(
+        [
+            ev_1m[
+                [
+                    "timestamp",
+                    "event_time",
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "volume",
+                    "kind",
+                ]
+            ],
+            ev_30s[
+                [
+                    "timestamp",
+                    "event_time",
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "volume",
+                    "kind",
+                ]
+            ],
+        ],
+        ignore_index=True,
+    )
+    events["kind_order"] = events["kind"].map({"1m": 0, "30s": 1}).fillna(2)
+    return events.sort_values(["event_time", "kind_order", "timestamp"]).reset_index(
+        drop=True
+    )
 
 
 def _candidate_from_break_state(
@@ -388,6 +729,9 @@ def _finalize_candidate(
     flem_time: Any,
     reentry_count: int,
     reclaim_count: int,
+    candidate_engine: str = "canonical",
+    break_sequence: int = 1,
+    attempt_sequence: int = 1,
 ) -> CandidateSetup:
     break_decision_time = break_ts + timedelta(minutes=1)
     decision_time = _bar_completion_time(entry_ts, timeframe)
@@ -480,5 +824,8 @@ def _finalize_candidate(
             "continuation_displacement_ratio": float(continuation_displacement_ratio),
             "post_reclaim_close_strength": float(post_reclaim_close_strength),
             "opposite_boundary_close_violation": 0.0,
+            "candidate_engine": candidate_engine,
+            "break_sequence": float(break_sequence),
+            "attempt_sequence": float(attempt_sequence),
         },
     )
